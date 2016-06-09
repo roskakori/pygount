@@ -6,8 +6,8 @@
 # Packages
 *.egg
 *.egg-info
-dist
 build
+dist
 eggs
 parts
 bin
@@ -33,3 +33,4 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+/dist/
