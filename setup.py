@@ -4,6 +4,9 @@ Setup for pygount.
 import os
 from setuptools import setup, find_packages
 
+from pygount import __version__
+
+
 # Read the long description from the README file.
 _setup_folder = os.path.dirname(__file__)
 with open(os.path.join(_setup_folder, 'README.rst'), encoding='utf-8') as readme_file:
@@ -11,7 +14,7 @@ with open(os.path.join(_setup_folder, 'README.rst'), encoding='utf-8') as readme
 
 setup(
     name='pygount',
-    version='0.0.1',  # TODO: Use version number from pygount.__version__.
+    version=__version__,
     description='A sample Python project',
     long_description=long_description,
     url='https://github.com/roskakori/pygount',
@@ -31,7 +34,8 @@ setup(
     keywords='code analysis count',
     packages=find_packages(exclude=['tests']),
     install_requires=[
-        'pygments>=2.0'
+        'chardet>=2.0',
+        'pygments>=2.0',
     ],
     entry_points={
         'console_scripts': [

@@ -2,11 +2,14 @@
 Count lines of code using pygments.
 """
 import collections
+
+import chardet.universaldetector
 from pygments import lexers, token, util
 
 import pygount
 
 _log = pygount.log
+_detector = chardet.universaldetector.UniversalDetector()
 
 _MARK_TO_NAME_MAP = (
     ('c', 'code'),
@@ -46,14 +49,25 @@ def _line_parts(lexer, text):
         yield line_marks
 
 
-def line_analysis(project, source_path, encoding='cp1252'):
+def _encoding_for(source_path):
+    with open(source_path, 'rb') as source_file:
+        for line in source_file.readlines():
+            _detector.feed(line)
+            if _detector.done:
+                break
+    return _detector.result['encoding']
+
+
+def line_analysis(project, source_path, encoding=None):
     result = None
     try:
         lexer = lexers.get_lexer_for_filename(source_path)
     except util.ClassNotFound:
         lexer = None
     if lexer is not None:
-        _log.info('%s: analyze as %s', source_path, lexer.name)
+        if encoding is None:
+            encoding = _encoding_for(source_path)
+        _log.info('%s: analyze as %s using encoding %s', source_path, lexer.name, encoding)
         try:
             with open(source_path, 'r', encoding=encoding) as source_file:
                     text = source_file.read()
