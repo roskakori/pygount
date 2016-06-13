@@ -77,7 +77,7 @@ class EncodingTest(unittest.TestCase):
         encoding = 'iso-8859-15'
         test_path = self._test_path('xml-' + encoding)
         with open(test_path, 'w', encoding=encoding) as test_file:
-            xml_code = '<?xml encoding="{0}"?><some>{1}</some>'.format(
+            xml_code = '<?xml encoding="{0}" standalone="yes"?><some>{1}</some>'.format(
                 encoding, EncodingTest._TEST_CODE)
             test_file.write(xml_code)
         actual_encoding = analysis.encoding_for(test_path)

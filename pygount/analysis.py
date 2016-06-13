@@ -27,11 +27,11 @@ _BOM_TO_ENCODING_MAP = collections.OrderedDict((
     (codecs.BOM_UTF16_LE, 'utf-16-le'),
     (codecs.BOM_UTF32_BE, 'utf-32-be'),
 ))
-_XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>.+)".*\?>')
+_XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>[-_.a-zA-Z0-9]+)".*\?>')
 _CODING_MAGIC_REGEX = re.compile(r'.+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b', re.DOTALL)
 
 LineAnalysis = collections.namedtuple(
-    'LineAnalysis', ['path', 'language', 'project', 'code', 'documentation', 'empty', 'string'])
+    'LineAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string'])
 
 
 def _delined_tokens(tokens):
@@ -61,8 +61,11 @@ def _line_parts(lexer, text):
         yield line_marks
 
 
-def encoding_for(source_path, default_encoding=None):
-    if default_encoding is None:
+def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
+    assert encoding is not None
+    assert fallback_encoding is not None
+
+    if encoding == 'automatic':
         with open(source_path, 'rb') as source_file:
             heading = source_file.read(128)
         result = None
@@ -96,9 +99,9 @@ def encoding_for(source_path, default_encoding=None):
                     source_file.read(16384)
                 result = 'utf-8'
             except UnicodeDecodeError:
-                # It is not UTF-8, just assume the default encoding.
-                result = 'cp1252'
-    elif default_encoding == 'chardet':
+                # It is not UTF-8, just assume the fallback encoding.
+                result = fallback_encoding
+    elif encoding == 'chardet':
         _detector.reset()
         with open(source_path, 'rb') as source_file:
             for line in source_file.readlines():
@@ -107,27 +110,31 @@ def encoding_for(source_path, default_encoding=None):
                     break
         result = _detector.result['encoding']
     else:
-        result = default_encoding
+        # Simply use the speficied encoding.
+        result = encoding
     assert result is not None
     return result
 
 
-def line_analysis(project, source_path, encoding=None):
+def line_analysis(source_path, group, encoding='automatic', fallback_encoding='cp1252'):
+    assert encoding is not None
+    assert fallback_encoding is not None
+
     result = None
     try:
         lexer = lexers.get_lexer_for_filename(source_path)
     except util.ClassNotFound:
         lexer = None
     if lexer is not None:
-        if encoding is None:
-            encoding = encoding_for(source_path)
+        if encoding == 'automatic':
+            encoding = encoding_for(source_path, encoding, fallback_encoding)
         _log.info('%s: analyze as %s using encoding %s', source_path, lexer.name, encoding)
         try:
             with open(source_path, 'r', encoding=encoding) as source_file:
-                    text = source_file.read()
+                text = source_file.read()
         except (OSError, UnicodeDecodeError) as error:
             _log.warning('cannot read %s: %s', source_path, error)
-            result = LineAnalysis(source_path, 'error', project, 0, 0, 0, 0)
+            result = LineAnalysis(source_path, 'error', group, 0, 0, 0, 0)
         if result is None:
             mark_to_count_map = {'c': 0, 'd': 0, 'e': 0, 's': 0}
             for line_parts in _line_parts(lexer, text):
@@ -139,7 +146,7 @@ def line_analysis(project, source_path, encoding=None):
             result = LineAnalysis(
                 path=source_path,
                 language=lexer.name,
-                project=project,
+                group=group,
                 code=mark_to_count_map['c'],
                 documentation=mark_to_count_map['d'],
                 empty=mark_to_count_map['e'],
@@ -147,7 +154,7 @@ def line_analysis(project, source_path, encoding=None):
             )
     else:
         _log.info('%s: skip', source_path)
-        result = LineAnalysis(source_path, None, project, 0, 0, 0, 0)
+        result = LineAnalysis(source_path, None, group, 0, 0, 0, 0)
 
     assert result is not None
     return result
