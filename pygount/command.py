@@ -52,3 +52,7 @@ def pygount_command(arguments=None):
 def main():
     logging.basicConfig(level=logging.WARNING)
     sys.exit(pygount_command())
+
+
+if __name__ == '__main__':
+    main()
