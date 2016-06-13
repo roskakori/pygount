@@ -1,7 +1,9 @@
 """
 Count lines of code using pygments.
 """
+import codecs
 import collections
+import re
 
 import chardet.universaldetector
 from pygments import lexers, token, util
@@ -17,6 +19,16 @@ _MARK_TO_NAME_MAP = (
     ('e', 'empty'),
     ('s', 'string'),
 )
+_BOM_TO_ENCODING_MAP = collections.OrderedDict((
+    # NOTE: We need an ordered dict due the overlap between utf-32-le and utf-16-be.
+    (codecs.BOM_UTF8, 'utf-8-sig'),
+    (codecs.BOM_UTF32_LE, 'utf-32-le'),
+    (codecs.BOM_UTF16_BE, 'utf-16-be'),
+    (codecs.BOM_UTF16_LE, 'utf-16-le'),
+    (codecs.BOM_UTF32_BE, 'utf-32-be'),
+))
+_XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>.+)".*\?>')
+_CODING_MAGIC_REGEX = re.compile(r'.+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b', re.DOTALL)
 
 LineAnalysis = collections.namedtuple(
     'LineAnalysis', ['path', 'language', 'project', 'code', 'documentation', 'empty', 'string'])
@@ -49,13 +61,55 @@ def _line_parts(lexer, text):
         yield line_marks
 
 
-def _encoding_for(source_path):
-    with open(source_path, 'rb') as source_file:
-        for line in source_file.readlines():
-            _detector.feed(line)
-            if _detector.done:
-                break
-    return _detector.result['encoding']
+def encoding_for(source_path, default_encoding=None):
+    if default_encoding is None:
+        with open(source_path, 'rb') as source_file:
+            heading = source_file.read(128)
+        result = None
+        if len(heading) == 0:
+            # File is empty, assume a dummy encoding.
+            result = 'utf-8'
+        if result is None:
+            # Check for known BOMs.
+            for bom, encoding in _BOM_TO_ENCODING_MAP.items():
+                if heading[:len(bom)] == bom:
+                    result = encoding
+                    break
+        if result is None:
+            # Look for common headings that indicate the encoding.
+            ascii_heading = heading.decode('ascii', errors='replace')
+            ascii_heading = ascii_heading.replace('\r\n', '\n')
+            ascii_heading = ascii_heading.replace('\r', '\n')
+            ascii_heading = '\n'.join(ascii_heading.split('\n')[:2]) + '\n'
+            coding_magic_match = _CODING_MAGIC_REGEX.match(ascii_heading)
+            if coding_magic_match is not None:
+                result = coding_magic_match.group('encoding')
+            else:
+                first_line = ascii_heading.split('\n')[0]
+                xml_prolog_match = _XML_PROLOG_REGEX.match(first_line)
+                if xml_prolog_match is not None:
+                    result = xml_prolog_match.group('encoding')
+        if result is None:
+            try:
+                # Attempt to read the first 16 KiB of the file as UTF-8.
+                with open(source_path, 'r', encoding='utf-8') as source_file:
+                    source_file.read(16384)
+                result = 'utf-8'
+            except UnicodeDecodeError:
+                # It is not UTF-8, just assume the default encoding.
+                result = 'cp1252'
+    elif default_encoding == 'chardet':
+        _detector.reset()
+        with open(source_path, 'rb') as source_file:
+            for line in source_file.readlines():
+                _detector.feed(line)
+                if _detector.done:
+                    break
+        result = _detector.result['encoding']
+    else:
+        result = default_encoding
+    assert result is not None
+    return result
 
 
 def line_analysis(project, source_path, encoding=None):
@@ -66,7 +120,7 @@ def line_analysis(project, source_path, encoding=None):
         lexer = None
     if lexer is not None:
         if encoding is None:
-            encoding = _encoding_for(source_path)
+            encoding = encoding_for(source_path)
         _log.info('%s: analyze as %s using encoding %s', source_path, lexer.name, encoding)
         try:
             with open(source_path, 'r', encoding=encoding) as source_file:

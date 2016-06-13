@@ -1,6 +1,9 @@
 """
 Tests for pygount.
 """
+import atexit
+import os
+import tempfile
 import unittest
 
 from pygments import lexers, token
@@ -37,3 +40,56 @@ class AnalysisTest(unittest.TestCase):
             list(analysis._line_parts(python_lexer, "s = 'x'  # x")),
             [set('cds')]
         )
+
+
+class EncodingTest(unittest.TestCase):
+    _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
+    _TEST_CODE =  "x = '\u00fd \u20ac'"
+
+    def _test_path(self, name):
+        result = os.path.join(tempfile.gettempdir(), 'pygount_tests_EncodingTest_' + name + '.tmp')
+        atexit.register(os.remove, result)
+        return result
+
+    def _test_can_detect_bom_encoding(self, encoding):
+        test_path = self._test_path(encoding)
+        with open(test_path, 'wb') as test_file:
+            if encoding != 'utf-8-sig':
+                bom = EncodingTest._ENCODING_TO_BOM_MAP[encoding]
+                test_file.write(bom)
+            test_file.write(EncodingTest._TEST_CODE.encode(encoding))
+        actual_encoding = analysis.encoding_for(test_path)
+        self.assertEqual(actual_encoding, encoding)
+
+    def test_can_detect_bom_encodings(self):
+        for _, encoding in analysis._BOM_TO_ENCODING_MAP.items():
+            self._test_can_detect_bom_encoding(encoding)
+
+    def test_can_detect_plain_encoding(self):
+        for encoding in ('cp1252', 'utf-8'):
+            test_path = self._test_path(encoding)
+            with open(test_path, 'w', encoding=encoding) as test_file:
+                test_file.write(EncodingTest._TEST_CODE)
+        actual_encoding = analysis.encoding_for(test_path)
+        self.assertEqual(actual_encoding, encoding)
+
+    def test_can_detect_xml_prolog(self):
+        encoding = 'iso-8859-15'
+        test_path = self._test_path('xml-' + encoding)
+        with open(test_path, 'w', encoding=encoding) as test_file:
+            xml_code = '<?xml encoding="{0}"?><some>{1}</some>'.format(
+                encoding, EncodingTest._TEST_CODE)
+            test_file.write(xml_code)
+        actual_encoding = analysis.encoding_for(test_path)
+        self.assertEqual(actual_encoding, encoding)
+
+    def test_can_detect_magic_comment(self):
+        encoding = 'iso-8859-15'
+        test_path = self._test_path('magic-' + encoding)
+        with open(test_path, 'w', encoding=encoding) as test_file:
+            test_file.write('#!/usr/bin/python\n')
+            test_file.write('# -*- coding: {0} -*-\n'.format(encoding))
+            test_file.write(EncodingTest._TEST_CODE)
+        actual_encoding = analysis.encoding_for(test_path)
+        self.assertEqual(actual_encoding, encoding)
+
