@@ -7,7 +7,7 @@ from pygount import command
 
 
 class PygountCommandTest(unittest.TestCase):
-    def test_can_show_version(self):
+    def test_can_show_help(self):
         try:
             command.pygount_command(['--help'])
         except SystemExit as system_exit:
