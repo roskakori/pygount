@@ -15,7 +15,7 @@ with open(os.path.join(_setup_folder, 'README.rst'), encoding='utf-8') as readme
 setup(
     name='pygount',
     version=__version__,
-    description='A sample Python project',
+    description='count number of source code lines',
     long_description=long_description,
     url='https://github.com/roskakori/pygount',
     author='Thomas Aglassinger',

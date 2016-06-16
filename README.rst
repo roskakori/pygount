@@ -26,9 +26,9 @@ Usage
 
 Simply run and specify the folder to analyze recursively, for example::
 
-$ pygount ~/workspace/sometool
+$ pygount ~/development/sometool
 
-If you omit the folder, the current folder of you shell is used as starting
+If you omit the folder, the current folder of your shell is used as starting
 point.
 
 There are a couple of command line options, to find out more, run::
