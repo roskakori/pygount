@@ -1,0 +1,20 @@
+# Travis CI build for pygount.
+language: python
+
+python:
+  - "3.3"
+  - "3.4"
+  - "3.5"
+
+install:
+  - pip install --requirement dev-requirements.txt
+  - pip install --editable .
+
+script:
+  # Build the distribution archive.
+  - python setup.py bdist_wheel
+  # Run the test suite.
+  - nosetests --cover-erase --with-coverage --cover-package=vcdb
+
+after_success:
+  - coveralls
