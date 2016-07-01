@@ -14,7 +14,7 @@ script:
   # Build the distribution archive.
   - python setup.py bdist_wheel
   # Run the test suite.
-  - nosetests --cover-erase --with-coverage --cover-package=vcdb
+  - nosetests --cover-erase --with-coverage --cover-package=pygount
 
 after_success:
   - coveralls
