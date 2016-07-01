@@ -1,3 +1,16 @@
+.. image:: https://travis-ci.org/roskakori/pygount.svg?branch=master
+    :target: https://travis-ci.org/roskakori/pygount
+    :alt: Build Status
+
+.. image:: https://coveralls.io/repos/roskakori/pygount/badge.png?branch=master
+    :target: https://coveralls.io/r/roskakori/pygount?branch=master
+    :alt: Test coverage
+
+.. image:: https://landscape.io/github/roskakori/pygount/master/landscape.svg
+    :target: https://landscape.io/github/roskakori/pygount/master
+    :alt: Code Health
+
+
 pygount
 =======
 
