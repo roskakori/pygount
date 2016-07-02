@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+<project name="pygount" default="dist" basedir=".">
+
+    <description>
+        Build pygount
+    </description>
+
+    <property name="python" value="python3"/>
+    <property name="build" location="build"/>
+    <property name="dist" location="dist"/>
+
+    <target name="init">
+        <tstamp/>
+    </target>
+
+    <target name="bdist_wheel" depends="init" description="build wheel archive">
+        <exec executable="${python}" failonerror="true">
+            <arg value="setup.py"/>
+            <arg value="bdist_wheel"/>
+        </exec>
+    </target>
+
+    <target name="test" depends="init" description="run test suite">
+        <exec executable="${python}" failonerror="true">
+            <arg value="-m"/>
+            <arg value="nose"/>
+            <arg value="--cover-erase"/>
+            <arg value="--cover-package=pygount"/>
+            <arg value="--cover-xml"/>
+            <arg value="--with-coverage"/>
+            <arg value="--with-xunit"/>
+        </exec>
+    </target>
+
+    <target name="dist" depends="bdist_wheel" description="build distribution archives">
+    </target>
+
+    <target name="clean" description="clean up">
+        <delete dir="${build}"/>
+        <delete dir="${dist}"/>
+        <delete file="coverage.xml" />
+        <delete file="nosetests.xml" />
+    </target>
+</project>
