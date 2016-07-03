@@ -95,6 +95,7 @@ class ClocXmlWriter(BaseWriter):
             'blank': str(source_analysis.empty),
             'code': str(source_analysis.code + source_analysis.string),
             'comment': str(source_analysis.documentation),
+            'language': source_analysis.language,
             'name': source_analysis.path,
         }
         ElementTree.SubElement(self._files_element, 'file', attrib=file_attributes)
