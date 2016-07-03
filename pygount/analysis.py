@@ -110,13 +110,13 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
                     break
         result = _detector.result['encoding']
     else:
-        # Simply use the speficied encoding.
+        # Simply use the specified encoding.
         result = encoding
     assert result is not None
     return result
 
 
-def line_analysis(source_path, group, encoding='automatic', fallback_encoding='cp1252'):
+def source_analysis(source_path, group, encoding='automatic', fallback_encoding='cp1252'):
     assert encoding is not None
     assert fallback_encoding is not None
 

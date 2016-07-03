@@ -38,6 +38,7 @@
     <target name="clean" description="clean up">
         <delete dir="${build}"/>
         <delete dir="${dist}"/>
+        <delete dir="tests/temp"/>
         <delete file="coverage.xml" />
         <delete file="nosetests.xml" />
     </target>

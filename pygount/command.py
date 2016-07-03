@@ -10,6 +10,23 @@ import sys
 
 import pygount
 import pygount.analysis
+import pygount.write
+
+#: Valid formats for option --format.
+_VALID_FORMATS = ('cloc-xml', 'sloccount')
+
+_HELP_ENCODING = '''encoding to use when reading source code; use "automatic"
+ to take BOMs, XML prolog and magic headers into account and fall back to
+ UTF-8 or CP1252 if none fits; use "automatic;<fallback>" to specify a
+ different fallback encoding than CP1252; use "chardet" to let the chardet
+ package determine the encoding; default: "%(default)s"'''
+
+_HELP_FORMAT = 'output format, one of: {0}; default: "%(default)s"'.format(
+    ', '.join(['"' + format + '"' for format in _VALID_FORMATS]))
+
+_HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
+ separated LIST; shell patterns are possible; example: "py,sql"; default:
+ "%(default)s"'''
 
 _log = pygount.log
 
@@ -51,24 +68,23 @@ def _paths_and_group_to_analyze(folder, group=None):
     yield from _paths_and_group_to_analyze_in(folder, actual_group)
 
 
-def pygount_command(arguments=None):
-    result = 1
-    if arguments is None:
-        arguments = sys.argv[1:]
+def parsed_args(arguments):
+    assert arguments is not None
+
     parser = argparse.ArgumentParser(description='count lines of code')
     parser.add_argument(
-        '--encoding', '-e', default='automatic;cp1252',
-        help='encoding to use when reading source code; use "automatic" to ' \
-            + 'take BOMs, XML prolog and magic headers into account and ' \
-            + 'fall back to UTF-8 or CP1252 if none fits; use ' \
-            + '"automatic;<fallback>" to specify a different fallback ' \
-            + 'encoding than CP1252; use "chardet" to let the chardet ' \
-            + 'package determine the encoding; default: "%(default)s"'
+        '--encoding', '-e', default='automatic;cp1252', help=_HELP_ENCODING
     )
     parser.add_argument(
-        '--suffix', '-s', metavar='LIST', default='*',
-        help='limit analysis on files matching any suffix in comma separated LIST; ' \
-            + 'shell patterns are possible; example: "py,sql"; default: "%(default)s"'
+        '--format', '-f', metavar='FORMAT', choices=_VALID_FORMATS, default='sloccount',
+        help=_HELP_FORMAT
+    )
+    parser.add_argument(
+        '--out', '-o', metavar='FILE', default='STDOUT',
+        help='file to write results to; use "STDOUT" for standard output; default: "%(default)s"'
+    )
+    parser.add_argument(
+        '--suffix', '-s', metavar='LIST', default='*', help=_HELP_SUFFIX
     )
     parser.add_argument(
         'source_folders', metavar='DIR', nargs='*', default=[os.getcwd()],
@@ -101,31 +117,59 @@ def pygount_command(arguments=None):
             except LookupError:
                 parser.error('{0} specified with --encoding must be a known Python encoding: {1}'.format(
                     name, encoding))
+    return args, default_encoding, fallback_encoding
+
+def pygount_command(arguments=None):
+    result = 1
+    if arguments is None:
+        arguments = sys.argv[1:]
+    args, default_encoding, fallback_encoding = parsed_args(arguments)
     if args.verbose:
         _log.setLevel(logging.INFO)
     suffixes_to_analyze = [suffix.strip() for suffix in args.suffix.split(',')]
     try:
         source_paths_and_groups_to_analyze = []
         for source_folder in args.source_folders:
-            source_paths_and_groups_to_analyze.extend(_paths_and_group_to_analyze(source_folder))
+            try:
+                source_paths_and_groups_to_analyze.extend(_paths_and_group_to_analyze(source_folder))
+            except OSError as error:
+                raise OSError('cannot scan folder "{0}" for source files: {1}'.format(source_folder, error))
         source_paths_and_groups_to_analyze = sorted(set(source_paths_and_groups_to_analyze))
-        for source_path, group in source_paths_and_groups_to_analyze:
-            suffix = os.path.splitext(source_path)[1].lstrip('.')
-            is_suffix_to_analyze = any(
-                fnmatch.fnmatch(suffix, suffix_to_analyze)
-                for suffix_to_analyze in suffixes_to_analyze
-            )
-            if is_suffix_to_analyze:
-                statistics = pygount.analysis.line_analysis(source_path, group, default_encoding, fallback_encoding)
-                if statistics is not None:
-                    if statistics.language is not None:
-                        source_line_count = statistics.code + statistics.string
-                        print('{0}\t{1}\t{2}\t{3}'.format(
-                            source_line_count, statistics.language, statistics.group, statistics.path))
-                    else:
-                        _log.info('skip due unknown language: %s', statistics.path)
-            else:
-                _log.info('skip due suffix: %s', source_path)
+
+        if args.out == 'STDOUT':
+            target_file = sys.stdout
+            has_target_file_to_close = False
+        else:
+            target_file = open(args.out, 'w', encoding='utf-8', newline='')
+            has_target_file_to_close = True
+
+        if args.format == 'cloc-xml':
+            writer_class = pygount.write.ClocXmlWriter
+        else:
+            assert args.format == 'sloccount'
+            writer_class = pygount.write.LineWriter
+        with writer_class(target_file) as writer:
+            for source_path, group in source_paths_and_groups_to_analyze:
+                suffix = os.path.splitext(source_path)[1].lstrip('.')
+                is_suffix_to_analyze = any(
+                    fnmatch.fnmatch(suffix, suffix_to_analyze)
+                    for suffix_to_analyze in suffixes_to_analyze
+                )
+                if is_suffix_to_analyze:
+                    statistics = pygount.analysis.source_analysis(source_path, group, default_encoding, fallback_encoding)
+                    if statistics is not None:
+                        if statistics.language is not None:
+                            writer.add(statistics)
+                        else:
+                            _log.info('skip due unknown language: %s', statistics.path)
+                else:
+                    _log.info('skip due suffix: %s', source_path)
+
+        if has_target_file_to_close:
+            try:
+                target_file.close()
+            except Exception as error:
+                raise OSError('cannot write output to "{0}": {1}'.format(args.output, error))
 
         result = 0
     except KeyboardInterrupt:
@@ -134,6 +178,7 @@ def pygount_command(arguments=None):
         _log.error(error)
     except Exception as error:
         _log.exception(error)
+
     return result
 
 
