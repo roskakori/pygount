@@ -26,18 +26,6 @@
         </exec>
     </target>
 
-    <target name="count" depends="init" description="count number of source line">
-        <exec executable="${python}" failonerror="true">
-            <arg value="pygount/command.py"/>
-            <arg value="--format=cloc-xml"/>
-            <arg value="--out"/>
-            <arg file="cloc.xml"/>
-            <arg value="--suffix=py,xml"/>
-            <arg value="--verbose"/>
-            <arg file="."/>
-        </exec>
-    </target>
-
     <target name="dist" depends="bdist_wheel" description="build distribution archives">
     </target>
 
@@ -49,5 +37,9 @@
         <delete file="nosetests.xml" />
     </target>
 
-    <target name="jenkins" depends="dist, clean, count, test" description="build everything needed for Jenkins" />
+    <target name="jenkins" depends="dist, clean, test" description="build everything needed for Jenkins">
+        <exec executable="bash" failonerror="true" osfamily="unix">
+            <arg file="tests/count_pygount.sh"/>
+        </exec>
+    </target>
 </project>
