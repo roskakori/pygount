@@ -6,7 +6,7 @@
     :target: https://coveralls.io/r/roskakori/pygount?branch=master
     :alt: Test coverage
 
-.. image:: https://landscape.io/github/roskakori/pygount/master/landscape.svg
+.. image:: https://landscape.io/github/roskakori/pygount/master/landscape.svg?style=flat
     :target: https://landscape.io/github/roskakori/pygount/master
     :alt: Code Health
 
@@ -49,8 +49,27 @@ There are a couple of command line options, to find out more, run::
 $ pygount --help
 
 
+Jenkins
+-------
+
+Pygount can produce output that can be processed by SLOCCount plug-in for the
+Jenkins continuous integration server.
+
+Example::
+
+pygount --format=cloc-xml --out cloc.xml --suffix=py --verbose .../projects/some
+
+Then add a post-build action "Publish SLOCCount analysis results" and set
+"SLOCCount report" to "clox.xml".
+
+
 Revision history
 ----------------
+
+Version 0.0.3, 2016-07-04
+
+* Added command line option --format.
+* Added command line option --out.
 
 Version 0.0.2, 2016-06-13
 
