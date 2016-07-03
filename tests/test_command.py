@@ -1,6 +1,8 @@
 """
-Tests for pygount.
+Tests for pygount command line interface.
 """
+# Copyright (c) 2016, Thomas Aglassinger.
+# All rights reserved. Distributed under the BSD License.
 import os
 import tempfile
 import unittest
