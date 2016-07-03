@@ -1,6 +1,8 @@
 """
 Count lines of code using pygments.
 """
+# Copyright (c) 2016, Thomas Aglassinger.
+# All rights reserved. Distributed under the BSD License.
 import argparse
 import fnmatch
 import logging

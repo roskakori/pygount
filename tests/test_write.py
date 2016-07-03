@@ -1,6 +1,8 @@
 """
 Test for write module.
 """
+# Copyright (c) 2016, Thomas Aglassinger.
+# All rights reserved. Distributed under the BSD License.
 import io
 import tempfile
 import unittest

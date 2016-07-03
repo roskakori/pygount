@@ -1,6 +1,8 @@
 """
 Setup for pygount.
 """
+# Copyright (c) 2016, Thomas Aglassinger.
+# All rights reserved. Distributed under the BSD License.
 import os
 from setuptools import setup, find_packages
 

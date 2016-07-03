@@ -1,6 +1,8 @@
 """
 Tests for pygount.
 """
+# Copyright (c) 2016, Thomas Aglassinger.
+# All rights reserved. Distributed under the BSD License.
 import atexit
 import os
 import tempfile
