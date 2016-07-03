@@ -21,26 +21,20 @@
     </target>
 
     <target name="test" depends="init" description="run test suite">
-        <exec executable="${python}" failonerror="true">
-            <arg value="-m"/>
-            <arg value="nose"/>
-            <arg value="--cover-erase"/>
-            <arg value="--cover-package=pygount"/>
-            <arg value="--cover-xml"/>
-            <arg value="--with-coverage"/>
-            <arg value="--with-xunit"/>
+        <exec executable="tox" failonerror="true">
+            <arg value="--skip-missing-interpreters"/>
         </exec>
     </target>
 
     <target name="count" depends="init" description="count number of source line">
         <exec executable="${python}" failonerror="true">
-            <arg file="pygount/command.py"/>
+            <arg value="pygount/command.py"/>
             <arg value="--format=cloc-xml"/>
             <arg value="--out"/>
             <arg file="cloc.xml"/>
-            <arg value="--suffix=py"/>
+            <arg value="--suffix=py,xml"/>
             <arg value="--verbose"/>
-            <arg value="pygount"/>
+            <arg file="."/>
         </exec>
     </target>
 
@@ -55,5 +49,5 @@
         <delete file="nosetests.xml" />
     </target>
 
-    <target name="jenkins" depends="dist, test, count" description="build everything needed for Jenkins" />
+    <target name="jenkins" depends="dist, clean, count, test" description="build everything needed for Jenkins" />
 </project>
