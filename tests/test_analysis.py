@@ -56,6 +56,19 @@ class AnalysisTest(unittest.TestCase):
         for token_type, token_text in list(analysis._pythonized_comments(analysis._delined_tokens(python_tokens))):
             self.assertNotIn(token_type, token.String, 'token_text=%r' % token_text)
 
+    def test_can_analyze_python(self):
+        source_code = \
+            '"Some tool."\n' \
+            '#!/bin/python\n' \
+            '#(C) by me\n' \
+            'def x():\n' \
+            '    "Some function"\n' \
+            '    return "abc"\n'
+        python_lexer = lexers.get_lexer_by_name('python')
+        actual_line_parts = list(analysis._line_parts(python_lexer, source_code))
+        expected_line_parts = [{'d'}, {'d'}, {'d'}, {'c'}, {'d'}, {'c', 's'}]
+        self.assertEqual(actual_line_parts, expected_line_parts)
+
 
 class EncodingTest(unittest.TestCase):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
