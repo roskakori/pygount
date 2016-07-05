@@ -43,6 +43,19 @@ class AnalysisTest(unittest.TestCase):
             [set('cds')]
         )
 
+    def test_can_convert_python_strings_to_comments(self):
+        source_code = \
+            '#!/bin/python\n' \
+            '"Some tool."\n' \
+            '#(C) by me\n' \
+            'def x():\n' \
+            '    "Some function"\n' \
+            '    return 1'
+        python_lexer = lexers.get_lexer_by_name('python')
+        python_tokens = python_lexer.get_tokens(source_code)
+        for token_type, token_text in list(analysis._pythonized_comments(analysis._delined_tokens(python_tokens))):
+            self.assertNotIn(token_type, token.String, 'token_text=%r' % token_text)
+
 
 class EncodingTest(unittest.TestCase):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
