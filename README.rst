@@ -52,36 +52,21 @@ $ pygount --help
 Jenkins
 -------
 
-Pygount can produce output that can be processed by SLOCCount plug-in for the
-Jenkins continuous integration server.
+Pygount can produce output that can be processed by the
+`SLOCCount plug-in <https://wiki.jenkins-ci.org/display/JENKINS/SLOCCount+Plugin>`_
+for `Jenkins <https://jenkins.io/>`_ continuous integration server.
 
 Example::
 
-pygount --format=cloc-xml --out cloc.xml --suffix=py --verbose .../projects/some
+pygount --format=cloc-xml --out cloc.xml --suffix=py --verbose .
 
 Then add a post-build action "Publish SLOCCount analysis results" and set
-"SLOCCount report" to "clox.xml".
+"SLOCCount report" to "cloc.xml".
 
 
 Revision history
 ----------------
 
-Version 0.0.3, 2016-07-04
+Version 0.0.1, 2016-07-05
 
-* Added command line option --format.
-* Added command line option --out.
-
-Version 0.0.2, 2016-06-13
-
-* Fixed missing reset of chardet analyzer between files.
-* Changed default detection of encoding to a lightweight one that recognizes
-  BOMs, magic comments, XML prologs and otherwise attempts UTF-8. If that
-  fails, use CP1252 and ignore possible encoding errors.
-* Added option --encoding the specify the encoding.
-* Added option --suffix to specify a comma separated list of suffixes the
-  analysis should be limited to, e.g. "py,sql".
-* Added filter to exclude "hidden" files and folders from analysis.
-
-Version 0.0.1, 2016-06-08
-
-* Initial internal release.
+* Initial public release.

@@ -1,5 +1,17 @@
 """
 Setup for pygount.
+
+Developer cheat sheet
+---------------------
+
+Tag a release (simply replace ``0.x`` with the current version number)::
+
+  $ git tag -a -m "Tagged version 0.x." v0.x
+  $ git push --tags
+
+Upload release to PyPI::
+
+  $ python setup.py bdist_wheel upload
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
