@@ -22,7 +22,7 @@ count the number of source code lines in it. It is similar to tools like
 package to analyze the source code and consequently can analyze any
 `programming language supported by pygments <http://pygments.org/languages/>`_.
 
-The name is a combination of **pyg**ments and c**ount**.
+The name is a combination of pygments and count.
 
 
 Download and installation
@@ -31,7 +31,7 @@ Download and installation
 Pygount is available from https://pypi.python.org/pypi/pygount and can be
 installed running::
 
-$ pip install pygount
+  $ pip install pygount
 
 
 Usage
@@ -39,14 +39,14 @@ Usage
 
 Simply run and specify the folder to analyze recursively, for example::
 
-$ pygount ~/development/sometool
+  $ pygount ~/development/sometool
 
 If you omit the folder, the current folder of your shell is used as starting
 point.
 
 There are a couple of command line options, to find out more, run::
 
-$ pygount --help
+  $ pygount --help
 
 
 Jenkins
@@ -56,9 +56,9 @@ Pygount can produce output that can be processed by the
 `SLOCCount plug-in <https://wiki.jenkins-ci.org/display/JENKINS/SLOCCount+Plugin>`_
 for `Jenkins <https://jenkins.io/>`_ continuous integration server.
 
-Example::
+For example::
 
-pygount --format=cloc-xml --out cloc.xml --suffix=py --verbose .
+  pygount --format=cloc-xml --out cloc.xml --suffix=py --verbose
 
 Then add a post-build action "Publish SLOCCount analysis results" and set
 "SLOCCount report" to "cloc.xml".
