@@ -47,8 +47,28 @@ def _delined_tokens(tokens):
             yield token_type, token_text
 
 
+def _pythonized_comments(tokens):
+    """
+    Similar to tokens but converts strings after a colon (:) to comments.
+    """
+    is_after_colon = True
+    for token_type, token_text in tokens:
+        if is_after_colon and (token_type in token.String):
+            token_type = token.Comment
+        elif token_text == ':':
+            is_after_colon = True
+        elif token_type not in token.Comment:
+            is_space = len(token_text.rstrip(' \f\n\r\t')) == 0
+            if not is_space:
+                is_after_colon = False
+        yield token_type, token_text
+
+
 def _line_parts(lexer, text):
     line_marks = set()
+    tokens = _delined_tokens(lexer.get_tokens(text))
+    if lexer.name == 'Python':
+        tokens = _pythonized_comments(tokens)
     for token_type, token_text in _delined_tokens(lexer.get_tokens(text)):
         if token_type in token.Comment:
             line_marks.add('d')  # 'documentation'
