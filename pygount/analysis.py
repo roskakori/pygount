@@ -58,8 +58,8 @@ def _pythonized_comments(tokens):
         elif token_text == ':':
             is_after_colon = True
         elif token_type not in token.Comment:
-            is_space = len(token_text.rstrip(' \f\n\r\t')) == 0
-            if not is_space:
+            is_whitespace = len(token_text.rstrip(' \f\n\r\t')) == 0
+            if not is_whitespace:
                 is_after_colon = False
         yield token_type, token_text
 
@@ -69,13 +69,15 @@ def _line_parts(lexer, text):
     tokens = _delined_tokens(lexer.get_tokens(text))
     if lexer.name == 'Python':
         tokens = _pythonized_comments(tokens)
-    for token_type, token_text in _delined_tokens(lexer.get_tokens(text)):
+    for token_type, token_text in tokens:
         if token_type in token.Comment:
             line_marks.add('d')  # 'documentation'
         elif token_type in token.String:
             line_marks.add('s')  # 'string'
-        elif (token_type != token.Whitespace) and (token_text != '\n'):
-            line_marks.add('c')  # 'code'
+        else:
+            is_whitespace = len(token_text.rstrip(' \f\n\r\t')) == 0
+            if not is_whitespace:
+                line_marks.add('c')  # 'code'
         if token_text.endswith('\n'):
             yield line_marks
             line_marks = set()
