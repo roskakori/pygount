@@ -106,8 +106,6 @@ def parsed_args(arguments):
             default_encoding = args.encoding[:first_encoding_semicolon_index]
             fallback_encoding = args.encoding[first_encoding_semicolon_index + 1:]
             encoding_to_check = ('fallback encoding', fallback_encoding)
-        elif args.encoding == 'chardet':
-            encoding_to_check = None
         else:
             default_encoding = args.encoding
             fallback_encoding = None
@@ -120,6 +118,7 @@ def parsed_args(arguments):
                 parser.error('{0} specified with --encoding must be a known Python encoding: {1}'.format(
                     name, encoding))
     return args, default_encoding, fallback_encoding
+
 
 def pygount_command(arguments=None):
     result = 1
@@ -158,7 +157,8 @@ def pygount_command(arguments=None):
                     for suffix_to_analyze in suffixes_to_analyze
                 )
                 if is_suffix_to_analyze:
-                    statistics = pygount.analysis.source_analysis(source_path, group, default_encoding, fallback_encoding)
+                    statistics = pygount.analysis.source_analysis(
+                        source_path, group, default_encoding, fallback_encoding)
                     if statistics is not None:
                         if statistics.language is not None:
                             writer.add(statistics)
