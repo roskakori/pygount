@@ -52,7 +52,7 @@ class PygountCommandTest(unittest.TestCase):
 
     def test_can_analyze_pygount_source_code_as_cloc_xml(self):
         pygount_folder = os.path.dirname(os.path.dirname(__file__))
-        cloc_xml_folder = os.path.join(pygount_folder, 'tests', 'temp')
+        cloc_xml_folder = os.path.join(pygount_folder, 'tests', '.temp')
         os.makedirs(cloc_xml_folder, exist_ok=True)
         cloc_xml_path = os.path.join(cloc_xml_folder, 'cloc.xml')
         exit_code = command.pygount_command([
