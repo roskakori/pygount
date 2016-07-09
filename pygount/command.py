@@ -5,6 +5,7 @@ Count lines of code using pygments.
 # All rights reserved. Distributed under the BSD License.
 import argparse
 import fnmatch
+import glob
 import logging
 import os
 import re
@@ -32,13 +33,30 @@ _HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
 
 _log = pygount.log
 
-_PATH_NAME_REGEXS_TO_IGNORE = [
+#: Regular expressions for names of files to skip during analysis.
+_NAME_REGEXS_TO_SKIP = [
     re.compile(pattern) for pattern in (
         r'^\..*$',
-        r'^_.*$',
         r'^.*~$',
     )
 ]
+
+#: Regular expressions for names of files to skip during analysis.
+_FOLDER_REGEXS_TO_SKIP = [
+    re.compile(pattern) for pattern in (
+        r'^_.*$',
+    )
+]
+_FOLDER_REGEXS_TO_SKIP.extend(_NAME_REGEXS_TO_SKIP)
+
+
+def _is_path_to_skip(name, is_folder):
+    assert os.sep not in name, 'name=%r' % name
+    regexs_to_skip = _FOLDER_REGEXS_TO_SKIP if is_folder else _NAME_REGEXS_TO_SKIP
+    return any(
+        path_name_to_skip_regex.match(name) is not None
+        for path_name_to_skip_regex in regexs_to_skip
+    )
 
 
 def _paths_and_group_to_analyze_in(folder, group):
@@ -48,26 +66,50 @@ def _paths_and_group_to_analyze_in(folder, group):
     for name in os.listdir(folder):
         path = os.path.join(folder, name)
         if not os.path.islink(path):
-            is_path_name_to_ignore = any(
-                path_name_to_ignore_regex.match(name) is not None
-                for path_name_to_ignore_regex in _PATH_NAME_REGEXS_TO_IGNORE
-            )
-            if not is_path_name_to_ignore:
-                if os.path.isfile(path):
-                    yield path, group
-                elif os.path.isdir(path):
-                    yield from _paths_and_group_to_analyze_in(path, group)
+            is_folder = os.path.isdir(path)
+            if _is_path_to_skip(os.path.basename(path), is_folder):
+                _log.debug('skip due matching skip pattern: %s', path)
+            elif is_folder:
+                yield from _paths_and_group_to_analyze_in(path, group)
+            else:
+                yield path, group
 
 
-def _paths_and_group_to_analyze(folder, group=None):
-    if group is None:
-        actual_group = os.path.basename(folder)
-        if actual_group == '':
-            # Compensate for trailing path separator.
-            actual_group = os.path.basename(os.path.dirname(folder))
-    else:
-        actual_group = group
-    yield from _paths_and_group_to_analyze_in(folder, actual_group)
+def _paths_and_group_to_analyze(path_to_analyse_pattern, group=None):
+    for path_to_analyse in glob.glob(path_to_analyse_pattern):
+        if os.path.islink(path_to_analyse):
+            _log.debug('skip link: %s', path_to_analyse)
+        else:
+            is_folder = os.path.isdir(path_to_analyse)
+            if _is_path_to_skip(os.path.basename(path_to_analyse), is_folder):
+                _log.debug('skip due matching skip pattern: %s', path_to_analyse)
+            else:
+                actual_group = group
+                if is_folder:
+                    if actual_group is None:
+                        actual_group = os.path.basename(path_to_analyse)
+                        if actual_group == '':
+                            # Compensate for trailing path separator.
+                            actual_group = os.path.basename(os.path.dirname(path_to_analyse))
+                    yield from _paths_and_group_to_analyze_in(path_to_analyse_pattern, actual_group)
+                else:
+                    if actual_group is None:
+                        actual_group = os.path.dirname(path_to_analyse)
+                        if actual_group == '':
+                            actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
+                    yield path_to_analyse, actual_group
+
+
+def _source_paths_and_groups_to_analyze(patterns_to_analyze):
+    assert patterns_to_analyze is not None
+    result = []
+    for pattern in patterns_to_analyze:
+        try:
+            result.extend(_paths_and_group_to_analyze(pattern))
+        except OSError as error:
+            raise OSError('cannot scan "{0}" for source files: {1}'.format(pattern, error))
+    result = sorted(set(result))
+    return result
 
 
 def parsed_args(arguments):
@@ -89,8 +131,8 @@ def parsed_args(arguments):
         '--suffix', '-s', metavar='LIST', default='*', help=_HELP_SUFFIX
     )
     parser.add_argument(
-        'source_folders', metavar='DIR', nargs='*', default=[os.getcwd()],
-        help='directories to scan for source files; default: current directory')
+        'source_patterns', metavar='PATTERN', nargs='*', default=[os.getcwd()],
+        help='source files and directories to scan; can use glob patterns; default: current directory')
     parser.add_argument('--verbose', '-v', action='store_true', help='explain what is being done')
     parser.add_argument('--version', action='version', version='%(prog)s ' + pygount.__version__)
     args = parser.parse_args(arguments)
@@ -129,13 +171,7 @@ def pygount_command(arguments=None):
         _log.setLevel(logging.INFO)
     suffixes_to_analyze = [suffix.strip() for suffix in args.suffix.split(',')]
     try:
-        source_paths_and_groups_to_analyze = []
-        for source_folder in args.source_folders:
-            try:
-                source_paths_and_groups_to_analyze.extend(_paths_and_group_to_analyze(source_folder))
-            except OSError as error:
-                raise OSError('cannot scan folder "{0}" for source files: {1}'.format(source_folder, error))
-        source_paths_and_groups_to_analyze = sorted(set(source_paths_and_groups_to_analyze))
+        source_paths_and_groups_to_analyze = _source_paths_and_groups_to_analyze(args.source_patterns)
 
         if args.out == 'STDOUT':
             target_file = sys.stdout

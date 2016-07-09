@@ -42,7 +42,13 @@ Simply run and specify the folder to analyze recursively, for example::
   $ pygount ~/development/sometool
 
 If you omit the folder, the current folder of your shell is used as starting
-point.
+point. Apart from folders you can also specify single files and glob patterns
+(using ``?``, ``*`` and ranges like ``[a-z]``).
+
+Certain files and folders are automatically excluded from the analysis:
+
+* files starting with dot (.) or ending in tilda (~)
+* folders starting with dot (.) or underscore (_) or ending in tilda (~)
 
 There are a couple of command line options, to find out more, run::
 
@@ -54,7 +60,7 @@ Jenkins
 
 Pygount can produce output that can be processed by the
 `SLOCCount plug-in <https://wiki.jenkins-ci.org/display/JENKINS/SLOCCount+Plugin>`_
-for `Jenkins <https://jenkins.io/>`_ continuous integration server.
+for the `Jenkins <https://jenkins.io/>`_ continuous integration server.
 
 For example::
 
@@ -67,6 +73,13 @@ Then add a post-build action "Publish SLOCCount analysis results" and set
 Revision history
 ----------------
 
-Version 0.0.1, 2016-07-05
+Version 0.2, 2016-07-xx
+
+* Fixed that files starting with underscore (e.g. ``__init__.py``) were
+  excluded from analysis.
+* Added possibility to specify single files and glob patterns to analyze.
+* Cleaned up and (slightly) optimized code.
+
+Version 0.1, 2016-07-05
 
 * Initial public release.
