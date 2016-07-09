@@ -41,7 +41,7 @@ class BaseWriter():
         self.total_empty_count += source_analysis.empty
         self.total_source_count += 1
         self.total_line_count += \
-            source_analysis.code + source_analysis.documentation + source_analysis.empty +  source_analysis.string
+            source_analysis.code + source_analysis.documentation + source_analysis.empty + source_analysis.string
         self.total_string_count += source_analysis.string
 
     def close(self):

@@ -13,14 +13,27 @@
         <tstamp/>
     </target>
 
-    <target name="bdist_wheel" depends="init" description="build wheel archive">
+    <target name="pep8" depends="init" description="check for PEP8 conformance">
+        <exec executable="${python}" failonerror="true">
+            <arg value="-m"/>
+            <arg value="pep8"/>
+            <arg value="--exclude"/>
+            <arg file="tests/temp"/>
+            <arg value="--max-line-length=120"/>
+            <arg file="setup.py"/>
+            <arg file="pygount"/>
+            <arg file="tests"/>
+        </exec>
+    </target>
+
+    <target name="bdist_wheel" depends="pep8" description="build wheel archive">
         <exec executable="${python}" failonerror="true">
             <arg value="setup.py"/>
             <arg value="bdist_wheel"/>
         </exec>
     </target>
 
-    <target name="test" depends="init" description="run test suite">
+    <target name="test" depends="pep8" description="run test suite">
         <exec executable="tox" failonerror="true">
             <arg value="--skip-missing-interpreters"/>
         </exec>
