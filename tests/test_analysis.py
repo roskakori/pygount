@@ -43,6 +43,17 @@ class AnalysisTest(unittest.TestCase):
             [set('cds')]
         )
 
+    def test_can_detect_white_text(self):
+        python_lexer = lexers.get_lexer_by_name('python')
+        self.assertEqual(
+            list(analysis._line_parts(python_lexer, '{[()]};')),
+            [set()]
+        )
+        self.assertEqual(
+            list(analysis._line_parts(python_lexer, 'pass')),
+            [set()]
+        )
+
     def test_can_convert_python_strings_to_comments(self):
         source_code = \
             '#!/bin/python\n' \
