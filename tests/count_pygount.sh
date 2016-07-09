@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Install pygount in a new environment and count its lines of code.
 python3 -m venv tests/.temp/env_count
 rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
