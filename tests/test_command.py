@@ -40,6 +40,11 @@ class PygountCommandTest(unittest.TestCase):
         except SystemExit as system_exit:
             self.assertEqual(system_exit.code, 2)
 
+    def test_can_analyze_pygount_setup_py(self):
+        pygount_setup_py_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'setup.py')
+        exit_code = command.pygount_command(['--verbose', pygount_setup_py_path])
+        self.assertEqual(exit_code, 0)
+
     def test_can_analyze_pygount_source_code(self):
         pygount_folder = os.path.dirname(os.path.dirname(__file__))
         exit_code = command.pygount_command(['--verbose', pygount_folder])
