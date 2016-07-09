@@ -18,8 +18,7 @@
         <exec executable="${python}" failonerror="true">
             <arg value="-m"/>
             <arg value="pep8"/>
-            <arg value="--exclude"/>
-            <arg file="${temp}"/>
+            <arg value="--exclude=.temp"/>
             <arg value="--max-line-length=120"/>
             <arg file="setup.py"/>
             <arg file="pygount"/>
