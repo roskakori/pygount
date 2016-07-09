@@ -36,6 +36,33 @@ LineAnalysis = collections.namedtuple(
     'LineAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string'])
 
 
+_LANGUAGE_TO_WHITE_WORDS_MAP = {
+    'python': ['pass'],
+    'sql': ['begin', 'end']
+}
+for language in _LANGUAGE_TO_WHITE_WORDS_MAP.keys():
+    assert language.islower()
+
+
+def white_characters(language_id):
+    """
+    Characters that count as white space if they are the only characters in a
+    line.
+    """
+    assert language_id is not None
+    assert language_id.islower()
+    return '()[]{};'
+
+
+def white_code_words(language_id):
+    """
+    Words that do not count as code if it is the only word in a line.
+    """
+    assert language_id is not None
+    assert language_id.islower()
+    return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
+
+
 def _delined_tokens(tokens):
     for token_type, token_text in tokens:
         newline_index = token_text.find('\n')
@@ -69,14 +96,17 @@ def _line_parts(lexer, text):
     tokens = _delined_tokens(lexer.get_tokens(text))
     if lexer.name == 'Python':
         tokens = _pythonized_comments(tokens)
+    language_id = lexer.name.lower()
+    white_text = ' \f\n\r\t' + white_characters(language_id)
+    white_words = white_code_words(language_id)
     for token_type, token_text in tokens:
         if token_type in token.Comment:
             line_marks.add('d')  # 'documentation'
         elif token_type in token.String:
             line_marks.add('s')  # 'string'
         else:
-            is_whitespace = len(token_text.rstrip(' \f\n\r\t')) == 0
-            if not is_whitespace:
+            is_white_text = (token_text.strip() in white_words) or (token_text.rstrip(white_text) == '')
+            if not is_white_text:
                 line_marks.add('c')  # 'code'
         if token_text.endswith('\n'):
             yield line_marks
