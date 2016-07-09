@@ -98,8 +98,8 @@ class EncodingTest(unittest.TestCase):
             test_path = self._test_path(encoding)
             with open(test_path, 'w', encoding=encoding) as test_file:
                 test_file.write(EncodingTest._TEST_CODE)
-        actual_encoding = analysis.encoding_for(test_path)
-        self.assertEqual(actual_encoding, encoding)
+            actual_encoding = analysis.encoding_for(test_path)
+            self.assertEqual(actual_encoding, encoding)
 
     def test_can_detect_xml_prolog(self):
         encoding = 'iso-8859-15'
