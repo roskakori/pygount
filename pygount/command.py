@@ -48,11 +48,11 @@ def _paths_and_group_to_analyze_in(folder, group):
     for name in os.listdir(folder):
         path = os.path.join(folder, name)
         if not os.path.islink(path):
-            is_path_name_to_ignore = [
+            is_path_name_to_ignore = any(
                 path_name_to_ignore_regex.match(name) is not None
                 for path_name_to_ignore_regex in _PATH_NAME_REGEXS_TO_IGNORE
-            ]
-            if not any(is_path_name_to_ignore):
+            )
+            if not is_path_name_to_ignore:
                 if os.path.isfile(path):
                     yield path, group
                 elif os.path.isdir(path):
