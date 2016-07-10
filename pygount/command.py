@@ -140,7 +140,7 @@ def parsed_args(arguments):
         default_encoding = args.encoding
         fallback_encoding = 'cp1252'
     elif args.encoding == 'chardet':
-        if not pygount.analysis.has_chardet:
+        if not pygount.analysis.has_chardet:  # pragma: no cover
             parser.error('chardet must be installed in order to specify --encoding=chardet')
         default_encoding = args.encoding
         fallback_encoding = None
@@ -166,7 +166,7 @@ def parsed_args(arguments):
 
 def pygount_command(arguments=None):
     result = 1
-    if arguments is None:
+    if arguments is None:  # pragma: no cover
         arguments = sys.argv[1:]
     args, default_encoding, fallback_encoding = parsed_args(arguments)
     if args.verbose:
@@ -212,7 +212,7 @@ def pygount_command(arguments=None):
                 raise OSError('cannot write output to "{0}": {1}'.format(args.output, error))
 
         result = 0
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # pragma: no cover
         _log.error('interrupted as requested by user')
     except OSError as error:
         _log.error(error)
@@ -222,10 +222,10 @@ def pygount_command(arguments=None):
     return result
 
 
-def main():
+def main():  # pragma: no cover
     logging.basicConfig(level=logging.WARNING)
     sys.exit(pygount_command())
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()
