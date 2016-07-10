@@ -1,5 +1,5 @@
 """
-Count lines of code using pygments.
+Command line inteface for pygount.
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
@@ -31,7 +31,7 @@ _HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
  separated LIST; shell patterns are possible; example: "py,sql"; default:
  "%(default)s"'''
 
-_log = pygount.log
+_log = logging.getLogger('pygount')
 
 #: Regular expressions for names of files to skip during analysis.
 _NAME_REGEXS_TO_SKIP = [

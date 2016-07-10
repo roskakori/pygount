@@ -55,8 +55,22 @@ There are a couple of command line options, to find out more, run::
   $ pygount --help
 
 
-Jenkins
--------
+API
+---
+
+Pygount provides a simple API to integrate it in other tools. This however is
+currently still a work in progress and subject to change.
+
+Here's an example on how to analyze one of pygount's source codes::
+
+  >>> import pygount
+  >>> analysis = pygount.source_analysis('pygount/analysis.py', 'pygount')
+  >>> analysis
+  SourceAnalysis(path='pygount/analysis.py', language='Python', group='pygount', code=164, documentation=48, empty=27, string=0)
+
+
+Continuous integration
+----------------------
 
 Pygount can produce output that can be processed by the
 `SLOCCount plug-in <https://wiki.jenkins-ci.org/display/JENKINS/SLOCCount+Plugin>`_
@@ -70,8 +84,8 @@ Then add a post-build action "Publish SLOCCount analysis results" and set
 "SLOCCount report" to "cloc.xml".
 
 
-Revision history
-----------------
+Version history
+---------------
 
 Version 0.2, 2016-07-xx
 
