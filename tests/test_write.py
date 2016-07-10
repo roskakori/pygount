@@ -1,5 +1,5 @@
 """
-Test for write module.
+Test to write results of pygount analyses.
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
@@ -15,8 +15,8 @@ from pygount import write
 class BaseWriterCase(unittest.TestCase):
     def test_can_collect_totals(self):
         source_analyses = (
-            analysis.LineAnalysis('some.py', 'Python', 'some', 1, 2, 3, 4),
-            analysis.LineAnalysis('other.py', 'Python', 'some', 10, 20, 30, 40),
+            analysis.SourceAnalysis('some.py', 'Python', 'some', 1, 2, 3, 4),
+            analysis.SourceAnalysis('other.py', 'Python', 'some', 10, 20, 30, 40),
         )
         with tempfile.NamedTemporaryFile('w', encoding='utf-8', prefix='pygount_', suffix='.tmp') as target_stream:
             with write.BaseWriter(target_stream) as writer:
@@ -29,8 +29,8 @@ class BaseWriterCase(unittest.TestCase):
 class ClocXmlWriterTest(unittest.TestCase):
     def test_can_write_cloc_xml(self):
         source_analyses = (
-            analysis.LineAnalysis('some.py', 'Python', 'some', 1, 2, 3, 4),
-            analysis.LineAnalysis('other.py', 'Python', 'some', 10, 20, 30, 40),
+            analysis.SourceAnalysis('some.py', 'Python', 'some', 1, 2, 3, 4),
+            analysis.SourceAnalysis('other.py', 'Python', 'some', 10, 20, 30, 40),
         )
         with io.StringIO() as target_stream:
             with write.ClocXmlWriter(target_stream) as writer:

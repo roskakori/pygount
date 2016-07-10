@@ -1,18 +1,17 @@
 """
-Count lines of code using pygments.
+Functions to analyze source code and count lines in it.
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import codecs
 import collections
+import logging
 import re
 
 import chardet.universaldetector
 from pygments import lexers, token, util
 
-import pygount
-
-_log = pygount.log
+_log = logging.getLogger('pygount')
 _detector = chardet.universaldetector.UniversalDetector()
 
 _MARK_TO_NAME_MAP = (
@@ -32,8 +31,9 @@ _BOM_TO_ENCODING_MAP = collections.OrderedDict((
 _XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>[-_.a-zA-Z0-9]+)".*\?>')
 _CODING_MAGIC_REGEX = re.compile(r'.+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b', re.DOTALL)
 
-LineAnalysis = collections.namedtuple(
-    'LineAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string'])
+#: Results of a source analysis derived by :func:`source_analysis`.
+SourceAnalysis = collections.namedtuple(
+    'SourceAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string'])
 
 
 _LANGUAGE_TO_WHITE_WORDS_MAP = {
@@ -116,6 +116,19 @@ def _line_parts(lexer, text):
 
 
 def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
+    """
+    The encoding used by the text file stored in ``source_path``.
+
+    The algorithm used is:
+
+    * If ``encoding`` is ``'automatic``, attempt the following:
+      1. Check BOM for UTF-8, UTF-16 and UTF-32.
+      2. Look for XML prolog or magic heading like ``# -*- coding: cp1252 -*-``
+      3. Read the file using UTF-8.
+      4. If all this fails, use assume the ``fallback_encoding``.
+    * If ``encoding`` is ``'chardet`` use :mod:`chardet` to obtain the encoding.
+    * For any other ``encoding`` simply use the specified value.
+    """
     assert encoding is not None
     assert fallback_encoding is not None
 
@@ -171,6 +184,18 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
 
 
 def source_analysis(source_path, group, encoding='automatic', fallback_encoding='cp1252'):
+    """
+    Analysis for line counts in source code stored in ``source_path``.
+
+    :param source_path:
+    :param group: name of a logical group the sourc code belongs to, e.g. a
+      package.
+    :param encoding: encoding according to :func:`encoding_for`
+    :param fallback_encoding: fallback encoding according to
+      :func:`encoding_for`
+    :return: a :class:`SourceAnalysis`; if no matching lexer could be found,
+      `language`` is ``None``.
+    """
     assert encoding is not None
     assert fallback_encoding is not None
 
@@ -188,7 +213,7 @@ def source_analysis(source_path, group, encoding='automatic', fallback_encoding=
                 text = source_file.read()
         except (OSError, UnicodeDecodeError) as error:
             _log.warning('cannot read %s: %s', source_path, error)
-            result = LineAnalysis(source_path, 'error', group, 0, 0, 0, 0)
+            result = SourceAnalysis(source_path, 'error', group, 0, 0, 0, 0)
         if result is None:
             mark_to_count_map = {'c': 0, 'd': 0, 'e': 0, 's': 0}
             for line_parts in _line_parts(lexer, text):
@@ -197,7 +222,7 @@ def source_analysis(source_path, group, encoding='automatic', fallback_encoding=
                     if mark_to_check in line_parts:
                         mark_to_increment = mark_to_check
                 mark_to_count_map[mark_to_increment] += 1
-            result = LineAnalysis(
+            result = SourceAnalysis(
                 path=source_path,
                 language=lexer.name,
                 group=group,
@@ -208,7 +233,7 @@ def source_analysis(source_path, group, encoding='automatic', fallback_encoding=
             )
     else:
         _log.info('%s: skip', source_path)
-        result = LineAnalysis(source_path, None, group, 0, 0, 0, 0)
+        result = SourceAnalysis(source_path, None, group, 0, 0, 0, 0)
 
     assert result is not None
     return result
