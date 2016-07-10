@@ -8,11 +8,18 @@ import collections
 import logging
 import re
 
-import chardet.universaldetector
+# Attempt to import chardet.
+try:
+    import chardet.universaldetector
+    _detector = chardet.universaldetector.UniversalDetector()
+    has_chardet = True
+except ImportError:
+    _detector = None
+    has_chardet = False
+
 from pygments import lexers, token, util
 
 _log = logging.getLogger('pygount')
-_detector = chardet.universaldetector.UniversalDetector()
 
 _MARK_TO_NAME_MAP = (
     ('c', 'code'),
@@ -169,6 +176,8 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
                 # It is not UTF-8, just assume the fallback encoding.
                 result = fallback_encoding
     elif encoding == 'chardet':
+        assert _detector is not None, \
+            'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
         _detector.reset()
         with open(source_path, 'rb') as source_file:
             for line in source_file.readlines():
