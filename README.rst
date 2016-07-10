@@ -50,7 +50,38 @@ Certain files and folders are automatically excluded from the analysis:
 * files starting with dot (.) or ending in tilda (~)
 * folders starting with dot (.) or underscore (_) or ending in tilda (~)
 
-There are a couple of command line options, to find out more, run::
+To limit the analysis on certain files, you can specify a comma separated list
+of suffices to take into account, for example ``--suffix=py,sql,xml``.
+
+By default the result of the analysis are written to the standard output in a
+format similar to sloccount. To redirect the output to a file, use e.g.
+``--out=counts.txt``. To change the format to an XML file similar to cloc, use
+``--format=cloc-xml``.
+
+When reading source code, pygount automatically detects the encoding. It uses
+a simple algorithm where it recognizes BOM, XML declaractions such as::
+
+  <?xml encoding='cp1252'?>
+
+and "magic" comments such as::
+
+  # -*- coding: cp1252 -*-
+
+If the file does not have an appropriate heading, pygount attempts to read it
+using UTF-8. If this fails, it reads the file using a fallback encoding (by
+default CP1252) and ignores any encoding errors.
+
+You can change this behavior using the ``--encoding`` option:
+
+* To keep the automatic analysis and use a different fallback encoding specify
+  for example ``--encoding=automatic;iso-8859-15``
+* To use an automatic detection based on heuristic, use
+  ``--encoding=chardet``. For this to work, the
+  `chardet <https://pypi.python.org/pypi/chardet>`_ package must be installed,
+* To use a specific encoding (for all files analyzed), use for example
+  ``--encoding=iso-8859-15``.
+
+To get a description of all the available command line options, run::
 
   $ pygount --help
 
@@ -61,7 +92,7 @@ API
 Pygount provides a simple API to integrate it in other tools. This however is
 currently still a work in progress and subject to change.
 
-Here's an example on how to analyze one of pygount's source codes::
+Here's an example on how to analyze one of pygount's own source codes::
 
   >>> import pygount
   >>> analysis = pygount.source_analysis('pygount/analysis.py', 'pygount')
@@ -87,7 +118,7 @@ Then add a post-build action "Publish SLOCCount analysis results" and set
 Version history
 ---------------
 
-Version 0.2, 2016-07-xx
+Version 0.2, 2016-07-10
 
 * Fixed that files starting with underscore (e.g. ``__init__.py``) were
   excluded from analysis.
