@@ -3,8 +3,6 @@ Pygount counts lines of source code using pygments lexers.
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
-import logging
-
 from pygount.analysis import encoding_for, SourceAnalysis, source_analysis
 
 __all__ = [
