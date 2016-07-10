@@ -91,6 +91,7 @@ Version 0.2, 2016-07-xx
 
 * Fixed that files starting with underscore (e.g. ``__init__.py``) were
   excluded from analysis.
+* Changed ``chardet`` package to be optional.
 * Added possibility to specify single files and glob patterns to analyze.
 * Added that lines containing only certain characters are treated as white
   space instead of code. Currently this concerns brackets (``()[]{}``) and

@@ -140,6 +140,8 @@ def parsed_args(arguments):
         default_encoding = args.encoding
         fallback_encoding = 'cp1252'
     elif args.encoding == 'chardet':
+        if not pygount.analysis.has_chardet:
+            parser.error('chardet must be installed in order to specify --encoding=chardet')
         default_encoding = args.encoding
         fallback_encoding = None
     else:
