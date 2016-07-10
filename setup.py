@@ -11,7 +11,7 @@ Tag a release (simply replace ``0.x`` with the current version number)::
 
 Upload release to PyPI::
 
-  $ python setup.py bdist_wheel upload
+  $ python3 setup.py bdist_wheel upload
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
