@@ -14,6 +14,12 @@ from pygount import analysis
 
 
 class AnalysisTest(unittest.TestCase):
+    @staticmethod
+    def _test_path(name, suffix='tmp'):
+        result = os.path.join(tempfile.gettempdir(), 'pygount_tests_AnalysisTest_' + name + '.' + suffix)
+        atexit.register(os.remove, result)
+        return result
+
     def test_can_deline_tokens(self):
         self.assertEqual(
             list(analysis._delined_tokens([(token.Comment, '# a')])),
@@ -80,6 +86,13 @@ class AnalysisTest(unittest.TestCase):
         expected_line_parts = [{'d'}, {'d'}, {'d'}, {'c'}, {'d'}, {'c', 's'}]
         self.assertEqual(actual_line_parts, expected_line_parts)
 
+    def test_can_analyze_encoding_error(self):
+        test_path = AnalysisTest._test_path('encoding_error', '.py')
+        with open(test_path, 'w', encoding='cp1252') as test_file:
+            test_file.write('print("\N{EURO SIGN}")')
+        source_analysis = analysis.source_analysis(test_path, 'test', encoding='utf-8')
+        self.assertEqual(source_analysis.language, 'error')
+
 
 class EncodingTest(unittest.TestCase):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
@@ -132,3 +145,25 @@ class EncodingTest(unittest.TestCase):
             test_file.write(EncodingTest._TEST_CODE)
         actual_encoding = analysis.encoding_for(test_path)
         self.assertEqual(actual_encoding, encoding)
+
+    def test_can_detect_automatic_encoding_for_empty_source(self):
+        test_path = EncodingTest._test_path('empty')
+        with open(test_path, 'wb') as _:
+            pass  # Write empty file.
+        actual_encoding = analysis.encoding_for(test_path)
+        self.assertEqual(actual_encoding, 'utf-8')
+
+    def test_can_detect_chardet_encoding(self):
+        test_path = __file__
+        actual_encoding = analysis.encoding_for(test_path)
+        self.assertEqual(actual_encoding, 'utf-8')
+
+    def test_can_use_hardcoded_ending(self):
+        test_path = EncodingTest._test_path('hardcoded_cp1252')
+        with open(test_path, 'w', encoding='cp1252') as test_file:
+            test_file.write('\N{EURO SIGN}')
+        actual_encoding = analysis.encoding_for(test_path, 'utf-8')
+        self.assertEqual(actual_encoding, 'utf-8')
+        # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
+        with open(test_path, 'r', encoding=actual_encoding) as broken_test_file:
+            self.assertRaises(UnicodeDecodeError, broken_test_file.read)
