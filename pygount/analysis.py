@@ -5,7 +5,10 @@ Functions to analyze source code and count lines in it.
 # All rights reserved. Distributed under the BSD License.
 import codecs
 import collections
+import fnmatch
+import glob
 import logging
+import os
 import re
 
 # Attempt to import chardet.
@@ -38,9 +41,120 @@ _BOM_TO_ENCODING_MAP = collections.OrderedDict((
 _XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>[-_.a-zA-Z0-9]+)".*\?>')
 _CODING_MAGIC_REGEX = re.compile(r'.+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b', re.DOTALL)
 
-#: Results of a source analysis derived by :func:`source_analysis`.
+#: Results of a source analysis derived by :py:func:`source_analysis`.
 SourceAnalysis = collections.namedtuple(
     'SourceAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string'])
+
+
+class SourceScanner():
+    def __init__(self, source_patterns, suffices=['*']):
+        assert not isinstance(suffices, str), \
+            'suffices must be list, use [%a] instead of %a' % (suffices, suffices)
+        self._source_patterns = source_patterns
+        self._suffices = suffices
+        self.clear_folder_patterns_to_skip()
+        self.add_folder_pattern_to_skip('.*')
+        self.add_folder_pattern_to_skip('_svn')  # Subversion hack for Windows
+        self.clear_name_patterns_to_skip()
+        self.add_name_pattern_to_skip('.*')
+        self.add_name_pattern_to_skip('*~')
+
+    @property
+    def source_patterns(self):
+        return self._source_patterns
+
+    @property
+    def suffices(self):
+        return self._suffices
+
+    def clear_folder_patterns_to_skip(self):
+        self._folder_regexps_to_skip = []
+
+    def add_folder_pattern_to_skip(self, pattern_to_add):
+        folder_regexp_to_skip = re.compile(fnmatch.translate(pattern_to_add))
+        self._folder_regexps_to_skip.append(folder_regexp_to_skip)
+
+    def clear_name_patterns_to_skip(self):
+        self._name_regexps_to_skip = []
+
+    def add_name_pattern_to_skip(self, pattern_to_add):
+        name_regexp_to_skip = re.compile(fnmatch.translate(pattern_to_add))
+        self._name_regexps_to_skip.append(name_regexp_to_skip)
+
+    def _is_path_to_skip(self, name, is_folder):
+        assert os.sep not in name, 'name=%r' % name
+        regexs_to_skip = self._folder_regexps_to_skip if is_folder else self._name_regexps_to_skip
+        return any(
+            path_name_to_skip_regex.match(name) is not None
+            for path_name_to_skip_regex in regexs_to_skip
+        )
+
+    def _paths_and_group_to_analyze_in(self, folder, group):
+        assert folder is not None
+        assert group is not None
+
+        for name in os.listdir(folder):
+            path = os.path.join(folder, name)
+            if not os.path.islink(path):
+                is_folder = os.path.isdir(path)
+                if self._is_path_to_skip(os.path.basename(path), is_folder):
+                    _log.debug('skip due matching skip pattern: %s', path)
+                elif is_folder:
+                    yield from self._paths_and_group_to_analyze_in(path, group)
+                else:
+                    yield path, group
+
+    def _paths_and_group_to_analyze(self, path_to_analyse_pattern, group=None):
+        for path_to_analyse in glob.glob(path_to_analyse_pattern):
+            if os.path.islink(path_to_analyse):
+                _log.debug('skip link: %s', path_to_analyse)
+            else:
+                is_folder = os.path.isdir(path_to_analyse)
+                if self._is_path_to_skip(os.path.basename(path_to_analyse), is_folder):
+                    _log.debug('skip due matching skip pattern: %s', path_to_analyse)
+                else:
+                    actual_group = group
+                    if is_folder:
+                        if actual_group is None:
+                            actual_group = os.path.basename(path_to_analyse)
+                            if actual_group == '':
+                                # Compensate for trailing path separator.
+                                actual_group = os.path.basename(os.path.dirname(path_to_analyse))
+                        yield from self._paths_and_group_to_analyze_in(path_to_analyse_pattern, actual_group)
+                    else:
+                        if actual_group is None:
+                            actual_group = os.path.dirname(path_to_analyse)
+                            if actual_group == '':
+                                actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
+                        yield path_to_analyse, actual_group
+
+
+    def _source_paths_and_groups_to_analyze(self, patterns_to_analyze):
+        assert patterns_to_analyze is not None
+        result = []
+        for pattern in patterns_to_analyze:
+            try:
+                result.extend(self._paths_and_group_to_analyze(pattern))
+            except OSError as error:
+                raise OSError('cannot scan "{0}" for source files: {1}'.format(pattern, error))
+        result = sorted(set(result))
+        return result
+
+    def source_paths(self):
+        source_paths_and_groups_to_analyze = self._source_paths_and_groups_to_analyze(self.source_patterns)
+
+        for source_path, group in source_paths_and_groups_to_analyze:
+            suffix = os.path.splitext(source_path)[1].lstrip('.')
+            is_suffix_to_analyze = any(
+                fnmatch.fnmatch(suffix, suffix_to_analyze)
+                for suffix_to_analyze in self.suffices
+            )
+            if is_suffix_to_analyze:
+                yield source_path, group
+            else:
+                _log.info('skip due suffix: %s', source_path)
+
+
 
 
 _LANGUAGE_TO_WHITE_WORDS_MAP = {

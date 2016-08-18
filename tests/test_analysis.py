@@ -5,12 +5,58 @@ Tests for pygount source code analysis.
 # All rights reserved. Distributed under the BSD License.
 import atexit
 import os
+import shutil
 import tempfile
 import unittest
 
 from pygments import lexers, token
 
 from pygount import analysis
+
+
+def _write_test_file(path, lines=[], encoding='utf-8'):
+    with open(path, 'w', encoding=encoding) as test_file:
+        for line in lines:
+            test_file.write(line + '\n')
+
+
+class SourceScannerTest(unittest.TestCase):
+    def setUp(self):
+        self._tests_folder = os.path.dirname(__file__)
+
+    def test_can_find_no_files(self):
+        scanner = analysis.SourceScanner([])
+        actual_paths = list(scanner.source_paths())
+        self.assertEqual(actual_paths, [])
+
+    def test_can_find_any_files(self):
+        scanner = analysis.SourceScanner([self._tests_folder])
+        actual_paths = list(scanner.source_paths())
+        self.assertNotEqual(actual_paths, [])
+
+    def test_can_find_python_files(self):
+        scanner = analysis.SourceScanner([self._tests_folder], ['py'])
+        actual_paths = list(scanner.source_paths())
+        self.assertNotEqual(actual_paths, [])
+        for python_path, _ in actual_paths:
+            actual_suffix = os.path.splitext(python_path)[1]
+            self.assertEqual(actual_suffix, '.py')
+
+    def test_can_skip_folder(self):
+        NAME_TO_SKIP = 'source_to_skip.py'
+        folder_to_skip = os.path.join(self._tests_folder, '.test_can_skip_folder')
+        os.makedirs(folder_to_skip, exist_ok=True)
+        try:
+            _write_test_file(
+                os.path.join(folder_to_skip, NAME_TO_SKIP),
+                ['# Test', 'print(1)'])
+            scanner = analysis.SourceScanner([self._tests_folder], ['py'])
+            for python_path, _ in scanner.source_paths():
+                actual_name = os.path.basename(python_path)
+                self.assertNotEqual(actual_name, NAME_TO_SKIP)
+        finally:
+            # TODO: shutil.rmtree(folder_to_skip)
+            pass
 
 
 class AnalysisTest(unittest.TestCase):

@@ -173,7 +173,8 @@ def pygount_command(arguments=None):
         _log.setLevel(logging.INFO)
     suffixes_to_analyze = [suffix.strip() for suffix in args.suffix.split(',')]
     try:
-        source_paths_and_groups_to_analyze = _source_paths_and_groups_to_analyze(args.source_patterns)
+        source_scanner = pygount.analysis.SourceScanner(args.source_patterns, suffixes_to_analyze)
+        source_paths_and_groups_to_analyze = source_scanner.source_paths()
 
         if args.out == 'STDOUT':
             target_file = sys.stdout
@@ -189,21 +190,13 @@ def pygount_command(arguments=None):
             writer_class = pygount.write.LineWriter
         with writer_class(target_file) as writer:
             for source_path, group in source_paths_and_groups_to_analyze:
-                suffix = os.path.splitext(source_path)[1].lstrip('.')
-                is_suffix_to_analyze = any(
-                    fnmatch.fnmatch(suffix, suffix_to_analyze)
-                    for suffix_to_analyze in suffixes_to_analyze
-                )
-                if is_suffix_to_analyze:
-                    statistics = pygount.analysis.source_analysis(
-                        source_path, group, default_encoding, fallback_encoding)
-                    if statistics is not None:
-                        if statistics.language is not None:
-                            writer.add(statistics)
-                        else:
-                            _log.info('skip due unknown language: %s', statistics.path)
-                else:
-                    _log.info('skip due suffix: %s', source_path)
+                statistics = pygount.analysis.source_analysis(
+                    source_path, group, default_encoding, fallback_encoding)
+                if statistics is not None:
+                    if statistics.language is not None:
+                        writer.add(statistics)
+                    else:
+                        _log.info('skip due unknown language: %s', statistics.path)
 
         if has_target_file_to_close:
             try:
