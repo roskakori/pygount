@@ -4,11 +4,8 @@ Command line inteface for pygount.
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import argparse
-import fnmatch
-import glob
 import logging
 import os
-import re
 import sys
 
 import pygount
