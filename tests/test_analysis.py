@@ -55,8 +55,7 @@ class SourceScannerTest(unittest.TestCase):
                 actual_name = os.path.basename(python_path)
                 self.assertNotEqual(actual_name, NAME_TO_SKIP)
         finally:
-            # TODO: shutil.rmtree(folder_to_skip)
-            pass
+            shutil.rmtree(folder_to_skip)
 
 
 class AnalysisTest(unittest.TestCase):
