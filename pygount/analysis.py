@@ -155,9 +155,8 @@ class SourceScanner():
                 _log.info('skip due suffix: %s', source_path)
 
 
-
-
 _LANGUAGE_TO_WHITE_WORDS_MAP = {
+    'batchfile': ['@'],
     'python': ['pass'],
     'sql': ['begin', 'end']
 }

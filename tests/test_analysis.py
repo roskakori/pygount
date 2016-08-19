@@ -138,6 +138,18 @@ class AnalysisTest(unittest.TestCase):
         source_analysis = analysis.source_analysis(test_path, 'test', encoding='utf-8')
         self.assertEqual(source_analysis.language, 'error')
 
+    def test_can_detect_silent_dos_batch_remarks(self):
+        test_bat_path = AnalysisTest._test_path('test_can_detect_silent_dos_batch_remarks', '.bat')
+        _write_test_file(test_bat_path, [
+            'rem normal comment',
+            '@rem silent comment',
+            'echo some code'
+        ])
+        source_analysis = analysis.source_analysis(test_bat_path, 'test', encoding='utf-8')
+        self.assertEqual(source_analysis.language, 'Batchfile')
+        self.assertEqual(source_analysis.code, 1)
+        self.assertEqual(source_analysis.documentation, 2)
+
 
 class EncodingTest(unittest.TestCase):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
