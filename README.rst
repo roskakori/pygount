@@ -48,7 +48,7 @@ point. Apart from folders you can also specify single files and glob patterns
 Certain files and folders are automatically excluded from the analysis:
 
 * files starting with dot (.) or ending in tilda (~)
-* folders starting with dot (.) or underscore (_) or ending in tilda (~)
+* folders starting with dot (.) or named ``_svn``.
 
 To limit the analysis on certain files, you can specify a comma separated list
 of suffices to take into account, for example ``--suffix=py,sql,xml``.
