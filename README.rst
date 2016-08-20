@@ -118,6 +118,12 @@ Then add a post-build action "Publish SLOCCount analysis results" and set
 Version history
 ---------------
 
+Version 0.3, 2016-08-20
+
+* Fixed ``@rem`` comments in DOS batch files (issue
+  `#3 <https://github.com/roskakori/pygount/issues/3>`_).
+* Cleaned up code.
+
 Version 0.2, 2016-07-10
 
 * Fixed that files starting with underscore (e.g. ``__init__.py``) were
