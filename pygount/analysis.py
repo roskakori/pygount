@@ -128,7 +128,6 @@ class SourceScanner():
                                 actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
                         yield path_to_analyse, actual_group
 
-
     def _source_paths_and_groups_to_analyze(self, patterns_to_analyze):
         assert patterns_to_analyze is not None
         result = []
