@@ -22,6 +22,20 @@ except ImportError:
 
 from pygments import lexers, token, util
 
+
+#: Default glob patterns for folders not to analyze.
+DEFAULT_FOLDER_GLOB_PATTERNS_TO_SKIP = [
+    '.*',
+    '_svn',  # Subversion hack for Windows
+
+]
+
+#: Default glob patterns for file names not to analyze.
+DEFAULT_NAME_GLOB_PATTERNS_TO_SKIP = [
+    '.*',
+    '*~',
+]
+
 _log = logging.getLogger('pygount')
 
 _MARK_TO_NAME_MAP = (
@@ -53,11 +67,11 @@ class SourceScanner():
         self._source_patterns = source_patterns
         self._suffices = suffices
         self.clear_folder_patterns_to_skip()
-        self.add_folder_pattern_to_skip('.*')
-        self.add_folder_pattern_to_skip('_svn')  # Subversion hack for Windows
+        for folder_glob_pattern_to_skip in DEFAULT_FOLDER_GLOB_PATTERNS_TO_SKIP:
+            self.add_folder_pattern_to_skip(folder_glob_pattern_to_skip)
         self.clear_name_patterns_to_skip()
-        self.add_name_pattern_to_skip('.*')
-        self.add_name_pattern_to_skip('*~')
+        for name_glob_pattern_to_skip in DEFAULT_NAME_GLOB_PATTERNS_TO_SKIP:
+            self.add_name_pattern_to_skip(name_glob_pattern_to_skip)
 
     @property
     def source_patterns(self):
