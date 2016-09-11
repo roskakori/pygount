@@ -143,7 +143,7 @@ How pygount counts code
 
 Pygount basically counts physical lines of source code.
 
-First, it lexes the code using the lexers `pygments` assigned to it. Lines
+First, it lexes the code using the lexers ``pygments`` assigned to it. Lines
 that only contain comment tokens and white space count as comments. Lines
 that only contain white space are not taken into account. Everything else
 counts as code.
@@ -155,7 +155,7 @@ read. Currently white characters are::
     (),:;[]{}
 
 For some languages "no operations" are detected and treated as white space.
-For example Pyton's ``pass`` or T-SQL's ``begin...end`` .
+For example Python's ``pass`` or Transact-SQL's ``begin`` and ``end`` .
 
 As example consider this Python code::
 
@@ -182,7 +182,7 @@ actually lexes the code unlike other tools that mostly look for comment
 markers and can get confused when they show up inside strings. In practice
 though this should not make much of a difference.
 
-Pygount is slower that most other tools. Partially this is due to actually
+Pygount is slower than most other tools. Partially this is due to actually
 lexing instead of just scanning the code. Partially other tools can use
 statically compiled languages such as Java or C, which are generally faster
 than dynamic languages. For many applications though pygount should be
@@ -206,7 +206,7 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
-Version 0.4, 2016-09-xx
+Version 0.4, 2016-09-11
 
 * Fixed ``LookupError`` on broken encoding in magic comment (issue
   `#4 <https://github.com/roskakori/pygount/issues/4>`_).
