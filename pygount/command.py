@@ -4,10 +4,8 @@ Command line interface for pygount.
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import argparse
-import fnmatch
 import logging
 import os
-import re
 import sys
 
 import pygount.analysis
@@ -78,7 +76,7 @@ class Command():
         self._names_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         self._output = _DEFAULT_OUTPUT
         self._output_format = _DEFAULT_OUTPUT_FORMAT
-        self._source_patterns = pygount.common.regexes_from(_DEFAULT_SOURCE_PATTERNS)
+        self._source_patterns = _DEFAULT_SOURCE_PATTERNS
         self._suffixes = pygount.common.regexes_from(_DEFAULT_SUFFIXES)
 
     def set_encodings(self, encoding, source=None):
