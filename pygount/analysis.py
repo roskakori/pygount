@@ -195,7 +195,7 @@ def white_characters(language_id):
     """
     assert language_id is not None
     assert language_id.islower()
-    return '()[]{};'
+    return '(),:;[]{}'
 
 
 def white_code_words(language_id):

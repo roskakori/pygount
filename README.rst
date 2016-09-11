@@ -148,9 +148,11 @@ that only contain comment tokens and white space count as comments. Lines
 that only contain white space are not taken into account. Everything else
 counts as code.
 
-If a line only contains punctuation characters like curly braces (``{}``) or
-semicolons (``;``) it is not taken into account presumably because the code is
-only formatted that way to make it easier to read.
+If a line contains only "white characters" it is not taken into account
+presumably because the code is only formatted that way to make it easier to
+read. Currently white characters are::
+
+    (),:;[]{}
 
 For some languages "no operations" are detected and treated as white space.
 For example Pyton's ``pass`` or T-SQL's ``begin...end`` .
@@ -210,6 +212,8 @@ Version 0.4, 2016-09-xx
   `#4 <https://github.com/roskakori/pygount/issues/4>`_).
 * Added options ``--folders-to-skip`` and ``--names-to-skip`` to specify which
   files should be excluded from analysis.
+* Added comma (``,``) and colon (``:``) to list of "white characters" that do
+  not count as code if there is nothing else in the line.
 * Improved pattern matching: for all options that according to ``--help``
   take ``PATTERNS`` you can now specify that the patterns are regular
   expressions instead of shell patterns (using ``[regex]``) and that they
