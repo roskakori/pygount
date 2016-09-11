@@ -3,7 +3,20 @@ Common classes and functions for pygount.
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
-__version__ = '0.3'
+import fnmatch
+import re
+
+
+__version__ = '0.4'
+
+
+#: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
+ADDITIONAL_PATTERN = '[...]'
+
+#: Prefix to use for pattern strings to describe a regular expression instead of a shell pattern.
+REGEX_PATTERN_PREFIX = '[regex]'
+
+_REGEX_TYPE = type(re.compile(''))
 
 
 class Error(Exception):
@@ -18,3 +31,65 @@ class OptionError(Error):
 
     def __str__(self):
         return self.option_error_message
+
+
+def as_list(items_or_text):
+    if isinstance(items_or_text, str):
+        # TODO: Allow to specify comma (,) in text using '[,]'.
+        result = [item.strip() for item in items_or_text.split(',') if item.strip() != '']
+    else:
+        result = list(items_or_text)
+    return result
+
+
+def regex_from(pattern, is_shell_pattern=False):
+    assert pattern is not None
+    if isinstance(pattern, str):
+        if is_shell_pattern:
+            result = re.compile(fnmatch.translate(pattern))
+        else:
+            result = re.compile(pattern)
+    else:
+        result = pattern  # Assume pattern already is a compiled regular expression
+    return result
+
+
+def regexes_from(patterns_text, default_patterns_text=None, source=None):
+    assert patterns_text is not None
+
+    result = []
+    default_regexes = []
+    try:
+        if isinstance(patterns_text, str):
+            is_shell_pattern = True
+            patterns_text_without_prefixes = patterns_text
+            if patterns_text_without_prefixes.startswith(REGEX_PATTERN_PREFIX):
+                is_shell_pattern = False
+                patterns_text_without_prefixes = patterns_text_without_prefixes[len(REGEX_PATTERN_PREFIX):]
+            if patterns_text_without_prefixes.startswith(ADDITIONAL_PATTERN):
+                assert default_patterns_text is not None
+                default_regexes = regexes_from(default_patterns_text)
+                patterns_text_without_prefixes = patterns_text_without_prefixes[len(ADDITIONAL_PATTERN):]
+
+            patterns = as_list(patterns_text_without_prefixes)
+            for pattern in patterns:
+                result.append(regex_from(pattern, is_shell_pattern))
+        else:
+            regexes = list(patterns_text)
+            if len(regexes) >= 1 and regexes[0] is None:
+                default_regexes = regexes_from(default_patterns_text)
+                regexes = regexes[1:]
+            for supposed_regex in regexes:
+                assert isinstance(supposed_regex, _REGEX_TYPE), \
+                    'patterns_text must a text or sequnce or regular expressions but contains: %a' % supposed_regex
+            result.extend(regexes)
+    except re.error as error:
+        raise OptionError(
+            'cannot parse pattern for regular repression: {0}'.format(error),
+            source)
+    result.extend(default_regexes)
+    return result
+
+
+def matches_any(regexes, text):
+    return any(regex.match(text) for regex in regexes)

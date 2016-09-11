@@ -44,7 +44,7 @@ class CommandTest(unittest.TestCase):
         command.set_output(output_path)
         command.set_output_format('cloc-xml')
         command.set_source_patterns(self.pygount_folder)
-        command.set_suffices('py')
+        command.set_suffixes('py')
         command.execute()
         cloc_xml_root = ElementTree.parse(output_path)
         file_elements = cloc_xml_root.findall('files/file')

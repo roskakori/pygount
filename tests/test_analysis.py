@@ -14,7 +14,7 @@ from pygments import lexers, token
 from pygount import analysis
 
 
-def _write_test_file(path, lines=[], encoding='utf-8'):
+def _write_test_file(path, lines=list(), encoding='utf-8'):
     with open(path, 'w', encoding=encoding) as test_file:
         for line in lines:
             test_file.write(line + '\n')
@@ -35,7 +35,7 @@ class SourceScannerTest(unittest.TestCase):
         self.assertNotEqual(actual_paths, [])
 
     def test_can_find_python_files(self):
-        scanner = analysis.SourceScanner([self._tests_folder], ['py'])
+        scanner = analysis.SourceScanner([self._tests_folder], 'py')
         actual_paths = list(scanner.source_paths())
         self.assertNotEqual(actual_paths, [])
         for python_path, _ in actual_paths:
@@ -50,7 +50,7 @@ class SourceScannerTest(unittest.TestCase):
             _write_test_file(
                 os.path.join(folder_to_skip, NAME_TO_SKIP),
                 ['# Test', 'print(1)'])
-            scanner = analysis.SourceScanner([self._tests_folder], ['py'])
+            scanner = analysis.SourceScanner([self._tests_folder], 'py')
             for python_path, _ in scanner.source_paths():
                 actual_name = os.path.basename(python_path)
                 self.assertNotEqual(actual_name, NAME_TO_SKIP)

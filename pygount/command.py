@@ -22,7 +22,7 @@ _DEFAULT_ENCODING = 'automatic;cp1252'
 _DEFAULT_OUTPUT_FORMAT = 'sloccount'
 _DEFAULT_OUTPUT = 'STDOUT'
 _DEFAULT_SOURCE_PATTERNS = os.curdir
-_DEFAULT_SUFFICES = '*'
+_DEFAULT_SUFFIXES = '*'
 
 _HELP_ENCODING = '''encoding to use when reading source code; use "automatic"
  to take BOMs, XML prolog and magic headers into account and fall back to
@@ -46,35 +46,6 @@ _HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
  "%(default)s"'''
 
 _log = logging.getLogger('pygount')
-
-
-def _as_list(items_or_text):
-    if isinstance(items_or_text, str):
-        result = [item.strip() for item in items_or_text.split(',')]
-    else:
-        result = list(items_or_text)
-    return result
-
-
-def _glob_patterns(patterns, default_patterns):
-    if isinstance(patterns, str):
-        result = []
-        for pattern in _as_list(patterns):
-            if pattern == '...':
-                result.extend(default_patterns)
-            else:
-                result.append(pattern)
-    else:
-        result = patterns
-    return result
-
-
-def _regexs_from(patterns_or_text):
-    if isinstance(patterns_or_text, str):
-        patterns = [pattern.strip() for pattern in patterns_or_text.split(',')]
-    else:
-        patterns = patterns_or_text
-    return [re.compile(fnmatch.translate(pattern)) for pattern in patterns]
 
 
 def _check_encoding(name, encoding_to_check, alternative_encoding, source=None):
@@ -102,13 +73,13 @@ class Command():
     """
     def __init__(self):
         self._default_encoding, self._fallback_encoding = _DEFAULT_ENCODING.split(';')
-        self._folders_to_skip = _regexs_from(pygount.analysis.DEFAULT_FOLDER_GLOB_PATTERNS_TO_SKIP)
+        self._folders_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
         self._is_verbose = False
-        self._names_to_skip = _regexs_from(pygount.analysis.DEFAULT_NAME_GLOB_PATTERNS_TO_SKIP)
+        self._names_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         self._output = _DEFAULT_OUTPUT
         self._output_format = _DEFAULT_OUTPUT_FORMAT
-        self._source_patterns = _regexs_from(_DEFAULT_SOURCE_PATTERNS)
-        self._suffices = _as_list(_DEFAULT_SUFFICES)
+        self._source_patterns = pygount.common.regexes_from(_DEFAULT_SOURCE_PATTERNS)
+        self._suffixes = pygount.common.regexes_from(_DEFAULT_SUFFIXES)
 
     def set_encodings(self, encoding, source=None):
         if encoding == 'automatic':
@@ -160,20 +131,15 @@ class Command():
     def folders_to_skip(self):
         return self._folders_to_skip
 
-    def append_folder_to_skip(self, folder_glob_pattern_to_skip, source=None):
-        self._folders_to_skip.extend(
-            _regexs_from(_glob_patterns([folder_glob_pattern_to_skip])))
-
-    def clear_folder_to_skip(self, source=None):
-        self._folders_to_skip = []
-
-    def set_folders_to_skip(self, folder_glob_patterns_to_skip, source=None):
-        self._folders_to_skip = _regexs_from(
-            _glob_patterns(folder_glob_patterns_to_skip, pygount.analysis.DEFAULT_FOLDER_GLOB_PATTERNS_TO_SKIP))
+    def set_folders_to_skip(self, regexes_or_patterns_text, source=None):
+        self._folders_to_skip = pygount.common.regexes_from(
+            regexes_or_patterns_text,
+            pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT,
+            source)
 
     @property
     def is_verbose(self):
-        self._is_verbose
+        return self._is_verbose
 
     def set_is_verbose(self, is_verbose, source=None):
         self._is_verbose = bool(is_verbose)
@@ -182,16 +148,11 @@ class Command():
     def names_to_skip(self):
         return self._names_to_skip
 
-    def append_name_to_skip(self, name_glob_pattern_to_skip, source=None):
-        self._names_to_skip.extend(
-            _regexs_from(_glob_patterns([name_glob_pattern_to_skip])))
-
-    def clear_names_to_skip(self, source=None):
-        self._names_to_skip = []
-
-    def set_names_to_skip(self, name_glob_patterns_to_skip, source=None):
-        self._names_to_skip = _regexs_from(
-            _glob_patterns(name_glob_patterns_to_skip, pygount.analysis.DEFAULT_NAME_GLOB_PATTERNS_TO_SKIP))
+    def set_names_to_skip(self, regexes_or_pattern_text, source=None):
+        self._names_to_skip = pygount.common.regexes_from(
+            regexes_or_pattern_text,
+            pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT,
+            source)
 
     @property
     def output(self):
@@ -217,16 +178,19 @@ class Command():
     def source_patterns(self):
         return self._source_patterns
 
-    def set_source_patterns(self, source_patterns, source=None):
-        self._source_patterns = _glob_patterns(source_patterns, _DEFAULT_SOURCE_PATTERNS)
+    def set_source_patterns(self, glob_patterns_or_text, source=None):
+        assert glob_patterns_or_text is not None
+        self._source_patterns = pygount.common.as_list(glob_patterns_or_text)
+        assert len(self._source_patterns) >= 0
 
     @property
-    def suffices(self):
-        return self._suffices
+    def suffixes(self):
+        return self._suffixes
 
-    def set_suffices(self, suffices, source=None):
-        assert suffices is not None
-        self._suffices = _as_list(suffices)
+    def set_suffixes(self, regexes_or_patterns_text, source=None):
+        assert regexes_or_patterns_text is not None
+        self._suffixes = pygount.common.regexes_from(
+            regexes_or_patterns_text, _DEFAULT_SUFFIXES, source)
 
     def argument_parser(self):
         parser = argparse.ArgumentParser(description='count source lines of code')
@@ -234,8 +198,8 @@ class Command():
             '--encoding', '-e', default=_DEFAULT_ENCODING, help=_HELP_ENCODING
         )
         parser.add_argument(
-            '--folders-to-skip', '-F', metavar='GLOBPATTERNS',
-            default=', '.join(pygount.analysis.DEFAULT_FOLDER_GLOB_PATTERNS_TO_SKIP),
+            '--folders-to-skip', '-F', metavar='PATTERNS',
+            default=pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT,
             help=_HELP_FOLDERS_TO_SKIP
         )
         parser.add_argument(
@@ -244,8 +208,8 @@ class Command():
             help=_HELP_FORMAT
         )
         parser.add_argument(
-            '--names-to-skip', '-N', metavar='GLOBPATTERNS',
-            default=', '.join(pygount.analysis.DEFAULT_NAME_GLOB_PATTERNS_TO_SKIP),
+            '--names-to-skip', '-N', metavar='PATTERNS',
+            default=pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT,
             help=_HELP_NAMES_TO_SKIP
         )
         parser.add_argument(
@@ -253,10 +217,13 @@ class Command():
             help='file to write results to; use "STDOUT" for standard output; default: "%(default)s"'
         )
         parser.add_argument(
-            '--suffix', '-s', metavar='LIST', default='*', help=_HELP_SUFFIX
+            '--suffix', '-s', metavar='PATTERNS',
+            default=_DEFAULT_SUFFIXES,
+            help=_HELP_SUFFIX
         )
         parser.add_argument(
-            'source_patterns', metavar='PATTERN', nargs='*', default=[os.getcwd()],
+            'source_patterns', metavar='SHELL-PATTERN', nargs='*',
+            default=[os.getcwd()],
             help='source files and directories to scan; can use glob patterns; default: current directory')
         parser.add_argument('--verbose', '-v', action='store_true', help='explain what is being done')
         parser.add_argument('--version', action='version', version='%(prog)s ' + pygount.common.__version__)
@@ -306,13 +273,13 @@ class Command():
         self.set_output(args.out, 'option --out')
         self.set_output_format(args.format, 'option --format')
         self.set_source_patterns(args.source_patterns, 'option PATTERNS')
-        self.set_suffices(args.suffix, 'option --suffix')
+        self.set_suffixes(args.suffix, 'option --suffix')
 
     def execute(self):
         source_scanner = pygount.analysis.SourceScanner(
             self.source_patterns,
-            self.suffices)
-        source_paths_and_groups_to_analyze = source_scanner.source_paths()
+            self.suffixes)
+        source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
 
         if self.output == 'STDOUT':
             target_file = sys.stdout

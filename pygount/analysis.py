@@ -5,11 +5,13 @@ Functions to analyze source code and count lines in it.
 # All rights reserved. Distributed under the BSD License.
 import codecs
 import collections
-import fnmatch
 import glob
 import logging
 import os
 import re
+
+import pygount.common
+
 
 # Attempt to import chardet.
 try:
@@ -24,17 +26,16 @@ from pygments import lexers, token, util
 
 
 #: Default glob patterns for folders not to analyze.
-DEFAULT_FOLDER_GLOB_PATTERNS_TO_SKIP = [
+DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ', '.join([
     '.*',
     '_svn',  # Subversion hack for Windows
-
-]
+])
 
 #: Default glob patterns for file names not to analyze.
-DEFAULT_NAME_GLOB_PATTERNS_TO_SKIP = [
+DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT = ', '.join([
     '.*',
     '*~',
-]
+])
 
 _log = logging.getLogger('pygount')
 
@@ -61,46 +62,56 @@ SourceAnalysis = collections.namedtuple(
 
 
 class SourceScanner():
-    def __init__(self, source_patterns, suffices=['*']):
-        assert not isinstance(suffices, str), \
-            'suffices must be list, use [%a] instead of %a' % (suffices, suffices)
+    def __init__(self, source_patterns, suffixes='*'):
         self._source_patterns = source_patterns
-        self._suffices = suffices
-        self.clear_folder_patterns_to_skip()
-        for folder_glob_pattern_to_skip in DEFAULT_FOLDER_GLOB_PATTERNS_TO_SKIP:
-            self.add_folder_pattern_to_skip(folder_glob_pattern_to_skip)
-        self.clear_name_patterns_to_skip()
-        for name_glob_pattern_to_skip in DEFAULT_NAME_GLOB_PATTERNS_TO_SKIP:
-            self.add_name_pattern_to_skip(name_glob_pattern_to_skip)
+        self._suffixes = pygount.common.regexes_from(suffixes)
+        self._folder_regexps_to_skip = pygount.common.regexes_from(DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
+        self._name_regexps_to_skip = pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
 
     @property
     def source_patterns(self):
         return self._source_patterns
 
     @property
-    def suffices(self):
-        return self._suffices
+    def suffixes(self):
+        return self._suffixes
 
-    def clear_folder_patterns_to_skip(self):
-        self._folder_regexps_to_skip = []
+    @property
+    def folder_regexps_to_skip(self):
+        return self._folder_regexps_to_skip
 
-    def add_folder_pattern_to_skip(self, pattern_to_add):
-        folder_regexp_to_skip = re.compile(fnmatch.translate(pattern_to_add))
-        self._folder_regexps_to_skip.append(folder_regexp_to_skip)
+    @folder_regexps_to_skip.setter
+    def set_folder_pattern_to_skip(self, regexps_or_pattern_text):
+        self._folder_regexps_to_skip.append = pygount.common.regexes_from(
+            regexps_or_pattern_text,
+            self.folder_regexps_to_skip)
 
-    def clear_name_patterns_to_skip(self):
-        self._name_regexps_to_skip = []
+    @property
+    def generated_regexps(self):
+        return self._generated_regexps_to_skip
 
-    def add_name_pattern_to_skip(self, pattern_to_add):
-        name_regexp_to_skip = re.compile(fnmatch.translate(pattern_to_add))
-        self._name_regexps_to_skip.append(name_regexp_to_skip)
+    @generated_regexps.setter
+    def set_generated_regexps(self, regexps_or_pattern_text):
+        self._generated_regexps_to_skip = pygount.common.regexes_from(
+            regexps_or_pattern_text,
+            self.generated_regexps)
+
+    @property
+    def name_regexps_to_skip(self):
+        return self._name_regexps_to_skip
+
+    @name_regexps_to_skip.setter
+    def set_name_regexps_to_skip(self, regexps_or_pattern_text):
+        self._name_regexp_to_skip = pygount.common.regexes_from(
+            regexps_or_pattern_text,
+            self.name_regexps_to_skip)
 
     def _is_path_to_skip(self, name, is_folder):
         assert os.sep not in name, 'name=%r' % name
-        regexs_to_skip = self._folder_regexps_to_skip if is_folder else self._name_regexps_to_skip
+        regexps_to_skip = self._folder_regexps_to_skip if is_folder else self._name_regexps_to_skip
         return any(
             path_name_to_skip_regex.match(name) is not None
-            for path_name_to_skip_regex in regexs_to_skip
+            for path_name_to_skip_regex in regexps_to_skip
         )
 
     def _paths_and_group_to_analyze_in(self, folder, group):
@@ -159,8 +170,8 @@ class SourceScanner():
         for source_path, group in source_paths_and_groups_to_analyze:
             suffix = os.path.splitext(source_path)[1].lstrip('.')
             is_suffix_to_analyze = any(
-                fnmatch.fnmatch(suffix, suffix_to_analyze)
-                for suffix_to_analyze in self.suffices
+                suffix_regexp.match(suffix)
+                for suffix_regexp in self.suffixes
             )
             if is_suffix_to_analyze:
                 yield source_path, group
