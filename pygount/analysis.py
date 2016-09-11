@@ -357,7 +357,7 @@ def source_analysis(source_path, group, encoding='automatic', fallback_encoding=
         try:
             with open(source_path, 'r', encoding=encoding) as source_file:
                 text = source_file.read()
-        except (OSError, UnicodeDecodeError) as error:
+        except (LookupError, OSError, UnicodeDecodeError) as error:
             _log.warning('cannot read %s: %s', source_path, error)
             result = SourceAnalysis(source_path, 'error', group, 0, 0, 0, 0)
         if result is None:

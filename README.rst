@@ -206,12 +206,14 @@ Version history
 
 Version 0.4, 2016-09-xx
 
+* Fixed ``LookupError`` on broken encoding in magic comment (issue
+  `#4 <https://github.com/roskakori/pygount/issues/4>`_).
+* Added options ``--folders-to-skip`` and ``--names-to-skip`` to specify which
+  files should be excluded from analysis.
 * Improved pattern matching: for all options that according to ``--help``
   take ``PATTERNS`` you can now specify that the patterns are regular
   expressions instead of shell patterns (using ``[regex]``) and that they
   should extend the default patterns (using ``[...]``).
-* Added options ``--folders-to-skip`` and ``--names-to-skip`` to specify which
-  files should be excluded from analysis.
 * Improved documentation: added notes on how code is counted and how pygount
   compares to other similar tools.
 

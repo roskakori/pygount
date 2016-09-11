@@ -150,6 +150,16 @@ class AnalysisTest(unittest.TestCase):
         self.assertEqual(source_analysis.code, 1)
         self.assertEqual(source_analysis.documentation, 2)
 
+    def test_fails_on_unknown_magic_encoding_comment(self):
+        test_path = AnalysisTest._test_path('unknown_magic_encoding_comment', '.py')
+        with open(test_path, 'w', encoding='utf-8') as test_file:
+            test_file.write('# -*- coding: no_such_encoding -*-')
+            test_file.write('print("hello")')
+        no_such_encoding = analysis.encoding_for(test_path)
+        self.assertEqual(no_such_encoding, 'no_such_encoding')
+        source_analysis = analysis.source_analysis(test_path, 'test', encoding=no_such_encoding)
+        self.assertEqual(source_analysis.language, 'error')
+
 
 class EncodingTest(unittest.TestCase):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
