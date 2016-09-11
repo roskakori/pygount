@@ -24,6 +24,10 @@ package to analyze the source code and consequently can analyze any
 
 The name is a combination of pygments and count.
 
+Pygount is open source and distributed under the
+`BSD license <https://opensource.org/licenses/BSD-3-Clause>`_. The source
+code is available from https://github.com/roskakori/pygount.
+
 
 Download and installation
 -------------------------
