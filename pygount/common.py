@@ -7,7 +7,7 @@ import fnmatch
 import re
 
 
-__version__ = '0.4'
+__version__ = '0.5'
 
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
@@ -93,3 +93,17 @@ def regexes_from(patterns_text, default_patterns_text=None, source=None):
 
 def matches_any(regexes, text):
     return any(regex.match(text) for regex in regexes)
+
+
+def lines(text):
+    assert text is not None
+    assert '\r' not in text
+    previous_newline_index = 0
+    newline_index = text.find('\n')
+    while newline_index != -1:
+        yield text[previous_newline_index:newline_index]
+        previous_newline_index = newline_index + 1
+        newline_index = text.find('\n', previous_newline_index)
+    last_line = text[previous_newline_index:]
+    if last_line != '':
+        yield last_line

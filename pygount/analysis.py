@@ -5,7 +5,9 @@ Functions to analyze source code and count lines in it.
 # All rights reserved. Distributed under the BSD License.
 import codecs
 import collections
+import enum
 import glob
+import itertools
 import logging
 import os
 import re
@@ -29,6 +31,25 @@ from pygments import lexers, token, util
 DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ', '.join([
     '.*',
     '_svn',  # Subversion hack for Windows
+])
+
+SourceState = enum.Enum('SourceState', ' '.join([
+    'analyzed',  # successfully analyzed
+    # TODO: 'duplicate',  # source code is an identical copy of another
+    'error',  # source could not be parsed
+    'generated',  # source code has been genered
+    # TODO: 'huge',  # source code exceeds size limit
+    'unknown',  # pygments does not offer any lexer to analyze the source
+]))
+
+#: Default patterns for regular expressions to detect generated code.
+#: The '(?i)' indicates that the patterns are case insensitive.
+DEFAULT_GENERATED_PATTERNS_TEXT = pygount.common.REGEX_PATTERN_PREFIX + ', '.join([
+    r'(?i).*automatically generated',
+    r'(?i).*do not edit',
+    r'(?i).*generated with the .+ utility',
+    r'(?i).*this is a generated file',
+    r'(?i).*generated automatically',
 ])
 
 #: Default glob patterns for file names not to analyze.
@@ -58,7 +79,7 @@ _CODING_MAGIC_REGEX = re.compile(r'.+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]
 
 #: Results of a source analysis derived by :py:func:`source_analysis`.
 SourceAnalysis = collections.namedtuple(
-    'SourceAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string'])
+    'SourceAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string', 'state', 'state_info'])
 
 
 class SourceScanner():
@@ -85,16 +106,6 @@ class SourceScanner():
         self._folder_regexps_to_skip.append = pygount.common.regexes_from(
             regexps_or_pattern_text,
             self.folder_regexps_to_skip)
-
-    @property
-    def generated_regexps(self):
-        return self._generated_regexps_to_skip
-
-    @generated_regexps.setter
-    def set_generated_regexps(self, regexps_or_pattern_text):
-        self._generated_regexps_to_skip = pygount.common.regexes_from(
-            regexps_or_pattern_text,
-            self.generated_regexps)
 
     @property
     def name_regexps_to_skip(self):
@@ -186,6 +197,30 @@ _LANGUAGE_TO_WHITE_WORDS_MAP = {
 }
 for language in _LANGUAGE_TO_WHITE_WORDS_MAP.keys():
     assert language.islower()
+
+
+def matching_number_line_and_regex(source_lines, generated_regexes, max_line_count=15):
+    """
+    The first line and its number (starting with 0) in the source code that
+    indicated that the source code is generated.
+    :param source_lines: lines of text to scan
+    :param generated_regexes: regular expressions a line must match to indicate
+        the source code is generated.
+    :param max_line_count: maximum number of lines to scan
+    :return: a tuple of the form ``(number, line, regex)`` or ``None`` if the
+        source lines do not match any ``generated_regexes``.
+    """
+    initial_numbers_and_lines = enumerate(itertools.islice(source_lines, max_line_count))
+    matching_number_line_and_regexps = (
+        (number, line, matching_regex)
+        for number, line in initial_numbers_and_lines
+        for matching_regex in generated_regexes
+        if matching_regex.match(line)
+    )
+    possible_first_matching_number_line_and_regexp = list(
+        itertools.islice(matching_number_line_and_regexps, 1))
+    result = (possible_first_matching_number_line_and_regexp + [None])[0]
+    return result
 
 
 def white_characters(language_id):
@@ -329,7 +364,9 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
     return result
 
 
-def source_analysis(source_path, group, encoding='automatic', fallback_encoding='cp1252'):
+def source_analysis(
+        source_path, group, encoding='automatic', fallback_encoding='cp1252',
+        generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT)):
     """
     Analysis for line counts in source code stored in ``source_path``.
 
@@ -344,6 +381,7 @@ def source_analysis(source_path, group, encoding='automatic', fallback_encoding=
     """
     assert encoding is not None
     assert fallback_encoding is not None
+    assert generated_regexes is not None
 
     result = None
     try:
@@ -359,7 +397,34 @@ def source_analysis(source_path, group, encoding='automatic', fallback_encoding=
                 text = source_file.read()
         except (LookupError, OSError, UnicodeDecodeError) as error:
             _log.warning('cannot read %s: %s', source_path, error)
-            result = SourceAnalysis(source_path, 'error', group, 0, 0, 0, 0)
+            result = SourceAnalysis(
+                path=source_path,
+                language='__error__',
+                group=group,
+                code=0,
+                documentation=0,
+                empty=0,
+                string=0,
+                state=SourceState.error.name,
+                state_info=error,
+            )
+        if (result is None) and (len(generated_regexes) != 0):
+            number_line_and_regex = matching_number_line_and_regex(
+                pygount.common.lines(text), generated_regexes
+            )
+            if number_line_and_regex is not None:
+                number, line, regex = number_line_and_regex
+                result = SourceAnalysis(
+                    path=source_path,
+                    language='__generated__',
+                    group=group,
+                    code=0,
+                    documentation=0,
+                    empty=0,
+                    string=0,
+                    state=SourceState.generated.name,
+                    state_info='line {0} matches {0}'.format(number, regex),
+                )
         if result is None:
             mark_to_count_map = {'c': 0, 'd': 0, 'e': 0, 's': 0}
             for line_parts in _line_parts(lexer, text):
@@ -375,11 +440,13 @@ def source_analysis(source_path, group, encoding='automatic', fallback_encoding=
                 code=mark_to_count_map['c'],
                 documentation=mark_to_count_map['d'],
                 empty=mark_to_count_map['e'],
-                string=mark_to_count_map['s']
+                string=mark_to_count_map['s'],
+                state=None,
+                state_info=None,
             )
     else:
         _log.info('%s: skip', source_path)
-        result = SourceAnalysis(source_path, None, group, 0, 0, 0, 0)
+        result = SourceAnalysis(source_path, '__unknown__', group, 0, 0, 0, 0, SourceState.unknown.name, None)
 
     assert result is not None
     return result

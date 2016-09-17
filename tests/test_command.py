@@ -13,12 +13,14 @@ from pygount.command import Command
 from pygount.common import OptionError
 
 
-class CommandTest(unittest.TestCase):
+class _BaseCommandTest(unittest.TestCase):
     def setUp(self):
         self.pygount_folder = os.path.dirname(os.path.dirname(__file__))
         self.tests_temp_folder = os.path.join(self.pygount_folder, 'tests', '.temp')
         os.makedirs(self.tests_temp_folder, exist_ok=True)
 
+
+class CommandTest(_BaseCommandTest):
     def test_fails_on_unknown_output_format(self):
         unknown_output_format = 'no_such_output_format'
         command = Command()
@@ -52,7 +54,7 @@ class CommandTest(unittest.TestCase):
         self.assertNotEqual(len(file_elements), 0)
 
 
-class PygountCommandTest(unittest.TestCase):
+class PygountCommandTest(_BaseCommandTest):
     def test_can_show_help(self):
         try:
             command.pygount_command(['--help'])
@@ -91,11 +93,31 @@ class PygountCommandTest(unittest.TestCase):
         exit_code = command.pygount_command(['--verbose', pygount_folder])
         self.assertEqual(exit_code, 0)
 
+    def test_can_detect_generated_code(self):
+        generated_code_path = os.path.join(self.tests_temp_folder, 'generated.py')
+        with open(generated_code_path, 'w', encoding='utf-8') as generated_code_file:
+            generated_code_file.write(
+                '# Generated with pygount.test_command.PygountCommandTest.test_can_detect_generated_code.\n')
+            generated_code_file.write('# Do not edit!\n')
+            generated_code_file.write("print('hello World'\n")
+        cloc_xml_path = os.path.join(self.tests_temp_folder, 'cloc.xml')
+        exit_code = command.pygount_command([
+            '--verbose',
+            '--format',
+            'cloc-xml',
+            '--out',
+            cloc_xml_path,
+            generated_code_path])
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(os.path.exists(cloc_xml_path))
+        cloc_xml_root = ElementTree.parse(cloc_xml_path)
+        file_elements = cloc_xml_root.findall("files/file[@language='__generated__']")
+        self.assertIsNotNone(file_elements)
+        self.assertNotEqual(len(file_elements), 0)
+
     def test_can_analyze_pygount_source_code_as_cloc_xml(self):
         pygount_folder = os.path.dirname(os.path.dirname(__file__))
-        cloc_xml_folder = os.path.join(pygount_folder, 'tests', '.temp')
-        os.makedirs(cloc_xml_folder, exist_ok=True)
-        cloc_xml_path = os.path.join(cloc_xml_folder, 'cloc.xml')
+        cloc_xml_path = os.path.join(self.tests_temp_folder, 'cloc.xml')
         exit_code = command.pygount_command([
             '--verbose',
             '--format',

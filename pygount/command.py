@@ -28,8 +28,13 @@ _HELP_ENCODING = '''encoding to use when reading source code; use "automatic"
  different fallback encoding than CP1252; use "chardet" to let the chardet
  package determine the encoding; default: "%(default)s"'''
 
+_HELP_EPILOG = '''By default PATTERNS are shell patterns using *, ? and
+ ranges like [a-z] as placeholders.'''
 _HELP_FORMAT = 'output format, one of: {0}; default: "%(default)s"'.format(
     ', '.join(['"' + format + '"' for format in _VALID_FORMATS]))
+
+_HELP_GENERATED = '''comma separated list of regular expressions to detect
+ generated code; default: %(default)s'''
 
 _HELP_FOLDERS_TO_SKIP = '''comma separated list of glob patterns for folder
  names not to analyze. Use "..." as first entry to append patterns to the
@@ -72,6 +77,7 @@ class Command():
     def __init__(self):
         self._default_encoding, self._fallback_encoding = _DEFAULT_ENCODING.split(';')
         self._folders_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
+        self._generated_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
         self._is_verbose = False
         self._names_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         self._output = _DEFAULT_OUTPUT
@@ -136,6 +142,16 @@ class Command():
             source)
 
     @property
+    def generated_regexps(self):
+        return self._generated_regexs
+
+    def set_generated_regexps(self, regexes_or_patterns_text, source=None):
+        self._generated_regexs = pygount.common.regexes_from(
+            regexes_or_patterns_text,
+            pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT,
+            source)
+
+    @property
     def is_verbose(self):
         return self._is_verbose
 
@@ -191,7 +207,9 @@ class Command():
             regexes_or_patterns_text, _DEFAULT_SUFFIXES, source)
 
     def argument_parser(self):
-        parser = argparse.ArgumentParser(description='count source lines of code')
+        parser = argparse.ArgumentParser(
+            description='count source lines of code',
+            epilog=_HELP_EPILOG)
         parser.add_argument(
             '--encoding', '-e', default=_DEFAULT_ENCODING, help=_HELP_ENCODING
         )
@@ -204,6 +222,11 @@ class Command():
             '--format', '-f', metavar='FORMAT', choices=_VALID_FORMATS,
             default=_DEFAULT_OUTPUT_FORMAT,
             help=_HELP_FORMAT
+        )
+        parser.add_argument(
+            '--generated', '-g', metavar='PATTERNS',
+            default=pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT,
+            help=_HELP_GENERATED
         )
         parser.add_argument(
             '--names-to-skip', '-N', metavar='PATTERNS',
@@ -266,6 +289,7 @@ class Command():
         self.set_default_encoding(default_encoding, 'option --encoding')
         self.set_fallback_encoding(fallback_encoding, 'option --encoding')
         self.set_folders_to_skip(args.folders_to_skip, 'option --folders-to-skip')
+        self.set_generated_regexps(args.generated, 'option --generated')
         self.set_is_verbose(args.verbose, 'option --verbose')
         self.set_names_to_skip(args.names_to_skip, 'option --folders-to-skip')
         self.set_output(args.out, 'option --out')
@@ -295,12 +319,11 @@ class Command():
             with writer_class(target_file) as writer:
                 for source_path, group in source_paths_and_groups_to_analyze:
                     statistics = pygount.analysis.source_analysis(
-                        source_path, group, self.default_encoding, self.fallback_encoding)
-                    if statistics is not None:
-                        if statistics.language is not None:
-                            writer.add(statistics)
-                        else:
-                            _log.info('skip due unknown language: %s', statistics.path)
+                        source_path, group, self.default_encoding, self.fallback_encoding, )
+                    if statistics is None:
+                        _log.info('skip due unknown language: %s', statistics.path)
+                    else:
+                        writer.add(statistics)
         finally:
             if has_target_file_to_close:
                 try:

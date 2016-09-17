@@ -15,8 +15,10 @@ from pygount import write
 class BaseWriterCase(unittest.TestCase):
     def test_can_collect_totals(self):
         source_analyses = (
-            analysis.SourceAnalysis('some.py', 'Python', 'some', 1, 2, 3, 4),
-            analysis.SourceAnalysis('other.py', 'Python', 'some', 10, 20, 30, 40),
+            analysis.SourceAnalysis(
+                'some.py', 'Python', 'some', 1, 2, 3, 4, analysis.SourceState.analyzed.name, None),
+            analysis.SourceAnalysis(
+                'other.py', 'Python', 'some', 10, 20, 30, 40,  analysis.SourceState.analyzed.name, None),
         )
         with tempfile.NamedTemporaryFile('w', encoding='utf-8', prefix='pygount_', suffix='.tmp') as target_stream:
             with write.BaseWriter(target_stream) as writer:
@@ -29,8 +31,10 @@ class BaseWriterCase(unittest.TestCase):
 class ClocXmlWriterTest(unittest.TestCase):
     def test_can_write_cloc_xml(self):
         source_analyses = (
-            analysis.SourceAnalysis('some.py', 'Python', 'some', 1, 2, 3, 4),
-            analysis.SourceAnalysis('other.py', 'Python', 'some', 10, 20, 30, 40),
+            analysis.SourceAnalysis(
+                'some.py', 'Python', 'some', 1, 2, 3, 4, analysis.SourceState.analyzed.name, None),
+            analysis.SourceAnalysis(
+                'other.py', 'Python', 'some', 10, 20, 30, 40,  analysis.SourceState.analyzed.name, None),
         )
         with io.StringIO() as target_stream:
             with write.ClocXmlWriter(target_stream) as writer:

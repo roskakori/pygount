@@ -12,6 +12,7 @@ import unittest
 from pygments import lexers, token
 
 from pygount import analysis
+from pygount import common
 
 
 def _write_test_file(path, lines=list(), encoding='utf-8'):
@@ -136,7 +137,9 @@ class AnalysisTest(unittest.TestCase):
         with open(test_path, 'w', encoding='cp1252') as test_file:
             test_file.write('print("\N{EURO SIGN}")')
         source_analysis = analysis.source_analysis(test_path, 'test', encoding='utf-8')
-        self.assertEqual(source_analysis.language, 'error')
+        self.assertEqual(source_analysis.language, '__error__')
+        self.assertEqual(source_analysis.state, analysis.SourceState.error.name)
+        self.assertRegex(str(source_analysis.state_info), '.*0x80')
 
     def test_can_detect_silent_dos_batch_remarks(self):
         test_bat_path = AnalysisTest._test_path('test_can_detect_silent_dos_batch_remarks', '.bat')
@@ -158,7 +161,9 @@ class AnalysisTest(unittest.TestCase):
         no_such_encoding = analysis.encoding_for(test_path)
         self.assertEqual(no_such_encoding, 'no_such_encoding')
         source_analysis = analysis.source_analysis(test_path, 'test', encoding=no_such_encoding)
-        self.assertEqual(source_analysis.language, 'error')
+        self.assertEqual(source_analysis.language, '__error__')
+        self.assertEqual(source_analysis.state, analysis.SourceState.error.name)
+        self.assertRegex(str(source_analysis.state_info), '.*unknown encoding')
 
 
 class EncodingTest(unittest.TestCase):
@@ -234,3 +239,37 @@ class EncodingTest(unittest.TestCase):
         # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
         with open(test_path, 'r', encoding=actual_encoding) as broken_test_file:
             self.assertRaises(UnicodeDecodeError, broken_test_file.read)
+
+
+class GeneratedCodeTest(unittest.TestCase):
+    _STANDARD_SOURCE_LINES = """#!/bin/python3
+    # Example code for
+    # generated source code.
+    print("I'm generated!")
+    """.split('\n')
+    _STANDARD_GENERATED_REGEXES = common.regexes_from(
+        common.REGEX_PATTERN_PREFIX + '.*some,.*other,.*generated,.*print')
+
+    def test_can_detect_non_generated_code(self):
+        _DEFAULT_GENERATED_REGEXES = common.regexes_from(analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
+        with open(__file__, 'r', encoding='utf-8') as source_file:
+            matching_line_number_and_regex = analysis.matching_number_line_and_regex(
+                source_file, _DEFAULT_GENERATED_REGEXES)
+        self.assertIsNone(matching_line_number_and_regex)
+
+    def test_can_detect_generated_code(self):
+        matching_number_line_and_regex = analysis.matching_number_line_and_regex(
+            GeneratedCodeTest._STANDARD_SOURCE_LINES,
+            GeneratedCodeTest._STANDARD_GENERATED_REGEXES)
+        self.assertIsNotNone(matching_number_line_and_regex)
+        matching_number, matching_line, matching_regex = matching_number_line_and_regex
+        self.assertEqual(matching_number, 2)
+        self.assertEqual(matching_line, GeneratedCodeTest._STANDARD_SOURCE_LINES[2])
+        self.assertEqual(matching_regex, GeneratedCodeTest._STANDARD_GENERATED_REGEXES[2])
+
+    def test_can_not_detect_generated_code_with_late_comment(self):
+        non_matching_number_line_and_regex = analysis.matching_number_line_and_regex(
+            GeneratedCodeTest._STANDARD_SOURCE_LINES,
+            GeneratedCodeTest._STANDARD_GENERATED_REGEXES,
+            2)
+        self.assertIsNone(non_matching_number_line_and_regex)

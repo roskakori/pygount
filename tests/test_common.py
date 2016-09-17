@@ -80,5 +80,23 @@ class AsListTest(unittest.TestCase):
         self.assertEqual(pygount.common.as_list(range(3)), [0, 1, 2])
 
 
+class LinesTest(unittest.TestCase):
+    def test_can_convert_empty_text_to_lines(self):
+        self.assertEqual(list(pygount.common.lines('')), [])
+
+    def test_can_convert_single_letter_to_lines(self):
+        self.assertEqual(list(pygount.common.lines('a')), ['a'])
+
+    def test_can_convert_single_letter_with_newline_to_lines(self):
+        self.assertEqual(list(pygount.common.lines('a\n')), ['a'])
+
+    def test_can_convert_single_letter_with_newline_to_lines(self):
+        self.assertEqual(list(pygount.common.lines('a\nbc')), ['a', 'bc'])
+        self.assertEqual(list(pygount.common.lines('a\nbc\n')), ['a', 'bc'])
+
+    def test_can_convert_empty_lines(self):
+        self.assertEqual(list(pygount.common.lines('\n\n\n')), ['', '', ''])
+
+
 if __name__ == '__main__':
     unittest.main()
