@@ -387,6 +387,8 @@ def source_analysis(
     result = None
     try:
         lexer = lexers.get_lexer_for_filename(source_path)
+        if lexer.name.lower() == 'xml+evoque':
+            lexer = lexers.get_lexer_by_name('XML')
     except util.ClassNotFound:
         lexer = None
     if lexer is not None:
