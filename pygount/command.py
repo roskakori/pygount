@@ -28,8 +28,11 @@ _HELP_ENCODING = '''encoding to use when reading source code; use "automatic"
  different fallback encoding than CP1252; use "chardet" to let the chardet
  package determine the encoding; default: "%(default)s"'''
 
-_HELP_EPILOG = '''By default PATTERNS are shell patterns using *, ? and
- ranges like [a-z] as placeholders.'''
+_HELP_EPILOG = '''SHELL-PATTERN is a pattern using *, ? and ranges like [a-z]
+ as placeholders. PATTERNS is a comma separated list of SHELL-PATTERN. The
+ prefix [regex] indicated that the PATTERNS use regular expression syntax. If
+ default values are available, [...] indicates that the PATTERNS extend the
+ existing default values.'''
 _HELP_FORMAT = 'output format, one of: {0}; default: "%(default)s"'.format(
     ', '.join(['"' + format + '"' for format in _VALID_FORMATS]))
 
