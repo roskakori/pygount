@@ -31,6 +31,7 @@ from pygments import lexers, token, util
 DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ', '.join([
     '.*',
     '_svn',  # Subversion hack for Windows
+    '__pycache__',  # Python byte code
 ])
 
 SourceState = enum.Enum('SourceState', ' '.join([

@@ -210,10 +210,12 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
-Version 0.5, 2016-09-xx
+Version 0.5, 2016-09-22
 
 * Added that generated source code is excluded from analysis (issue
-  `#1 <https://github.com/roskakori/pygount/issues/1>`_).
+  `#1 <https://github.com/roskakori/pygount/issues/1>`_). Use option
+  ``--generated`` to specify patterns that indicate generated code.
+* Added ``__pycache__`` as default ``--folder-to-skip``.
 
 Version 0.4, 2016-09-11
 
