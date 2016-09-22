@@ -442,7 +442,7 @@ def source_analysis(
                 documentation=mark_to_count_map['d'],
                 empty=mark_to_count_map['e'],
                 string=mark_to_count_map['s'],
-                state=None,
+                state=SourceState.analyzed.name,
                 state_info=None,
             )
     else:

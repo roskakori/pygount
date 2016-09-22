@@ -115,6 +115,18 @@ You can change this behavior using the ``--encoding`` option:
   ``--encoding=iso-8859-15``.
 
 
+Pseudo languages
+----------------
+
+If a source code is not counted, the number of lines is 0 and the language
+shown is a pseudo language indicating the reason:
+
+* __error__ - the source code could not be parsed e.g. due an I/O error.
+* __generated__ - the source code is generated according to the command line
+  option ``--generated``.
+* __unknown__ - pygments does not provide a lexer to parse the source code.
+
+
 Other information
 -----------------
 
@@ -204,7 +216,7 @@ Here's an example on how to analyze one of pygount's own source codes::
   >>> import pygount
   >>> analysis = pygount.source_analysis('pygount/analysis.py', 'pygount')
   >>> analysis
-  SourceAnalysis(path='pygount/analysis.py', language='Python', group='pygount', code=164, documentation=48, empty=27, string=0)
+  SourceAnalysis(path='pygount/analysis.py', language='Python', group='pygount', code=302, documentation=66, empty=62, string=23, state='analyzed', state_info=None)
 
 
 Version history
@@ -216,6 +228,7 @@ Version 0.5, 2016-09-22
   `#1 <https://github.com/roskakori/pygount/issues/1>`_). Use option
   ``--generated`` to specify patterns that indicate generated code.
 * Added ``__pycache__`` as default ``--folder-to-skip``.
+* Added notes on pseudo languages for source code that cannot be analyzed.
 
 Version 0.4, 2016-09-11
 
