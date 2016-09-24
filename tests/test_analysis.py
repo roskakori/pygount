@@ -15,6 +15,12 @@ from pygount import analysis
 from pygount import common
 
 
+def _test_path(name, suffix='tmp'):
+    result = os.path.join(tempfile.gettempdir(), 'pygount_tests_EncodingTest_' + name + '.' + suffix)
+    atexit.register(os.remove, result)
+    return result
+
+
 def _write_test_file(path, lines=list(), encoding='utf-8'):
     with open(path, 'w', encoding=encoding) as test_file:
         for line in lines:
@@ -60,12 +66,6 @@ class SourceScannerTest(unittest.TestCase):
 
 
 class AnalysisTest(unittest.TestCase):
-    @staticmethod
-    def _test_path(name, suffix='tmp'):
-        result = os.path.join(tempfile.gettempdir(), 'pygount_tests_AnalysisTest_' + name + '.' + suffix)
-        atexit.register(os.remove, result)
-        return result
-
     def test_can_deline_tokens(self):
         self.assertEqual(
             list(analysis._delined_tokens([(token.Comment, '# a')])),
@@ -133,7 +133,7 @@ class AnalysisTest(unittest.TestCase):
         self.assertEqual(actual_line_parts, expected_line_parts)
 
     def test_can_analyze_encoding_error(self):
-        test_path = AnalysisTest._test_path('encoding_error', '.py')
+        test_path = _test_path('encoding_error', 'py')
         with open(test_path, 'w', encoding='cp1252') as test_file:
             test_file.write('print("\N{EURO SIGN}")')
         source_analysis = analysis.source_analysis(test_path, 'test', encoding='utf-8')
@@ -142,7 +142,7 @@ class AnalysisTest(unittest.TestCase):
         self.assertRegex(str(source_analysis.state_info), '.*0x80')
 
     def test_can_detect_silent_dos_batch_remarks(self):
-        test_bat_path = AnalysisTest._test_path('test_can_detect_silent_dos_batch_remarks', '.bat')
+        test_bat_path = _test_path('test_can_detect_silent_dos_batch_remarks', 'bat')
         _write_test_file(test_bat_path, [
             'rem normal comment',
             '@rem silent comment',
@@ -154,7 +154,7 @@ class AnalysisTest(unittest.TestCase):
         self.assertEqual(source_analysis.documentation, 2)
 
     def test_fails_on_unknown_magic_encoding_comment(self):
-        test_path = AnalysisTest._test_path('unknown_magic_encoding_comment', '.py')
+        test_path = _test_path('unknown_magic_encoding_comment', 'py')
         with open(test_path, 'w', encoding='utf-8') as test_file:
             test_file.write('# -*- coding: no_such_encoding -*-')
             test_file.write('print("hello")')
@@ -170,14 +170,8 @@ class EncodingTest(unittest.TestCase):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
     _TEST_CODE = "x = '\u00fd \u20ac'"
 
-    @staticmethod
-    def _test_path(name):
-        result = os.path.join(tempfile.gettempdir(), 'pygount_tests_EncodingTest_' + name + '.tmp')
-        atexit.register(os.remove, result)
-        return result
-
     def _test_can_detect_bom_encoding(self, encoding):
-        test_path = EncodingTest._test_path(encoding)
+        test_path = _test_path(encoding)
         with open(test_path, 'wb') as test_file:
             if encoding != 'utf-8-sig':
                 bom = EncodingTest._ENCODING_TO_BOM_MAP[encoding]
@@ -192,7 +186,7 @@ class EncodingTest(unittest.TestCase):
 
     def test_can_detect_plain_encoding(self):
         for encoding in ('cp1252', 'utf-8'):
-            test_path = EncodingTest._test_path(encoding)
+            test_path = _test_path(encoding)
             with open(test_path, 'w', encoding=encoding) as test_file:
                 test_file.write(EncodingTest._TEST_CODE)
             actual_encoding = analysis.encoding_for(test_path)
@@ -200,7 +194,7 @@ class EncodingTest(unittest.TestCase):
 
     def test_can_detect_xml_prolog(self):
         encoding = 'iso-8859-15'
-        test_path = EncodingTest._test_path('xml-' + encoding)
+        test_path = _test_path('xml-' + encoding)
         with open(test_path, 'w', encoding=encoding) as test_file:
             xml_code = '<?xml encoding="{0}" standalone="yes"?><some>{1}</some>'.format(
                 encoding, EncodingTest._TEST_CODE)
@@ -210,7 +204,7 @@ class EncodingTest(unittest.TestCase):
 
     def test_can_detect_magic_comment(self):
         encoding = 'iso-8859-15'
-        test_path = EncodingTest._test_path('magic-' + encoding)
+        test_path = _test_path('magic-' + encoding)
         with open(test_path, 'w', encoding=encoding) as test_file:
             test_file.write('#!/usr/bin/python\n')
             test_file.write('# -*- coding: {0} -*-\n'.format(encoding))
@@ -219,7 +213,7 @@ class EncodingTest(unittest.TestCase):
         self.assertEqual(actual_encoding, encoding)
 
     def test_can_detect_automatic_encoding_for_empty_source(self):
-        test_path = EncodingTest._test_path('empty')
+        test_path = _test_path('empty')
         with open(test_path, 'wb') as _:
             pass  # Write empty file.
         actual_encoding = analysis.encoding_for(test_path)
@@ -231,7 +225,7 @@ class EncodingTest(unittest.TestCase):
         self.assertEqual(actual_encoding, 'utf-8')
 
     def test_can_use_hardcoded_ending(self):
-        test_path = EncodingTest._test_path('hardcoded_cp1252')
+        test_path = _test_path('hardcoded_cp1252')
         with open(test_path, 'w', encoding='cp1252') as test_file:
             test_file.write('\N{EURO SIGN}')
         actual_encoding = analysis.encoding_for(test_path, 'utf-8')
@@ -273,3 +267,12 @@ class GeneratedCodeTest(unittest.TestCase):
             GeneratedCodeTest._STANDARD_GENERATED_REGEXES,
             2)
         self.assertIsNone(non_matching_number_line_and_regex)
+
+
+class SizeTest(unittest.TestCase):
+    def test_can_detect_empty_source_code(self):
+        empty_py_path = _test_path('empty', 'py')
+        _write_test_file(empty_py_path)
+        source_analysis = analysis.source_analysis(empty_py_path, 'test', encoding='utf-8')
+        self.assertEqual(source_analysis.state, analysis.SourceState.empty.name)
+        self.assertEqual(source_analysis.code, 0)

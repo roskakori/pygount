@@ -121,6 +121,7 @@ Pseudo languages
 If a source code is not counted, the number of lines is 0 and the language
 shown is a pseudo language indicating the reason:
 
+* __empty__ - the source code is an empty file with a size of 0 bytes.
 * __error__ - the source code could not be parsed e.g. due an I/O error.
 * __generated__ - the source code is generated according to the command line
   option ``--generated``.
@@ -224,7 +225,8 @@ Version history
 
 Version 0.6, 2016-09-xx
 
-* TODO
+* Changed that empty files have ``__empty__`` as language (issue
+  `#7 <https://github.com/roskakori/pygount/issues/7>`_).
 
 Version 0.5, 2016-09-22
 
