@@ -4,6 +4,7 @@ Tests for pygount source code analysis.
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import atexit
+import glob
 import os
 import shutil
 import tempfile
@@ -13,6 +14,10 @@ from pygments import lexers, token
 
 from pygount import analysis
 from pygount import common
+
+
+_TESTS_FOLDER = os.path.dirname(__file__)
+_TESTS_TEMP_FOLDER = os.path.join(_TESTS_FOLDER, '.temp')
 
 
 def _test_path(name, suffix='tmp'):
@@ -276,3 +281,29 @@ class SizeTest(unittest.TestCase):
         source_analysis = analysis.source_analysis(empty_py_path, 'test', encoding='utf-8')
         self.assertEqual(source_analysis.state, analysis.SourceState.empty.name)
         self.assertEqual(source_analysis.code, 0)
+
+
+class PlainTextLexerTest(unittest.TestCase):
+    def test_can_lex_plain_text(self):
+        lexer = analysis.PlainTextLexer()
+        text = ''
+        text += 'a\n'  # line with text
+        text += '\n'  # empty line
+        text += ' \t \n'  # line containing only white space
+        text += '  '  # trailing while space line without newline character
+        text_tokens = list(lexer.get_tokens(text))
+        self.assertEqual(text_tokens, [
+            (token.Token.Comment.Single, 'a\n'),
+            (token.Token.Text, '\n \t \n  \n')
+        ])
+
+
+class TextTest(unittest.TestCase):
+    def test_can_analyze_project_text_files(self):
+        project_root_folder = os.path.dirname(_TESTS_FOLDER)
+        for text_path in glob.glob(os.path.join(project_root_folder, '*.txt')):
+            source_analysis = analysis.source_analysis(text_path, 'test')
+            self.assertEqual(source_analysis.state, analysis.SourceState.analyzed.name, text_path)
+            self.assertGreater(source_analysis.documentation, 0, text_path)
+            if 'requirements.txt' not in text_path:
+                self.assertGreater(source_analysis.empty, 0, text_path)

@@ -225,6 +225,9 @@ Version history
 
 Version 0.6, 2016-09-xx
 
+* Changed lines in plain text files to count as comments (issue
+  `#9 <https://github.com/roskakori/pygount/issues/9>`_). Before pygments
+  treated them as `ResourceBundle`.
 * Changed that empty files have ``__empty__`` as language (issue
   `#7 <https://github.com/roskakori/pygount/issues/7>`_).
 

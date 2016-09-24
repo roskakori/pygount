@@ -12,6 +12,9 @@ import logging
 import os
 import re
 
+import pygments.lexer
+import pygments.token
+
 import pygount.common
 
 
@@ -79,9 +82,50 @@ _BOM_TO_ENCODING_MAP = collections.OrderedDict((
 _XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>[-_.a-zA-Z0-9]+)".*\?>')
 _CODING_MAGIC_REGEX = re.compile(r'.+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b', re.DOTALL)
 
+_STANDARD_PLAIN_TEXT_NAMES = (
+    # Text files for (moribund) gnits standards.
+    'authors',
+    'bugs',
+    'changelog',
+    'copying',
+    'install',
+    'license',
+    'news',
+    'readme',
+    'thanks',
+    # Other common text files.
+    'changes',
+    'faq',
+    'readme\\.1st',
+    'read\\.me',
+    'todo',
+    '.*\\.txt'
+)
+_PLAIN_TEXT_PATTERN = '(^' + '$)|(^'.join(_STANDARD_PLAIN_TEXT_NAMES) + '$)'
+#: Regular expression to detect plain text files by name.
+_PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
+
 #: Results of a source analysis derived by :py:func:`source_analysis`.
 SourceAnalysis = collections.namedtuple(
     'SourceAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string', 'state', 'state_info'])
+
+
+class PlainTextLexer(pygments.lexer.RegexLexer):
+    """
+    Simple lexer for plain text that treats every line with non white space
+    characters as :py:data:`pygments.Token.Comment.Single` and only lines
+    that are empty or contain only white space as
+    :py:data:`pygments.Token.Text`.
+
+    This way, plaint text files count as documentation.
+    """
+    name = 'Text'
+    tokens = {
+        'root': [
+            (r'\s*\n', pygments.token.Text),
+            (r'.+\n', pygments.token.Comment.Single),
+        ]
+    }
 
 
 class SourceScanner():
@@ -385,14 +429,17 @@ def pseudo_source_analysis(source_path, group, state, state_info=None):
 
 def lexer_and_encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
     result = (None, None)
-    try:
-        lexer = lexers.get_lexer_for_filename(source_path)
-        # HACK: Workaround for pygments issue #1884: Inconsistent get_lexer_for_filename() with XML.
-        # See https://bitbucket.org/birkenfeld/pygments-main/issues/1284/.
-        if lexer.name.lower() == 'xml+evoque':
-            lexer = lexers.get_lexer_by_name('XML')
-    except util.ClassNotFound:
-        lexer = None
+    if is_plain_text(source_path):
+        lexer = PlainTextLexer()
+    else:
+        try:
+            lexer = lexers.get_lexer_for_filename(source_path)
+            # HACK: Workaround for pygments issue #1884: Inconsistent get_lexer_for_filename() with XML.
+            # See https://bitbucket.org/birkenfeld/pygments-main/issues/1284/.
+            if lexer.name.lower() == 'xml+evoque':
+                lexer = lexers.get_lexer_by_name('XML')
+        except util.ClassNotFound:
+            lexer = None
     if lexer is not None:
         if encoding == 'automatic':
             actual_encoding = encoding_for(source_path, encoding, fallback_encoding)
@@ -400,6 +447,10 @@ def lexer_and_encoding_for(source_path, encoding='automatic', fallback_encoding=
             actual_encoding = encoding
         result = (lexer, actual_encoding)
     return result
+
+
+def is_plain_text(source_path):
+    return _PLAIN_TEXT_NAME_REGEX.match(os.path.basename(source_path))
 
 
 def source_analysis(
@@ -424,7 +475,7 @@ def source_analysis(
     source_size = os.path.getsize(source_path)
     if source_size == 0:
         result = pseudo_source_analysis(source_path, group, SourceState.empty)
-    if result is None:
+    else:
         lexer, encoding = lexer_and_encoding_for(source_path, encoding, fallback_encoding)
         if lexer is not None:
             if encoding == 'automatic':
