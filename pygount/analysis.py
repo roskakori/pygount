@@ -13,7 +13,9 @@ import os
 import re
 
 import pygments.lexer
+import pygments.lexers
 import pygments.token
+import pygments.util
 
 import pygount.common
 
@@ -26,8 +28,6 @@ try:
 except ImportError:
     _detector = None
     has_chardet = False
-
-from pygments import lexers, token, util
 
 
 #: Default glob patterns for folders not to analyze.
@@ -305,11 +305,11 @@ def _pythonized_comments(tokens):
     """
     is_after_colon = True
     for token_type, token_text in tokens:
-        if is_after_colon and (token_type in token.String):
-            token_type = token.Comment
+        if is_after_colon and (token_type in pygments.token.String):
+            token_type = pygments.token.Comment
         elif token_text == ':':
             is_after_colon = True
-        elif token_type not in token.Comment:
+        elif token_type not in pygments.token.Comment:
             is_whitespace = len(token_text.rstrip(' \f\n\r\t')) == 0
             if not is_whitespace:
                 is_after_colon = False
@@ -325,9 +325,9 @@ def _line_parts(lexer, text):
     white_text = ' \f\n\r\t' + white_characters(language_id)
     white_words = white_code_words(language_id)
     for token_type, token_text in tokens:
-        if token_type in token.Comment:
+        if token_type in pygments.token.Comment:
             line_marks.add('d')  # 'documentation'
-        elif token_type in token.String:
+        elif token_type in pygments.token.String:
             line_marks.add('s')  # 'string'
         else:
             is_white_text = (token_text.strip() in white_words) or (token_text.rstrip(white_text) == '')
@@ -433,12 +433,12 @@ def lexer_and_encoding_for(source_path, encoding='automatic', fallback_encoding=
         lexer = PlainTextLexer()
     else:
         try:
-            lexer = lexers.get_lexer_for_filename(source_path)
+            lexer = pygments.lexers.get_lexer_for_filename(source_path)
             # HACK: Workaround for pygments issue #1884: Inconsistent get_lexer_for_filename() with XML.
             # See https://bitbucket.org/birkenfeld/pygments-main/issues/1284/.
             if lexer.name.lower() == 'xml+evoque':
-                lexer = lexers.get_lexer_by_name('XML')
-        except util.ClassNotFound:
+                lexer = pygments.lexers.get_lexer_by_name('XML')
+        except pygments.util.ClassNotFound:
             lexer = None
     if lexer is not None:
         if encoding == 'automatic':
@@ -492,9 +492,9 @@ def source_analysis(
                     pygount.common.lines(text), generated_regexes
                 )
                 if number_line_and_regex is not None:
-                    number, line, regex = number_line_and_regex
+                    number, _, regex = number_line_and_regex
                     result = pseudo_source_analysis(
-                        source_path, group, SourceState.generated, 'line {0} matches {0}'.format(number, regex)
+                        source_path, group, SourceState.generated, 'line {0} matches {1}'.format(number, regex)
                     )
             if result is None:
                 mark_to_count_map = {'c': 0, 'd': 0, 'e': 0, 's': 0}
