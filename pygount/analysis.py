@@ -434,10 +434,11 @@ def lexer_and_encoding_for(source_path, encoding='automatic', fallback_encoding=
     else:
         try:
             lexer = pygments.lexers.get_lexer_for_filename(source_path)
-            # HACK: Workaround for pygments issue #1884: Inconsistent get_lexer_for_filename() with XML.
-            # See https://bitbucket.org/birkenfeld/pygments-main/issues/1284/.
-            if lexer.name.lower() == 'xml+evoque':
-                lexer = pygments.lexers.get_lexer_by_name('XML')
+            if lexer.name.lower().endswith('evoque'):
+                # HACK: Workaround for pygments issue #1284: Inconsistent get_lexer_for_filename() with XML.
+                # See https://bitbucket.org/birkenfeld/pygments-main/issues/1284/.
+                lexer_name_without_evoque = lexer.name[:-7]
+                lexer = pygments.lexers.get_lexer_by_name(lexer_name_without_evoque)
         except pygments.util.ClassNotFound:
             lexer = None
     if lexer is not None:
