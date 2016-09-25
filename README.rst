@@ -223,8 +223,12 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
-Version 0.6, 2016-09-xx
+Version 0.6, 2016-09-26
 
+* Fixed that source files could end up as ``__error__`` if the first non ASCII
+  characters showed up only after 16 kilobyte and the encoding was not UTF-8.
+  Now pygount attempts to read the whole file as UTF-8 before assuming it
+  actually is UTF-8.
 * Changed lines in plain text files to count as comments (issue
   `#9 <https://github.com/roskakori/pygount/issues/9>`_). Before pygments
   treated them as `ResourceBundle`.

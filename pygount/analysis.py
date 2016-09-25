@@ -386,9 +386,9 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
                     result = xml_prolog_match.group('encoding')
         if result is None:
             try:
-                # Attempt to read the first 16 KiB of the file as UTF-8.
+                # Attempt to read the file as UTF-8.
                 with open(source_path, 'r', encoding='utf-8') as source_file:
-                    source_file.read(16384)
+                    source_file.read()
                 result = 'utf-8'
             except UnicodeDecodeError:
                 # It is not UTF-8, just assume the fallback encoding.
