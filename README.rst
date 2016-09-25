@@ -235,7 +235,7 @@ Version 0.6, 2016-09-26
 * Changed that empty files have ``__empty__`` as language (issue
   `#7 <https://github.com/roskakori/pygount/issues/7>`_).
 * Extended workaround for
-   `pygments issue #1284 <https://bitbucket.org/birkenfeld/pygments-main/issues/1284>`_
+  `pygments issue #1284 <https://bitbucket.org/birkenfeld/pygments-main/issues/1284>`_
   to replace any lexer ``*+Evoque`` by ``*``.
 
 Version 0.5, 2016-09-22
