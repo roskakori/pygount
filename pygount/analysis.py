@@ -18,6 +18,7 @@ import pygments.token
 import pygments.util
 
 import pygount.common
+import pygount.lexers
 
 
 # Attempt to import chardet.
@@ -109,23 +110,14 @@ _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
 SourceAnalysis = collections.namedtuple(
     'SourceAnalysis', ['path', 'language', 'group', 'code', 'documentation', 'empty', 'string', 'state', 'state_info'])
 
-
-class PlainTextLexer(pygments.lexer.RegexLexer):
-    """
-    Simple lexer for plain text that treats every line with non white space
-    characters as :py:data:`pygments.Token.Comment.Single` and only lines
-    that are empty or contain only white space as
-    :py:data:`pygments.Token.Text`.
-
-    This way, plaint text files count as documentation.
-    """
-    name = 'Text'
-    tokens = {
-        'root': [
-            (r'\s*\n', pygments.token.Text),
-            (r'.+\n', pygments.token.Comment.Single),
-        ]
-    }
+#: Mapping for file suffixes to lexers for which pygments offers no official one.
+_SUFFIX_TO_FALLBACK_LEXER_MAP = {
+    '.fex': pygount.lexers.MinimalisticWebFocusLexer(),
+    '.idl': pygount.lexers.IdlLexer(),
+    '.m4': pygount.lexers.MinimalisticM4Lexer(),
+    'vbe': pygount.lexers.MinimalisticVBScriptLexer(),
+    'vbs': pygount.lexers.MinimalisticVBScriptLexer(),
+}
 
 
 class SourceScanner():
@@ -430,7 +422,7 @@ def pseudo_source_analysis(source_path, group, state, state_info=None):
 def lexer_and_encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
     result = (None, None)
     if is_plain_text(source_path):
-        lexer = PlainTextLexer()
+        lexer = pygount.lexers.PlainTextLexer()
     else:
         try:
             lexer = pygments.lexers.get_lexer_for_filename(source_path)
@@ -440,7 +432,8 @@ def lexer_and_encoding_for(source_path, encoding='automatic', fallback_encoding=
                 lexer_name_without_evoque = lexer.name[:-7]
                 lexer = pygments.lexers.get_lexer_by_name(lexer_name_without_evoque)
         except pygments.util.ClassNotFound:
-            lexer = None
+            suffix = os.path.splitext(os.path.basename(source_path))[1]
+            lexer = _SUFFIX_TO_FALLBACK_LEXER_MAP.get(suffix)
     if lexer is not None:
         if encoding == 'automatic':
             actual_encoding = encoding_for(source_path, encoding, fallback_encoding)

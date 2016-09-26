@@ -223,6 +223,14 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
+Version 0.7, 2016-09-xx
+
+* Added support for a couple of languages not supported by ``pygments`` yet:
+
+  * m4, VBSript and WebFOCUS use minimalistic lexers that can distinguish
+    between comments and code.
+  * OMG IDL repurposes the existing Java lexer.
+
 Version 0.6, 2016-09-26
 
 * Fixed that source files could end up as ``__error__`` if the first non ASCII

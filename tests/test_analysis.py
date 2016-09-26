@@ -170,6 +170,18 @@ class AnalysisTest(unittest.TestCase):
         self.assertEqual(source_analysis.state, analysis.SourceState.error.name)
         self.assertRegex(str(source_analysis.state_info), '.*unknown encoding')
 
+    def test_can_analyze_webfocus(self):
+        test_fex_path = _test_path('test_can_analyze_webfocus', 'fex')
+        _write_test_file(test_fex_path, [
+            '-* comment',
+            '-type some text',
+            'table file some print * end;',
+        ])
+        source_analysis = analysis.source_analysis(test_fex_path, 'test', encoding='utf-8')
+        self.assertEqual(source_analysis.language, 'WebFOCUS')
+        self.assertEqual(source_analysis.code, 2)
+        self.assertEqual(source_analysis.documentation, 1)
+
 
 class EncodingTest(unittest.TestCase):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
@@ -281,21 +293,6 @@ class SizeTest(unittest.TestCase):
         source_analysis = analysis.source_analysis(empty_py_path, 'test', encoding='utf-8')
         self.assertEqual(source_analysis.state, analysis.SourceState.empty.name)
         self.assertEqual(source_analysis.code, 0)
-
-
-class PlainTextLexerTest(unittest.TestCase):
-    def test_can_lex_plain_text(self):
-        lexer = analysis.PlainTextLexer()
-        text = ''
-        text += 'a\n'  # line with text
-        text += '\n'  # empty line
-        text += ' \t \n'  # line containing only white space
-        text += '  '  # trailing while space line without newline character
-        text_tokens = list(lexer.get_tokens(text))
-        self.assertEqual(text_tokens, [
-            (token.Token.Comment.Single, 'a\n'),
-            (token.Token.Text, '\n \t \n  \n')
-        ])
 
 
 class TextTest(unittest.TestCase):
