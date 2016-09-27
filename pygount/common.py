@@ -7,7 +7,7 @@ import fnmatch
 import re
 
 
-__version__ = '0.7'
+__version__ = '0.8'
 
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.

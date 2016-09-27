@@ -235,6 +235,13 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
+Version 0.8, 2016-09-xx
+
+* Added workaround for ``pygments`` using different lexers for the same source
+  code across runs in case multiple lexers match the same file pattern. This
+  is caused by a dictionary containing all lexers that can use different hash
+  seeds when run multiple times.
+
 Version 0.7, 2016-09-28
 
 * Fixed that option ``--generated`` was ignored.
