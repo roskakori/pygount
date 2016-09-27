@@ -3,15 +3,6 @@ Additional lexers for pygount that fill gaps left by :py:mod:`pygments`.
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
-import codecs
-import collections
-import enum
-import glob
-import itertools
-import logging
-import os
-import re
-
 import pygments.lexer
 import pygments.lexers
 import pygments.token
