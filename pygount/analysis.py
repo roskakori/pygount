@@ -19,7 +19,7 @@ import pygments.util
 
 import pygount.common
 import pygount.lexers
-
+import pygount.xmldialect
 
 # Attempt to import chardet.
 try:
@@ -491,6 +491,11 @@ def source_analysis(
                         source_path, group, SourceState.generated, 'line {0} matches {1}'.format(number, regex)
                     )
             if result is None:
+                language = lexer.name
+                if language == 'XML':
+                    dialect = pygount.xmldialect.xml_dialect(source_path)
+                    if dialect is not None:
+                        language = dialect
                 mark_to_count_map = {'c': 0, 'd': 0, 'e': 0, 's': 0}
                 for line_parts in _line_parts(lexer, text):
                     mark_to_increment = 'e'
@@ -500,7 +505,7 @@ def source_analysis(
                     mark_to_count_map[mark_to_increment] += 1
                 result = SourceAnalysis(
                     path=source_path,
-                    language=lexer.name,
+                    language=language,
                     group=group,
                     code=mark_to_count_map['c'],
                     documentation=mark_to_count_map['d'],
