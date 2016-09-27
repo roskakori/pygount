@@ -68,7 +68,8 @@ def xml_dialect(xml_path):
     except SaxParserDone:
         # Language has been determined or the parser has given up.
         pass
-    except xml.sax.SAXException as error:
+    except (ValueError, xml.sax.SAXException) as error:
+        # NOTE: ValueError is raised on unknown url type.
         _log.warning(error)  # error already includes path
     except OSError as error:
         _log.warning('%s: cannot analyze XML dialect: %s', xml_path, error)
