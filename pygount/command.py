@@ -322,7 +322,9 @@ class Command():
             with writer_class(target_file) as writer:
                 for source_path, group in source_paths_and_groups_to_analyze:
                     statistics = pygount.analysis.source_analysis(
-                        source_path, group, self.default_encoding, self.fallback_encoding, )
+                        source_path, group, self.default_encoding, self.fallback_encoding,
+                        generated_regexes=self._generated_regexs
+                    )
                     if statistics is None:
                         _log.info('skip due unknown language: %s', statistics.path)
                     else:

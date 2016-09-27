@@ -285,6 +285,15 @@ class GeneratedCodeTest(unittest.TestCase):
             2)
         self.assertIsNone(non_matching_number_line_and_regex)
 
+    def test_can_analyze_generated_code_with_own_pattern(self):
+        generated_sql_path = _test_path('generated', 'sql')
+        with open(generated_sql_path, 'w', encoding='utf-8') as generated_sql_file:
+            generated_sql_file.write('-- Generiert mit Hau-Ruck-Franz-Deutsch.\n')
+            generated_sql_file.write('select * from sauerkraut;\n')
+        source_analysis = analysis.source_analysis(
+            generated_sql_path, 'test', generated_regexes=common.regexes_from('[regex](?i).*generiert'))
+        self.assertEqual(source_analysis.state, analysis.SourceState.generated.name)
+
 
 class SizeTest(unittest.TestCase):
     def test_can_detect_empty_source_code(self):
