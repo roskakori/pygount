@@ -33,7 +33,7 @@ class MinimalisticM4Lexer(pygments.lexer.RegexLexer):
     Minimalistic lexer for m4 macro processor that can distinguish between
     comments and code. It does not recognize a redefined comment mark though.
     """
-    name = 'm4'
+    name = 'M4'
     tokens = {
         'root': [
             (r'(.*)(#.*\n)', pygments.lexer.bygroups(pygments.token.Text, pygments.token.Comment.Single)),
