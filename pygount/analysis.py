@@ -112,9 +112,9 @@ SourceAnalysis = collections.namedtuple(
 
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
-    '.fex': pygount.lexers.MinimalisticWebFocusLexer(),
-    '.idl': pygount.lexers.IdlLexer(),
-    '.m4': pygount.lexers.MinimalisticM4Lexer(),
+    'fex': pygount.lexers.MinimalisticWebFocusLexer(),
+    'idl': pygount.lexers.IdlLexer(),
+    'm4': pygount.lexers.MinimalisticM4Lexer(),
     'vbe': pygount.lexers.MinimalisticVBScriptLexer(),
     'vbs': pygount.lexers.MinimalisticVBScriptLexer(),
 }
@@ -432,7 +432,7 @@ def lexer_and_encoding_for(source_path, encoding='automatic', fallback_encoding=
                 lexer_name_without_evoque = lexer.name[:-7]
                 lexer = pygments.lexers.get_lexer_by_name(lexer_name_without_evoque)
         except pygments.util.ClassNotFound:
-            suffix = os.path.splitext(os.path.basename(source_path))[1]
+            suffix = os.path.splitext(os.path.basename(source_path))[1].lstrip('.')
             lexer = _SUFFIX_TO_FALLBACK_LEXER_MAP.get(suffix)
     if lexer is not None:
         if encoding == 'automatic':
