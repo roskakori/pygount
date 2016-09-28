@@ -115,6 +115,28 @@ class PygountCommandTest(_BaseCommandTest):
         self.assertIsNotNone(file_elements)
         self.assertNotEqual(len(file_elements), 0)
 
+    def test_can_detect_generated_code_with_own_pattern(self):
+        generiert_py_path = os.path.join(self.tests_temp_folder, 'generiert.py')
+        with open(generiert_py_path, 'w', encoding='utf-8') as generiert_py_file:
+            generiert_py_file.write(
+                '# Generiert mit pygount.test_command.PygountCommandTest.'
+                'test_can_detect_generated_code_with_own_pattern.\n')
+            generiert_py_file.write("print('hello World'\n")
+        cloc_xml_path = os.path.join(self.tests_temp_folder, 'cloc.xml')
+        exit_code = command.pygount_command([
+            '--verbose',
+            '--format=cloc-xml',
+            '--generated=[regex](?i).*generiert',
+            '--out',
+            cloc_xml_path,
+            generiert_py_path])
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(os.path.exists(cloc_xml_path))
+        cloc_xml_root = ElementTree.parse(cloc_xml_path)
+        file_elements = cloc_xml_root.findall("files/file[@language='__generated__']")
+        self.assertIsNotNone(file_elements)
+        self.assertNotEqual(len(file_elements), 0)
+
     def test_can_analyze_pygount_source_code_as_cloc_xml(self):
         pygount_folder = os.path.dirname(os.path.dirname(__file__))
         cloc_xml_path = os.path.join(self.tests_temp_folder, 'cloc.xml')

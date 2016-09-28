@@ -87,6 +87,10 @@ If the first actual pattern is ``[...]`` default patterns are included.
 Without it, defaults are ignored and only the pattern explicitely stated are
 taken into account.
 
+So for example to specify that generated code can also contain the German word
+"Generiert" in a case insensivie way use
+``--generated=[regex][...](?i).*generiert``.
+
 
 Source code encoding
 --------------------
