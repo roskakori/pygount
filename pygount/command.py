@@ -312,6 +312,7 @@ class Command():
         self.set_suffixes(args.suffix, 'option --suffix')
 
     def execute(self):
+        _log.setLevel(logging.INFO if self.is_verbose else logging.WARNING)
         source_scanner = pygount.analysis.SourceScanner(
             self.source_patterns,
             self.suffixes)

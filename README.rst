@@ -244,6 +244,8 @@ Version history
 
 Version 0.8, 2016-10-xx
 
+* Fixed option ``--verbose``. Now each analyzed source code results in at least
+  one informational message in the log.
 * Added detection of duplicates using size and then MD5 code as criteria (issue
   `#2 <https://github.com/roskakori/pygount/issues/2>`_). Use the option
   ``--duplicates`` to still count duplicate source code.
