@@ -249,10 +249,8 @@ Version 0.8, 2016-10-xx
 * Added detection of duplicates using size and then MD5 code as criteria (issue
   `#2 <https://github.com/roskakori/pygount/issues/2>`_). Use the option
   ``--duplicates`` to still count duplicate source code.
-* Added workaround for ``pygments`` using different lexers for the same source
-  code across runs in case multiple lexers match the same file pattern. This
-  is caused by a dictionary containing all lexers that can use different hash
-  seeds when run multiple times.
+* Improved detetion of programming language, which now is more consistent
+  and yields the same language between Python invocations.
 
 Version 0.7, 2016-09-28
 

@@ -420,32 +420,33 @@ def pseudo_source_analysis(source_path, group, state, state_info=None):
             )
 
 
-def lexer_and_encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
-    result = (None, None)
-    if is_plain_text(source_path):
-        lexer = pygount.lexers.PlainTextLexer()
-    else:
-        try:
-            lexer = pygments.lexers.get_lexer_for_filename(source_path)
-            if lexer.name.lower().endswith('evoque'):
-                # HACK: Workaround for pygments issue #1284: Inconsistent get_lexer_for_filename() with XML.
-                # See https://bitbucket.org/birkenfeld/pygments-main/issues/1284/.
-                lexer_name_without_evoque = lexer.name[:-7]
-                lexer = pygments.lexers.get_lexer_by_name(lexer_name_without_evoque)
-        except pygments.util.ClassNotFound:
-            suffix = os.path.splitext(os.path.basename(source_path))[1].lstrip('.')
-            lexer = _SUFFIX_TO_FALLBACK_LEXER_MAP.get(suffix)
-    if lexer is not None:
-        if encoding == 'automatic':
-            actual_encoding = encoding_for(source_path, encoding, fallback_encoding)
-        else:
-            actual_encoding = encoding
-        result = (lexer, actual_encoding)
+def is_plain_text(source_path):
+    return _PLAIN_TEXT_NAME_REGEX.match(os.path.basename(source_path))
+
+
+def has_lexer(source_path):
+    """
+    Initial quick check if there is a lexer for ``source_path``. This removes
+    the need for calling :py:func:`pygments.lexers.guess_lexer_for_filename()`
+    which fully reads the source file.
+    """
+    result = bool(pygments.lexers.find_lexer_class_for_filename(source_path))
+    if not result:
+        suffix = os.path.splitext(os.path.basename(source_path))[1].lstrip('.')
+        result = suffix in _SUFFIX_TO_FALLBACK_LEXER_MAP
     return result
 
 
-def is_plain_text(source_path):
-    return _PLAIN_TEXT_NAME_REGEX.match(os.path.basename(source_path))
+def guess_lexer(source_path, text):
+    if is_plain_text(source_path):
+        result = pygount.lexers.PlainTextLexer()
+    else:
+        try:
+            result = pygments.lexers.guess_lexer_for_filename(source_path, text)
+        except pygments.util.ClassNotFound:
+            suffix = os.path.splitext(os.path.basename(source_path))[1].lstrip('.')
+            result = _SUFFIX_TO_FALLBACK_LEXER_MAP.get(suffix)
+    return result
 
 
 def source_analysis(
@@ -468,61 +469,68 @@ def source_analysis(
     assert generated_regexes is not None
 
     result = None
+    lexer = None
     source_size = os.path.getsize(source_path)
     if source_size == 0:
+        _log.info('%s: is empty', source_path)
         result = pseudo_source_analysis(source_path, group, SourceState.empty)
-    else:
-        lexer, encoding = lexer_and_encoding_for(source_path, encoding, fallback_encoding)
-        if lexer is not None:
-            if encoding == 'automatic':
-                encoding = encoding_for(source_path, encoding, fallback_encoding)
-            _log.info('%s: analyze as %s using encoding %s', source_path, lexer.name, encoding)
-            try:
-                with open(source_path, 'r', encoding=encoding) as source_file:
-                    text = source_file.read()
-            except (LookupError, OSError, UnicodeDecodeError) as error:
-                _log.warning('cannot read %s: %s', source_path, error)
-                result = pseudo_source_analysis(source_path, group, SourceState.error, error)
-            if (result is None) and (duplicate_pool is not None):
-                duplicate_path = duplicate_pool.duplicate_path(source_path)
-                if duplicate_path is not None:
-                    result = pseudo_source_analysis(source_path, group, SourceState.duplicate, duplicate_path)
-                    _log.info('%s: is a duplicate of %s', source_path, duplicate_path)
-            if (result is None) and (len(generated_regexes) != 0):
-                number_line_and_regex = matching_number_line_and_regex(
-                    pygount.common.lines(text), generated_regexes
-                )
-                if number_line_and_regex is not None:
-                    number, _, regex = number_line_and_regex
-                    result = pseudo_source_analysis(
-                        source_path, group, SourceState.generated, 'line {0} matches {1}'.format(number, regex)
-                    )
-            if result is None:
-                language = lexer.name
-                if language == 'XML':
-                    dialect = pygount.xmldialect.xml_dialect(source_path)
-                    if dialect is not None:
-                        language = dialect
-                mark_to_count_map = {'c': 0, 'd': 0, 'e': 0, 's': 0}
-                for line_parts in _line_parts(lexer, text):
-                    mark_to_increment = 'e'
-                    for mark_to_check in ('d', 's', 'c'):
-                        if mark_to_check in line_parts:
-                            mark_to_increment = mark_to_check
-                    mark_to_count_map[mark_to_increment] += 1
-                result = SourceAnalysis(
-                    path=source_path,
-                    language=language,
-                    group=group,
-                    code=mark_to_count_map['c'],
-                    documentation=mark_to_count_map['d'],
-                    empty=mark_to_count_map['e'],
-                    string=mark_to_count_map['s'],
-                    state=SourceState.analyzed.name,
-                    state_info=None,
-                )
-        else:
-            result = pseudo_source_analysis(source_path, group, SourceState.unknown)
+    elif not has_lexer(source_path):
+        _log.info('%s: unknown language', source_path)
+        result = pseudo_source_analysis(source_path, group, SourceState.unknown)
+    elif duplicate_pool is not None:
+        duplicate_path = duplicate_pool.duplicate_path(source_path)
+        if duplicate_path is not None:
+            _log.info('%s: is a duplicate of %s', source_path, duplicate_path)
+            result = pseudo_source_analysis(source_path, group, SourceState.duplicate, duplicate_path)
+    if result is None:
+        if encoding == 'automatic':
+            encoding = encoding_for(source_path, encoding, fallback_encoding)
+        try:
+            with open(source_path, 'r', encoding=encoding) as source_file:
+                text = source_file.read()
+        except (LookupError, OSError, UnicodeError) as error:
+            _log.warning('cannot read %s using encoding %s: %s', source_path, encoding, error)
+            result = pseudo_source_analysis(source_path, group, SourceState.error, error)
+        if result is None:
+            lexer = guess_lexer(source_path, text)
+            assert lexer is not None
+    if (result is None) and (len(generated_regexes) != 0):
+            number_line_and_regex = matching_number_line_and_regex(
+                pygount.common.lines(text), generated_regexes
+            )
+            if number_line_and_regex is not None:
+                number, _, regex = number_line_and_regex
+                message = 'line {0} matches {1}'.format(number, regex)
+                _log.info('%s: is generated code because %s', source_path, message)
+                result = pseudo_source_analysis(source_path, group, SourceState.generated, message)
+    if result is None:
+        if lexer is None:
+            print('....')
+        assert lexer is not None
+        language = lexer.name
+        if language == 'XML':
+            dialect = pygount.xmldialect.xml_dialect(source_path)
+            if dialect is not None:
+                language = dialect
+        _log.info('%s: analyze as %s using encoding %s', source_path, language, encoding)
+        mark_to_count_map = {'c': 0, 'd': 0, 'e': 0, 's': 0}
+        for line_parts in _line_parts(lexer, text):
+            mark_to_increment = 'e'
+            for mark_to_check in ('d', 's', 'c'):
+                if mark_to_check in line_parts:
+                    mark_to_increment = mark_to_check
+            mark_to_count_map[mark_to_increment] += 1
+        result = SourceAnalysis(
+            path=source_path,
+            language=language,
+            group=group,
+            code=mark_to_count_map['c'],
+            documentation=mark_to_count_map['d'],
+            empty=mark_to_count_map['e'],
+            string=mark_to_count_map['s'],
+            state=SourceState.analyzed.name,
+            state_info=None,
+        )
 
     assert result is not None
     return result

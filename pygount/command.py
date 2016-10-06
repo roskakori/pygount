@@ -367,13 +367,6 @@ def pygount_command(arguments=None):
 
 
 def main():  # pragma: no cover
-    try:
-        # HACK: Sort pygments' lexer dictionary to ensure that
-        # get_lexer_by_filename() behaves deterministically.
-        from pygments.lexers import _mapping
-        _mapping.LEXERS = OrderedDict(sorted(_mapping.LEXERS.items()))
-    except Exception:
-        pass  # It was worth a try; move on and accept that lexers might not be deterministic.
     logging.basicConfig(level=logging.WARNING)
     sys.exit(pygount_command())
 
