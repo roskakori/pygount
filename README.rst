@@ -125,6 +125,9 @@ Pseudo languages
 If a source code is not counted, the number of lines is 0 and the language
 shown is a pseudo language indicating the reason:
 
+* __duplicate__ - the source code is a bytewise identical copy of another
+  file; enable the command line option ``--duplicates`` to also count code in
+  duplicates (and gain a minor performance improvement)
 * __empty__ - the source code is an empty file with a size of 0 bytes.
 * __error__ - the source code could not be parsed e.g. due an I/O error.
 * __generated__ - the source code is generated according to the command line
@@ -239,8 +242,11 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
-Version 0.8, 2016-09-xx
+Version 0.8, 2016-10-xx
 
+* Added detection of duplicates using size and then MD5 code as criteria (issue
+  `#2 <https://github.com/roskakori/pygount/issues/2>`_). Use the option
+  ``--duplicates`` to still count duplicate source code.
 * Added workaround for ``pygments`` using different lexers for the same source
   code across runs in case multiple lexers match the same file pattern. This
   is caused by a dictionary containing all lexers that can use different hash

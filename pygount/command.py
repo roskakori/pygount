@@ -80,6 +80,7 @@ class Command():
     """
     def __init__(self):
         self._default_encoding, self._fallback_encoding = _DEFAULT_ENCODING.split(';')
+        self._has_duplicates = False
         self._folders_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
         self._generated_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
         self._is_verbose = False
@@ -156,6 +157,13 @@ class Command():
             source)
 
     @property
+    def has_duplicates(self):
+        return self._has_duplicates
+
+    def set_has_duplicates(self, has_duplicates, source=None):
+        self._has_duplicates = bool(has_duplicates)
+
+    @property
     def is_verbose(self):
         return self._is_verbose
 
@@ -214,6 +222,7 @@ class Command():
         parser = argparse.ArgumentParser(
             description='count source lines of code',
             epilog=_HELP_EPILOG)
+        parser.add_argument('--duplicates', '-d', action='store_true', help='analyze duplicate files')
         parser.add_argument(
             '--encoding', '-e', default=_DEFAULT_ENCODING, help=_HELP_ENCODING
         )
@@ -294,6 +303,7 @@ class Command():
         self.set_fallback_encoding(fallback_encoding, 'option --encoding')
         self.set_folders_to_skip(args.folders_to_skip, 'option --folders-to-skip')
         self.set_generated_regexps(args.generated, 'option --generated')
+        self.set_has_duplicates(args.duplicates, 'option --duplicates')
         self.set_is_verbose(args.verbose, 'option --verbose')
         self.set_names_to_skip(args.names_to_skip, 'option --folders-to-skip')
         self.set_output(args.out, 'option --out')
@@ -306,6 +316,7 @@ class Command():
             self.source_patterns,
             self.suffixes)
         source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
+        duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
 
         if self.output == 'STDOUT':
             target_file = sys.stdout
@@ -324,12 +335,10 @@ class Command():
                 for source_path, group in source_paths_and_groups_to_analyze:
                     statistics = pygount.analysis.source_analysis(
                         source_path, group, self.default_encoding, self.fallback_encoding,
-                        generated_regexes=self._generated_regexs
+                        generated_regexes=self._generated_regexs,
+                        duplicate_pool=duplicate_pool
                     )
-                    if statistics is None:
-                        _log.info('skip due unknown language: %s', statistics.path)
-                    else:
-                        writer.add(statistics)
+                    writer.add(statistics)
         finally:
             if has_target_file_to_close:
                 try:

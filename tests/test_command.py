@@ -153,3 +153,54 @@ class PygountCommandTest(_BaseCommandTest):
         file_elements = cloc_xml_root.findall('files/file')
         self.assertIsNotNone(file_elements)
         self.assertNotEqual(len(file_elements), 0)
+
+    def test_can_detect_duplicates(self):
+        source_code = "# Duplicate source\nprint('duplicate code')\n"
+        original_path = os.path.join(self.tests_temp_folder, 'original.py')
+        with open(original_path, 'w') as original_file:
+            original_file.write(source_code)
+        duplicate_path = os.path.join(self.tests_temp_folder, 'duplicate.py')
+        with open(duplicate_path, 'w') as duplicate_file:
+            duplicate_file.write(source_code)
+        cloc_xml_path = os.path.join(self.tests_temp_folder, 'cloc.xml')
+        exit_code = command.pygount_command([
+            '--verbose',
+            '--format',
+            'cloc-xml',
+            '--out',
+            cloc_xml_path,
+            original_path,
+            duplicate_path
+        ])
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(os.path.exists(cloc_xml_path))
+        cloc_xml_root = ElementTree.parse(cloc_xml_path)
+        file_elements = cloc_xml_root.findall("files/file[@language='__duplicate__']")
+        self.assertIsNotNone(file_elements)
+        self.assertEqual(len(file_elements), 1)
+
+    def test_can_accept_duplicates(self):
+        source_code = "# Duplicate source\nprint('duplicate code')\n"
+        original_path = os.path.join(self.tests_temp_folder, 'original.py')
+        with open(original_path, 'w') as original_file:
+            original_file.write(source_code)
+        duplicate_path = os.path.join(self.tests_temp_folder, 'duplicate.py')
+        with open(duplicate_path, 'w') as duplicate_file:
+            duplicate_file.write(source_code)
+        cloc_xml_path = os.path.join(self.tests_temp_folder, 'cloc.xml')
+        exit_code = command.pygount_command([
+            '--duplicates',
+            '--verbose',
+            '--format',
+            'cloc-xml',
+            '--out',
+            cloc_xml_path,
+            original_path,
+            duplicate_path
+        ])
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(os.path.exists(cloc_xml_path))
+        cloc_xml_root = ElementTree.parse(cloc_xml_path)
+        file_elements = cloc_xml_root.findall("files/file[@language='__duplicate__']")
+        self.assertIsNotNone(file_elements)
+        self.assertEqual(len(file_elements), 0)

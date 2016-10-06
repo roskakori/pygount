@@ -7,6 +7,7 @@ import codecs
 import collections
 import enum
 import glob
+import hashlib
 import itertools
 import logging
 import os
@@ -40,7 +41,7 @@ DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ', '.join([
 
 SourceState = enum.Enum('SourceState', ' '.join([
     'analyzed',  # successfully analyzed
-    # TODO: 'duplicate',  # source code is an identical copy of another
+    'duplicate',  # source code is an identical copy of another
     'empty',  # source code is empty (file size = 0)
     'error',  # source could not be parsed
     'generated',  # source code has been genered
@@ -449,7 +450,8 @@ def is_plain_text(source_path):
 
 def source_analysis(
         source_path, group, encoding='automatic', fallback_encoding='cp1252',
-        generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT)):
+        generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT),
+        duplicate_pool=None):
     """
     Analysis for line counts in source code stored in ``source_path``.
 
@@ -481,6 +483,11 @@ def source_analysis(
             except (LookupError, OSError, UnicodeDecodeError) as error:
                 _log.warning('cannot read %s: %s', source_path, error)
                 result = pseudo_source_analysis(source_path, group, SourceState.error, error)
+            if (result is None) and (duplicate_pool is not None):
+                duplicate_path = duplicate_pool.duplicate_path(source_path)
+                if duplicate_path is not None:
+                    result = pseudo_source_analysis(source_path, group, SourceState.duplicate, duplicate_path)
+                    _log.info('%s: is a duplicate of %s', source_path, duplicate_path)
             if (result is None) and (len(generated_regexes) != 0):
                 number_line_and_regex = matching_number_line_and_regex(
                     pygount.common.lines(text), generated_regexes
@@ -519,3 +526,37 @@ def source_analysis(
 
     assert result is not None
     return result
+
+
+class DuplicatePool():
+    def __init__(self):
+        self._size_to_paths_map = {}
+        self._size_and_hash_to_path_map = {}
+
+    @staticmethod
+    def _hash_for(path_to_hash):
+        buffer_size = 1024 * 1024
+        hash = hashlib.md5()
+        with open(path_to_hash, 'rb', buffer_size) as file_to_hash:
+            data = file_to_hash.read(buffer_size)
+            while len(data) >= 1:
+                hash.update(data)
+                data = file_to_hash.read(buffer_size)
+        return hash.digest()
+
+    def duplicate_path(self, source_path):
+        result = None
+        source_size = os.path.getsize(source_path)
+        paths_with_same_size = self._size_to_paths_map.get(source_size)
+        if paths_with_same_size is None:
+            self._size_to_paths_map[source_size] = [source_path]
+        else:
+            source_hash = DuplicatePool._hash_for(source_path)
+            if len(paths_with_same_size) == 1:
+                # Retrofit the initial path with the same size and its hash.
+                initial_path_with_same_size = paths_with_same_size[0]
+                initial_hash = DuplicatePool._hash_for(initial_path_with_same_size)
+                self._size_and_hash_to_path_map[(source_size, initial_hash)] = initial_path_with_same_size
+            result = self._size_and_hash_to_path_map.get((source_size, source_hash))
+            self._size_and_hash_to_path_map[(source_size, source_hash)] = source_path
+        return result

@@ -313,3 +313,39 @@ class TextTest(unittest.TestCase):
             self.assertGreater(source_analysis.documentation, 0, text_path)
             if 'requirements.txt' not in text_path:
                 self.assertGreater(source_analysis.empty, 0, text_path)
+
+
+class DuplicatePoolTest(unittest.TestCase):
+    def test_can_distinguish_different_files(self):
+        some_path = _test_path(__name__ + '_some')
+        _write_test_file(some_path, [])
+        other_path = _test_path(__name__ + '_other')
+        _write_test_file(other_path, ['x'])
+        duplicate_pool = analysis.DuplicatePool()
+        self.assertIsNone(duplicate_pool.duplicate_path(some_path))
+        self.assertIsNone(duplicate_pool.duplicate_path(other_path))
+
+    def test_can_detect_duplicate(self):
+        original_path = _test_path(__name__ + '_original')
+        _write_test_file(original_path, ['x'])
+        duplicate_path = _test_path(__name__ + '_duplicate')
+        _write_test_file(duplicate_path, ['x'])
+        duplicate_pool = analysis.DuplicatePool()
+        self.assertIsNone(duplicate_pool.duplicate_path(original_path))
+        self.assertEqual(original_path, duplicate_pool.duplicate_path(duplicate_path))
+
+    def test_has_no_duplicate_in_pygount_source(self):
+        project_folder = os.path.dirname(os.path.dirname(__file__))
+        duplicate_pool = analysis.DuplicatePool()
+        source_paths = []
+        for sub_folder_name in ('pygount', 'tests'):
+            source_paths.extend([
+                os.path.join(project_folder, sub_folder_name, source_name)
+                for source_name in os.listdir(os.path.join(project_folder, sub_folder_name))
+            ])
+        for source_path in source_paths:
+                if source_path.endswith('.py'):
+                    duplicate_path = duplicate_pool.duplicate_path(source_path)
+                    self.assertIsNone(
+                        duplicate_path,
+                        '{0} must not be duplicate of {1}'.format(source_path, duplicate_path))
