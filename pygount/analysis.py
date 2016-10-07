@@ -508,7 +508,7 @@ def source_analysis(
             print('....')
         assert lexer is not None
         language = lexer.name
-        if language == 'XML':
+        if ('xml' in language.lower()) or (language == 'Genshi'):
             dialect = pygount.xmldialect.xml_dialect(source_path)
             if dialect is not None:
                 language = dialect
