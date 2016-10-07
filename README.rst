@@ -242,15 +242,15 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
-Version 0.8, 2016-10-xx
+Version 0.8, 2016-10-07
 
 * Fixed option ``--verbose``. Now each analyzed source code results in at least
   one informational message in the log.
 * Added detection of duplicates using size and then MD5 code as criteria (issue
   `#2 <https://github.com/roskakori/pygount/issues/2>`_). Use the option
   ``--duplicates`` to still count duplicate source code.
-* Improved detetion of programming language, which now is more consistent
-  and yields the same language between Python invocations.
+* Improved detetion of programming language, which is now more consistent and
+  yields the same language between Python invocations.
 
 Version 0.7, 2016-09-28
 
