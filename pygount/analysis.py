@@ -542,13 +542,13 @@ class DuplicatePool():
     @staticmethod
     def _hash_for(path_to_hash):
         buffer_size = 1024 * 1024
-        hash = hashlib.md5()
+        md5_hash = hashlib.md5()
         with open(path_to_hash, 'rb', buffer_size) as file_to_hash:
             data = file_to_hash.read(buffer_size)
             while len(data) >= 1:
-                hash.update(data)
+                md5_hash.update(data)
                 data = file_to_hash.read(buffer_size)
-        return hash.digest()
+        return md5_hash.digest()
 
     def duplicate_path(self, source_path):
         result = None
