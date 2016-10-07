@@ -504,8 +504,6 @@ def source_analysis(
                 _log.info('%s: is generated code because %s', source_path, message)
                 result = pseudo_source_analysis(source_path, group, SourceState.generated, message)
     if result is None:
-        if lexer is None:
-            print('....')
         assert lexer is not None
         language = lexer.name
         if ('xml' in language.lower()) or (language == 'Genshi'):
