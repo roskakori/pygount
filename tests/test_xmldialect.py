@@ -33,6 +33,14 @@ _EXAMPLE_POM_CODE = '''<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:
   </dependencies>
 </project>'''
 
+_EXAMPLE_DOCBOOK_DTD_CODE = '''<!DOCTYPE example PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<example><title>Hello World in Python</title>
+<programlisting>
+print('Hello World!')
+</programlisting>
+</example>
+'''
 
 class XmlLanguageTest(unittest.TestCase):
     def test_can_detect_ant(self):
@@ -44,7 +52,7 @@ class XmlLanguageTest(unittest.TestCase):
         pom_xml_path = _test_path('pom', 'xml')
         with open(pom_xml_path, 'w', encoding='utf-8') as pom_xml_file:
             pom_xml_file.write(_EXAMPLE_POM_CODE)
-        self.assertEqual(pygount.xmldialect.xml_dialect(pom_xml_path), 'Maven')
+        self.assertEqual(pygount.xmldialect.xml_dialect(pom_xml_path), 'DocBook XML')
 
     def test_can_ignore_broken_xml(self):
         broken_xml_path = _test_path('broken', 'xml')
@@ -55,3 +63,10 @@ class XmlLanguageTest(unittest.TestCase):
     def test_can_ignore_non_existent_xml(self):
         non_existent_xml_path = os.path.join(tempfile.gettempdir(), 'missing_folder', 'non_existent.xml')
         self.assertEqual(pygount.xmldialect.xml_dialect(non_existent_xml_path), None)
+
+    # TODO #10: fix detecttion of DTD and activate test.
+    # def test_can_detect_docbook_from_dtd(self):
+    #     docbook_xml_path = _test_path('docboook-dtd', 'xml')
+    #     with open(docbook_xml_path, 'w', encoding='utf-8') as docbook_xml_file:
+    #         docbook_xml_file.write(_EXAMPLE_DOCBOOK_DTD_CODE)
+    #     self.assertEqual(pygount.xmldialect.xml_dialect(docbook_xml_path), 'Maven')

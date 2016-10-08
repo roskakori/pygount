@@ -17,7 +17,7 @@ class SaxParserDone(Exception):
     pass
 
 
-class XmlDialectContentHandler(xml.sax.ContentHandler):
+class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
     def __init__(self, max_element_count=100):
         super().__init__()
         self.dialect = None
@@ -55,14 +55,19 @@ class XmlDialectContentHandler(xml.sax.ContentHandler):
     def endElementNS(self, name, qname):
         self.endElement(name)
 
+    def notationDecl(self, name, publicId, systemId):
+        if 'DocBook' in publicId:
+            self._set_dialect('DocBook XML')
+
 
 def xml_dialect(xml_path):
-    content_handler = XmlDialectContentHandler()
+    xml_dialect_handler = XmlDialectHandler()
     parser = xml.sax.make_parser()
-    parser.setContentHandler(content_handler)
+    parser.setContentHandler(xml_dialect_handler)
+    parser.setDTDHandler(xml_dialect_handler)
     parser.setFeature(xml.sax.handler.feature_external_ges, False)
     parser.setFeature(xml.sax.handler.feature_external_pes, False)
-    parser.setFeature(xml.sax.handler.feature_validation, False)
+    #parser.setFeature(xml.sax.handler.feature_validation, False)
     try:
         parser.parse(xml_path)
     except SaxParserDone:
@@ -73,4 +78,4 @@ def xml_dialect(xml_path):
         _log.warning(error)  # error already includes path
     except OSError as error:
         _log.warning('%s: cannot analyze XML dialect: %s', xml_path, error)
-    return content_handler.dialect
+    return xml_dialect_handler.dialect
