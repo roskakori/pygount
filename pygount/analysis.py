@@ -26,10 +26,9 @@ import pygount.xmldialect
 try:
     import chardet.universaldetector
     _detector = chardet.universaldetector.UniversalDetector()
-    has_chardet = True
 except ImportError:
     _detector = None
-    has_chardet = False
+has_chardet = bool(_detector)
 
 
 #: Default glob patterns for folders not to analyze.
