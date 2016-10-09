@@ -246,6 +246,12 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
+Version 0.9, 2016-10-xx
+
+* Fixed ``AssertionError`` when option ``--encoding=chardet`` was specified.
+* Added possibility to specify a fallback encoding for encoding 'chardet'. Use
+  e.g. ``--encoding=chardet;cp1252``.
+
 Version 0.8, 2016-10-07
 
 * Fixed option ``--verbose``. Now each analyzed source code results in at least

@@ -7,7 +7,7 @@ import fnmatch
 import re
 
 
-__version__ = '0.8'
+__version__ = '0.9'
 
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
@@ -20,10 +20,17 @@ _REGEX_TYPE = type(re.compile(''))
 
 
 class Error(Exception):
+    """
+    Error to indicate that something went wrong during a pygount run.
+    """
     pass
 
 
 class OptionError(Error):
+    """
+    Error to indicate that a value passed to a command line option must be
+    fixed.
+    """
     def __init__(self, message, source=None):
         super().__init__(message)
         self.option_error_message = (source + ': ') if source is not None else ''
@@ -91,11 +98,12 @@ def regexes_from(patterns_text, default_patterns_text=None, source=None):
     return result
 
 
-def matches_any(regexes, text):
-    return any(regex.match(text) for regex in regexes)
-
-
 def lines(text):
+    """
+    Generator function to yield lines (delimited with ``'\n'``) stored in
+    ``text``. This is useful when a regular expression should only match on a
+    per line basis in a memory efficient way.
+    """
     assert text is not None
     assert '\r' not in text
     previous_newline_index = 0

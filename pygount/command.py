@@ -33,6 +33,7 @@ _HELP_EPILOG = '''SHELL-PATTERN is a pattern using *, ? and ranges like [a-z]
  prefix [regex] indicated that the PATTERNS use regular expression syntax. If
  default values are available, [...] indicates that the PATTERNS extend the
  existing default values.'''
+
 _HELP_FORMAT = 'output format, one of: {0}; default: "%(default)s"'.format(
     ', '.join(['"' + format + '"' for format in _VALID_FORMATS]))
 
@@ -62,7 +63,9 @@ def _check_encoding(name, encoding_to_check, alternative_encoding, source=None):
     :param source: source where the encoding has been set, e.g. option name
     :raise pygount.common.OptionError if ``encoding`` is not a valid Python encoding
     """
-    if encoding_to_check != alternative_encoding:
+    assert name is not None
+
+    if encoding_to_check not in (alternative_encoding, 'chardet', None):
         try:
             ''.encode(encoding_to_check)
         except LookupError:
@@ -90,32 +93,21 @@ class Command():
         self._suffixes = pygount.common.regexes_from(_DEFAULT_SUFFIXES)
 
     def set_encodings(self, encoding, source=None):
-        if encoding == 'automatic':
-            default_encoding = encoding
-            fallback_encoding = 'cp1252'
-        elif encoding == 'chardet':
-            if not pygount.analysis.has_chardet:  # pragma: no cover
-                raise pygount.common.OptionError(
-                    'chardet must be installed to set default encoding to "chardet"')
+        encoding_is_chardet = (encoding == 'chardet') or (encoding.startswith('chardet;'))
+        if encoding_is_chardet and not pygount.analysis.has_chardet:  # pragma: no cover
+            raise pygount.common.OptionError(
+                'chardet must be installed to set default encoding to "chardet"')
+        if encoding in ('automatic', 'chardet'):
             default_encoding = encoding
             fallback_encoding = None
         else:
-            if encoding.startswith('automatic;'):
+            if encoding.startswith('automatic;') or encoding.startswith('chardet;'):
                 first_encoding_semicolon_index = encoding.find(';')
                 default_encoding = encoding[:first_encoding_semicolon_index]
                 fallback_encoding = encoding[first_encoding_semicolon_index + 1:]
-                encoding_to_check = ('fallback encoding', fallback_encoding)
             else:
                 default_encoding = encoding
-                fallback_encoding = None
-                encoding_to_check = ('encoding', default_encoding)
-            if encoding_to_check is not None:
-                name, encoding = encoding_to_check
-                try:
-                    ''.encode(encoding)
-                except LookupError:
-                    raise pygount.common.OptionError(
-                        '{0} is "{1}" but must be a known Python encoding'.format(name, encoding))
+                fallback_encoding = pygount.analysis.DEFAULT_FALLBACK_ENCODING
         self.set_default_encoding(default_encoding, source)
         self.set_fallback_encoding(fallback_encoding, source)
 

@@ -53,6 +53,20 @@ class CommandTest(_BaseCommandTest):
         self.assertIsNotNone(file_elements)
         self.assertNotEqual(len(file_elements), 0)
 
+    def test_fails_on_broken_regex(self):
+        command = Command()
+        self.assertRaisesRegex(
+            OptionError,
+            r'^option --generated: cannot parse pattern for regular repression.*',
+            command.set_generated_regexps, '[regex](', 'option --generated'
+        )
+
+    def test_can_use_chardet_for_encoding(self):
+        command = Command()
+        command.set_encodings('chardet')
+        command.set_source_patterns(self.pygount_folder)
+        command.execute()
+
 
 class PygountCommandTest(_BaseCommandTest):
     def test_can_show_help(self):
@@ -82,6 +96,10 @@ class PygountCommandTest(_BaseCommandTest):
             self.fail('unknown --format must exit')
         except SystemExit as system_exit:
             self.assertEqual(system_exit.code, 2)
+
+    def test_fails_on_broken_regex_pattern(self):
+        exit_code = command.pygount_command(['--generated', '[regex](', tempfile.gettempdir()])
+        self.assertEqual(exit_code, 1)
 
     def test_can_analyze_pygount_setup_py(self):
         pygount_setup_py_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'setup.py')

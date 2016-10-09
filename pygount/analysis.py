@@ -30,6 +30,8 @@ except ImportError:
     _detector = None
 has_chardet = bool(_detector)
 
+#: Fallback encoding to use if no encoding is specified
+DEFAULT_FALLBACK_ENCODING = 'cp1252'
 
 #: Default glob patterns for folders not to analyze.
 DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ', '.join([
@@ -332,7 +334,7 @@ def _line_parts(lexer, text):
         yield line_marks
 
 
-def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
+def encoding_for(source_path, encoding='automatic', fallback_encoding=None):
     """
     The encoding used by the text file stored in ``source_path``.
 
@@ -347,7 +349,6 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
     * For any other ``encoding`` simply use the specified value.
     """
     assert encoding is not None
-    assert fallback_encoding is not None
 
     if encoding == 'automatic':
         with open(source_path, 'rb') as source_file:
@@ -376,15 +377,6 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
                 xml_prolog_match = _XML_PROLOG_REGEX.match(first_line)
                 if xml_prolog_match is not None:
                     result = xml_prolog_match.group('encoding')
-        if result is None:
-            try:
-                # Attempt to read the file as UTF-8.
-                with open(source_path, 'r', encoding='utf-8') as source_file:
-                    source_file.read()
-                result = 'utf-8'
-            except UnicodeDecodeError:
-                # It is not UTF-8, just assume the fallback encoding.
-                result = fallback_encoding
     elif encoding == 'chardet':
         assert _detector is not None, \
             'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
@@ -395,9 +387,30 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding='cp1252'):
                 if _detector.done:
                     break
         result = _detector.result['encoding']
+        if result is None:
+            _log.warning(
+                '%s: chardet cannot determine encoding, assuming fallback encoding %s',
+                source_path, fallback_encoding)
+            result = fallback_encoding
     else:
         # Simply use the specified encoding.
         result = encoding
+    if result is None:
+        # Encoding 'automatic' or 'chardet' failed to detect anything.
+        if fallback_encoding is not None:
+            # If defined, use the fallback encoding.
+            result = fallback_encoding
+        else:
+            try:
+                # Attempt to read the file as UTF-8.
+                with open(source_path, 'r', encoding='utf-8') as source_file:
+                    source_file.read()
+                result = 'utf-8'
+            except UnicodeDecodeError:
+                # UTF-8 did not work out, use the default as last resort.
+                result = DEFAULT_FALLBACK_ENCODING
+            _log.warning('%s: no fallback encoding specified, using %s', source_path, result)
+
     assert result is not None
     return result
 
@@ -464,7 +477,6 @@ def source_analysis(
     :return: a :class:`SourceAnalysis`
     """
     assert encoding is not None
-    assert fallback_encoding is not None
     assert generated_regexes is not None
 
     result = None
@@ -483,7 +495,7 @@ def source_analysis(
             _log.info('%s: is a duplicate of %s', source_path, duplicate_path)
             result = pseudo_source_analysis(source_path, group, SourceState.duplicate, duplicate_path)
     if result is None:
-        if encoding == 'automatic':
+        if encoding in ('automatic', 'chardet'):
             encoding = encoding_for(source_path, encoding, fallback_encoding)
         try:
             with open(source_path, 'r', encoding=encoding) as source_file:
