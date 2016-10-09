@@ -469,6 +469,7 @@ def source_analysis(
 
     result = None
     lexer = None
+    source_code = None
     source_size = os.path.getsize(source_path)
     if source_size == 0:
         _log.info('%s: is empty', source_path)
@@ -486,16 +487,16 @@ def source_analysis(
             encoding = encoding_for(source_path, encoding, fallback_encoding)
         try:
             with open(source_path, 'r', encoding=encoding) as source_file:
-                text = source_file.read()
+                source_code = source_file.read()
         except (LookupError, OSError, UnicodeError) as error:
             _log.warning('cannot read %s using encoding %s: %s', source_path, encoding, error)
             result = pseudo_source_analysis(source_path, group, SourceState.error, error)
         if result is None:
-            lexer = guess_lexer(source_path, text)
+            lexer = guess_lexer(source_path, source_code)
             assert lexer is not None
     if (result is None) and (len(generated_regexes) != 0):
             number_line_and_regex = matching_number_line_and_regex(
-                pygount.common.lines(text), generated_regexes
+                pygount.common.lines(source_code), generated_regexes
             )
             if number_line_and_regex is not None:
                 number, _, regex = number_line_and_regex
@@ -504,14 +505,15 @@ def source_analysis(
                 result = pseudo_source_analysis(source_path, group, SourceState.generated, message)
     if result is None:
         assert lexer is not None
+        assert source_code is not None
         language = lexer.name
         if ('xml' in language.lower()) or (language == 'Genshi'):
-            dialect = pygount.xmldialect.xml_dialect(source_path)
+            dialect = pygount.xmldialect.xml_dialect(source_path, source_code)
             if dialect is not None:
                 language = dialect
         _log.info('%s: analyze as %s using encoding %s', source_path, language, encoding)
         mark_to_count_map = {'c': 0, 'd': 0, 'e': 0, 's': 0}
-        for line_parts in _line_parts(lexer, text):
+        for line_parts in _line_parts(lexer, source_code):
             mark_to_increment = 'e'
             for mark_to_check in ('d', 's', 'c'):
                 if mark_to_check in line_parts:

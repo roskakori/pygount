@@ -4,8 +4,23 @@ Function to obtain the language dialect used by XML source code.
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import logging
+import re
 import xml.sax
 
+
+# TODO #10: Replace regex for DTD by working DTD handler.
+#: Regular expression to obtain DTD.
+_DTD_REGEX = re.compile(r'<!DOCTYPE\s+(?P<name>[a-zA-Z][a-zA-Z-]*)\s+PUBLIC\s+"(?P<public_id>.+)"')
+_REGEX_PATTERNS_AND_DIALECTS = (
+    ('.*DocBook.*', 'DocBook XML'),
+)
+_REGEXES_AND_DIALECTS = [
+    (re.compile(pattern), dialect) for pattern, dialect in _REGEX_PATTERNS_AND_DIALECTS
+    ]
+for public_id_regex, dialect in _REGEX_PATTERNS_AND_DIALECTS:
+    assert public_id_regex is not None
+    assert dialect is not None
+    assert dialect.strip() != ''
 
 _log = logging.getLogger('pygount')
 
@@ -60,16 +75,24 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
             self._set_dialect('DocBook XML')
 
 
-def xml_dialect(xml_path):
+def xml_dialect(xml_path, xml_code):
+    # TODO #10: Remove hack to obtain DTD using a regex instead of a DTDHandler.
+    dtd_match = _DTD_REGEX.match(xml_code)
+    if dtd_match is not None:
+        public_id = dtd_match.group('public_id')
+        for public_id_regex, dialect in _REGEXES_AND_DIALECTS:
+            if public_id_regex.match(public_id):
+                return dialect
+
     xml_dialect_handler = XmlDialectHandler()
     parser = xml.sax.make_parser()
     parser.setContentHandler(xml_dialect_handler)
-    parser.setDTDHandler(xml_dialect_handler)
+    # TODO #10: parser.setDTDHandler(xml_dialect_handler)
     parser.setFeature(xml.sax.handler.feature_external_ges, False)
     parser.setFeature(xml.sax.handler.feature_external_pes, False)
-    #parser.setFeature(xml.sax.handler.feature_validation, False)
+    parser.setFeature(xml.sax.handler.feature_validation, False)
     try:
-        parser.parse(xml_path)
+        parser.feed(xml_code)
     except SaxParserDone:
         # Language has been determined or the parser has given up.
         pass
