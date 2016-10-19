@@ -261,7 +261,7 @@ class Command():
         args = parser.parse_args(arguments)
         if args.encoding == 'automatic':
             default_encoding = args.encoding
-            fallback_encoding = 'cp1252'
+            fallback_encoding = None
         elif args.encoding == 'chardet':
             if not pygount.analysis.has_chardet:  # pragma: no cover
                 parser.error('chardet must be installed in order to specify --encoding=chardet')
