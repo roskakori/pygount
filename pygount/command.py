@@ -16,7 +16,7 @@ import pygount.write
 #: Valid formats for option --format.
 _VALID_FORMATS = ('cloc-xml', 'sloccount')
 
-_DEFAULT_ENCODING = 'automatic;cp1252'
+_DEFAULT_ENCODING = 'automatic'
 _DEFAULT_OUTPUT_FORMAT = 'sloccount'
 _DEFAULT_OUTPUT = 'STDOUT'
 _DEFAULT_SOURCE_PATTERNS = os.curdir
@@ -81,7 +81,7 @@ class Command():
     gradually be set and finally :py:meth:`execute()`.
     """
     def __init__(self):
-        self._default_encoding, self._fallback_encoding = _DEFAULT_ENCODING.split(';')
+        self.set_encodings(_DEFAULT_ENCODING)
         self._has_duplicates = False
         self._folders_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
         self._generated_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT)

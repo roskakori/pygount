@@ -241,6 +241,17 @@ class EncodingTest(unittest.TestCase):
         actual_encoding = analysis.encoding_for(test_path)
         self.assertEqual(actual_encoding, 'utf-8')
 
+    def test_can_detect_utf8_when_cp1252_would_fail(self):
+        test_path = _test_path('utf-8_ok_cp1252_broken')
+        with open(test_path, 'wb') as test_file:
+            # Write closing double quote in UTF-8, which contains 0x9d,
+            # which fails when read as CP1252.
+            test_file.write(b"\xe2\x80\x9d")
+        actual_encoding = analysis.encoding_for(test_path, encoding='automatic', fallback_encoding=None)
+        self.assertEqual(actual_encoding, 'utf-8')
+        actual_encoding = analysis.encoding_for(test_path, encoding='automatic', fallback_encoding='cp1252')
+        self.assertEqual(actual_encoding, 'cp1252')
+
     def test_can_use_hardcoded_ending(self):
         test_path = _test_path('hardcoded_cp1252')
         with open(test_path, 'w', encoding='cp1252') as test_file:
