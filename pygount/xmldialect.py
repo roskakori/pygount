@@ -70,10 +70,6 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
     def endElementNS(self, name, qname):
         self.endElement(name)
 
-    def notationDecl(self, name, publicId, systemId):
-        if 'DocBook' in publicId:
-            self._set_dialect('DocBook XML')
-
 
 def xml_dialect(xml_path, xml_code):
     # TODO #10: Remove hack to obtain DTD using a regex instead of a DTDHandler.
@@ -87,7 +83,6 @@ def xml_dialect(xml_path, xml_code):
     xml_dialect_handler = XmlDialectHandler()
     parser = xml.sax.make_parser()
     parser.setContentHandler(xml_dialect_handler)
-    # TODO #10: parser.setDTDHandler(xml_dialect_handler)
     parser.setFeature(xml.sax.handler.feature_external_ges, False)
     parser.setFeature(xml.sax.handler.feature_external_pes, False)
     parser.setFeature(xml.sax.handler.feature_validation, False)
