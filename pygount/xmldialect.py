@@ -40,7 +40,7 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
         self._element_count = 0
         self._max_element_count = max_element_count
 
-    def _set_dialect(self, dialect):
+    def _set_dialect_and_stop_parsing(self, dialect):
         self.dialect = dialect
         raise SaxParserDone('language detected: {0}'.format(dialect))
 
@@ -51,24 +51,18 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
         self._path += '/' + name
         xmlns = attrs.get('xmlns', '')
         if (self._path == '/project') and ('name' in attrs):
-            self._set_dialect('Ant')
+            self._set_dialect_and_stop_parsing('Ant')
         elif (self._path in ('/book/title', '/chapter/title')) or (xmlns == 'http://docbook.org/ns/docbook'):
-            self._set_dialect('DocBook XML')
+            self._set_dialect_and_stop_parsing('DocBook XML')
         elif xmlns == 'http://xmlns.jcp.org/xml/ns/javaee':
-            self._set_dialect('JavaEE XML')
+            self._set_dialect_and_stop_parsing('JavaEE XML')
         elif xmlns.startswith('http://maven.apache.org/POM'):
-            self._set_dialect('Maven')
+            self._set_dialect_and_stop_parsing('Maven')
         elif xmlns.startswith('http://www.netbeans.org/ns/project/'):
-            self._set_dialect('NetBeans Project')
-
-    def startElementNS(self, name, qname, attrs):
-        self.startElement(name, attrs)
+            self._set_dialect_and_stop_parsing('NetBeans Project')
 
     def endElement(self, name):
         self._path = self._path[:-len(name) - 1]
-
-    def endElementNS(self, name, qname):
-        self.endElement(name)
 
 
 def xml_dialect(xml_path, xml_code):
@@ -88,6 +82,9 @@ def xml_dialect(xml_path, xml_code):
     parser.setFeature(xml.sax.handler.feature_validation, False)
     try:
         parser.feed(xml_code)
+        # NOTE: We can only call close() when the parser has finished,
+        # otherwise close() raises a SAXException('parser finished').
+        parser.close()
     except SaxParserDone:
         # Language has been determined or the parser has given up.
         pass
