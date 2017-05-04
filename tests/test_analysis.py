@@ -183,6 +183,16 @@ class AnalysisTest(unittest.TestCase):
         self.assertEqual(source_analysis.documentation, 1)
 
 
+class BinaryTest(unittest.TestCase):
+    def test_can_detect_binary_source_code(self):
+        binary_path = _test_path('some_django', 'mo')
+        with open(binary_path, 'wb') as binary_file:
+            binary_file.write(b'hello\0world!')
+        source_analysis = analysis.source_analysis(binary_path, 'test', encoding='utf-8')
+        self.assertEqual(source_analysis.state, analysis.SourceState.binary.name)
+        self.assertEqual(source_analysis.code, 0)
+
+
 class EncodingTest(unittest.TestCase):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
     _TEST_CODE = "x = '\u00fd \u20ac'"
@@ -261,6 +271,18 @@ class EncodingTest(unittest.TestCase):
         # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
         with open(test_path, 'r', encoding=actual_encoding) as broken_test_file:
             self.assertRaises(UnicodeDecodeError, broken_test_file.read)
+
+    def test_can_detect_binary_with_zero_byte(self):
+        test_path = _test_path('binary')
+        with open(test_path, 'wb') as test_file:
+            test_file.write(b'hello\0world')
+        self.assertTrue(analysis.is_binary_file(test_path))
+
+    def test_can_detect_utf16_as_non_binary(self):
+        test_path = _test_path('utf-16')
+        with open(test_path, 'w', encoding='utf-16') as test_file:
+            test_file.write('Hello world!')
+        self.assertFalse(analysis.is_binary_file(test_path))
 
 
 class GeneratedCodeTest(unittest.TestCase):

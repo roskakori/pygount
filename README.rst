@@ -125,6 +125,10 @@ Pseudo languages
 If a source code is not counted, the number of lines is 0 and the language
 shown is a pseudo language indicating the reason:
 
+* __binary__ - the source code is a binary file; the detection of binary files
+  first ensures that file does not start with a BOM for UTF-8, UTF-16 or
+  UTF-32 (which indicates text files). After that it checks for zero bytes
+  within the initial 8192 bytes of the file.
 * __duplicate__ - the source code is a bytewise identical copy of another
   file; enable the command line option ``--duplicates`` to also count code in
   duplicates (and gain a minor performance improvement)
@@ -246,9 +250,13 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
-Version 0.9, 2016-10-xx
+Version 0.9, 2017-05-04
 
 * Fixed ``AssertionError`` when option ``--encoding=chardet`` was specified.
+* Added detection of binary files and excluded them from the analysis. In
+  particular Django model objects (``*.mo``) are not considered Modelica
+  source code anymore (issue
+  `#11 <https://github.com/roskakori/pygount/issues/11>`_).
 * Added possibility to specify a fallback encoding for encoding 'chardet'. Use
   e.g. ``--encoding=chardet;cp1252``.
 

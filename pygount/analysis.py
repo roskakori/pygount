@@ -42,6 +42,7 @@ DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ', '.join([
 
 SourceState = enum.Enum('SourceState', ' '.join([
     'analyzed',  # successfully analyzed
+    'binary',  # source code is a binary
     'duplicate',  # source code is an identical copy of another
     'empty',  # source code is empty (file size = 0)
     'error',  # source could not be parsed
@@ -120,6 +121,8 @@ _SUFFIX_TO_FALLBACK_LEXER_MAP = {
     'vbe': pygount.lexers.MinimalisticVBScriptLexer(),
     'vbs': pygount.lexers.MinimalisticVBScriptLexer(),
 }
+for oracle_suffix in ('pck', 'pkb', 'pks', 'pls'):
+    _SUFFIX_TO_FALLBACK_LEXER_MAP[oracle_suffix] = pygments.lexers.get_lexer_by_name('sql')
 
 
 class SourceScanner():
@@ -432,6 +435,23 @@ def pseudo_source_analysis(source_path, group, state, state_info=None):
             )
 
 
+#: BOMs to indicate that a file is a text file even if it contains zero bytes.
+_TEXT_BOMS = (
+    codecs.BOM_UTF16_BE,
+    codecs.BOM_UTF16_LE,
+    codecs.BOM_UTF32_BE,
+    codecs.BOM_UTF32_LE,
+    codecs.BOM_UTF8,
+)
+
+
+def is_binary_file(source_path):
+    with open(source_path, 'rb') as source_file:
+        initial_bytes = source_file.read(8192)
+    return not any(initial_bytes.startswith(bom) for bom in _TEXT_BOMS) \
+           and b'\0' in initial_bytes
+
+
 def is_plain_text(source_path):
     return _PLAIN_TEXT_NAME_REGEX.match(os.path.basename(source_path))
 
@@ -486,6 +506,9 @@ def source_analysis(
     if source_size == 0:
         _log.info('%s: is empty', source_path)
         result = pseudo_source_analysis(source_path, group, SourceState.empty)
+    elif is_binary_file(source_path):
+        _log.info('%s: is binary', source_path)
+        result = pseudo_source_analysis(source_path, group, SourceState.binary)
     elif not has_lexer(source_path):
         _log.info('%s: unknown language', source_path)
         result = pseudo_source_analysis(source_path, group, SourceState.unknown)
