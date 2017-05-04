@@ -412,7 +412,7 @@ def encoding_for(source_path, encoding='automatic', fallback_encoding=None):
             except UnicodeDecodeError:
                 # UTF-8 did not work out, use the default as last resort.
                 result = DEFAULT_FALLBACK_ENCODING
-            _log.warning('%s: no fallback encoding specified, using %s', source_path, result)
+            _log.debug('%s: no fallback encoding specified, using %s', source_path, result)
 
     assert result is not None
     return result

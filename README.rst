@@ -253,6 +253,9 @@ Version history
 Version 0.9, 2017-05-04
 
 * Fixed ``AssertionError`` when option ``--encoding=chardet`` was specified.
+* Changed warning message "no fallback encoding specified, using <encoding>"
+  to a debug message because it did not add any interesting information as
+  the encoding actually used is visible in the info message for each file.
 * Added detection of binary files and excluded them from the analysis. In
   particular Django model objects (``*.mo``) are not considered Modelica
   source code anymore (issue
