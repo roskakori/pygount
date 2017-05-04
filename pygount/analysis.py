@@ -449,7 +449,7 @@ def is_binary_file(source_path):
     with open(source_path, 'rb') as source_file:
         initial_bytes = source_file.read(8192)
     return not any(initial_bytes.startswith(bom) for bom in _TEXT_BOMS) \
-           and b'\0' in initial_bytes
+        and b'\0' in initial_bytes
 
 
 def is_plain_text(source_path):
