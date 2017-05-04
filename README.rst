@@ -262,7 +262,7 @@ Version 0.9, 2017-05-04
   `#11 <https://github.com/roskakori/pygount/issues/11>`_).
 * Added support for suffices to indicate PL/SQL files according to
   `Oracle FAQ entry on file extensions <http://www.orafaq.com/wiki/File_extensions>`_
- (issue `#12 <https://github.com/roskakori/pygount/issues/12>`_).
+  (issue `#12 <https://github.com/roskakori/pygount/issues/12>`_).
 * Added possibility to specify a fallback encoding for encoding 'chardet'. Use
   e.g. ``--encoding=chardet;cp1252``.
 
