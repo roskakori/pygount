@@ -46,7 +46,7 @@ SourceState = enum.Enum('SourceState', ' '.join([
     'duplicate',  # source code is an identical copy of another
     'empty',  # source code is empty (file size = 0)
     'error',  # source could not be parsed
-    'generated',  # source code has been genered
+    'generated',  # source code has been generated
     # TODO: 'huge',  # source code exceeds size limit
     'unknown',  # pygments does not offer any lexer to analyze the source
 ]))
