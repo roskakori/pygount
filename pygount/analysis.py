@@ -121,6 +121,8 @@ _SUFFIX_TO_FALLBACK_LEXER_MAP = {
     'vbe': pygount.lexers.MinimalisticVBScriptLexer(),
     'vbs': pygount.lexers.MinimalisticVBScriptLexer(),
 }
+for oracle_suffix in ('pck', 'pkb', 'pks', 'pls'):
+    _SUFFIX_TO_FALLBACK_LEXER_MAP[oracle_suffix] = pygments.lexers.get_lexer_by_name('plpgsql')
 
 
 class SourceScanner():

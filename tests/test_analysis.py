@@ -170,6 +170,18 @@ class AnalysisTest(unittest.TestCase):
         self.assertEqual(source_analysis.state, analysis.SourceState.error.name)
         self.assertRegex(str(source_analysis.state_info), '.*unknown encoding')
 
+    def test_can_analyze_oracle_sql(self):
+        test_oracle_sql_path = _test_path('test_can_analyze_oracle_sql', 'pls')
+        _write_test_file(test_oracle_sql_path, [
+            '-- Oracle SQL example using an obscure suffix.',
+            'select *',
+            'from some_table;',
+        ])
+        source_analysis = analysis.source_analysis(test_oracle_sql_path, 'test', encoding='utf-8')
+        self.assertRegex(source_analysis.language.lower(), '.*sql')
+        self.assertEqual(source_analysis.code, 2)
+        self.assertEqual(source_analysis.documentation, 1)
+
     def test_can_analyze_webfocus(self):
         test_fex_path = _test_path('test_can_analyze_webfocus', 'fex')
         _write_test_file(test_fex_path, [
