@@ -530,14 +530,14 @@ def source_analysis(
             lexer = guess_lexer(source_path, source_code)
             assert lexer is not None
     if (result is None) and (len(generated_regexes) != 0):
-            number_line_and_regex = matching_number_line_and_regex(
-                pygount.common.lines(source_code), generated_regexes
-            )
-            if number_line_and_regex is not None:
-                number, _, regex = number_line_and_regex
-                message = 'line {0} matches {1}'.format(number, regex)
-                _log.info('%s: is generated code because %s', source_path, message)
-                result = pseudo_source_analysis(source_path, group, SourceState.generated, message)
+        number_line_and_regex = matching_number_line_and_regex(
+            pygount.common.lines(source_code), generated_regexes
+        )
+        if number_line_and_regex is not None:
+            number, _, regex = number_line_and_regex
+            message = 'line {0} matches {1}'.format(number, regex)
+            _log.info('%s: is generated code because %s', source_path, message)
+            result = pseudo_source_analysis(source_path, group, SourceState.generated, message)
     if result is None:
         assert lexer is not None
         assert source_code is not None
