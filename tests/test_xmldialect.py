@@ -57,6 +57,5 @@ class XmlLanguageTest(unittest.TestCase):
     def test_can_ignore_broken_xml(self):
         self.assertEqual(pygount.xmldialect.xml_dialect('<broken>', '<some></other>'), None)
 
-    # TODO #10: fix detection of DTD and activate test.
     def test_can_detect_docbook_from_dtd(self):
         self.assertEqual(pygount.xmldialect.xml_dialect('<docbook-dtd>', _EXAMPLE_DOCBOOK_DTD_CODE), 'DocBook XML')

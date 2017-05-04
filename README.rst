@@ -260,6 +260,8 @@ Version 0.9, 2017-05-04
   particular Django model objects (``*.mo``) are not considered Modelica
   source code anymore (issue
   `#11 <https://github.com/roskakori/pygount/issues/11>`_).
+* Added detection of DocBook XML by DTD (issue
+  `#10 <https://github.com/roskakori/pygount/issues/10>`_).
 * Added support for suffices to indicate PL/SQL files according to
   `Oracle FAQ entry on file extensions <http://www.orafaq.com/wiki/File_extensions>`_
   (issue `#12 <https://github.com/roskakori/pygount/issues/12>`_).
