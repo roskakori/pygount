@@ -250,6 +250,11 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
+Version 1.0.0, 2017-07-04
+
+* Added Python 3.6 to the list of supported versions  (issue
+  `#14 <https://github.com/roskakori/pygount/issues/14>`_).
+
 Version 0.9, 2017-05-04
 
 * Fixed ``AssertionError`` when option ``--encoding=chardet`` was specified.
