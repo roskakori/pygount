@@ -4,11 +4,9 @@ Tests for function to obtain the language dialect used by XML source code.
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import os
-import tempfile
 import unittest
 
 import pygount.xmldialect
-from tests.test_analysis import _test_path
 
 
 _EXAMPLE_POM_CODE = '''<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
