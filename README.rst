@@ -252,6 +252,9 @@ Version history
 
 Version 1.0.0, 2017-07-04
 
+* Fixed confusing warning about XML file ``<unknown>`` caused by SAX parser.
+  As a workaround, ``<unknown>`` is now replaced by the actual path of the
+  XML file that cannot be parsed.
 * Added Python 3.6 to the list of supported versions  (issue
   `#14 <https://github.com/roskakori/pygount/issues/14>`_).
 

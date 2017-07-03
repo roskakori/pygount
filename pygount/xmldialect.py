@@ -21,6 +21,8 @@ for public_id_regex, dialect in _REGEX_PATTERNS_AND_DIALECTS:
     assert public_id_regex is not None
     assert dialect is not None
     assert dialect.strip() != ''
+#: Regex to detect Sax error messages with uninformative paths like '<unknown>'.
+_SAX_MESSAGE_WITHOUT_PATH_PATTERN = re.compile(r'^<.+>(?P<message_without_path>:\d+:\d+.+)')
 
 _log = logging.getLogger('pygount')
 
@@ -90,7 +92,12 @@ def xml_dialect(xml_path, xml_code):
         pass
     except (ValueError, xml.sax.SAXException) as error:
         # NOTE: ValueError is raised on unknown url type.
-        _log.warning(error)  # error already includes path
+        error_message = str(error)
+        message_without_path_match = _SAX_MESSAGE_WITHOUT_PATH_PATTERN.match(error_message)
+        if message_without_path_match is not None:
+            # HACK: Replace uninformative sax path like '<unknown>' with actual XML path.
+            error_message = xml_path + message_without_path_match.group('message_without_path')
+        _log.warning(error_message)
     except OSError as error:
         _log.warning('%s: cannot analyze XML dialect: %s', xml_path, error)
     return xml_dialect_handler.dialect
