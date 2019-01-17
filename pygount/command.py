@@ -91,6 +91,7 @@ class Command():
         self._output_format = _DEFAULT_OUTPUT_FORMAT
         self._source_patterns = _DEFAULT_SOURCE_PATTERNS
         self._suffixes = pygount.common.regexes_from(_DEFAULT_SUFFIXES)
+        self._summary = False
 
     def set_encodings(self, encoding, source=None):
         encoding_is_chardet = (encoding == 'chardet') or (encoding.startswith('chardet;'))
@@ -160,6 +161,9 @@ class Command():
 
     def set_is_verbose(self, is_verbose, source=None):
         self._is_verbose = bool(is_verbose)
+
+    def set_show_summary(self, show_summary, source=None):
+        self._summary = bool(show_summary)
 
     @property
     def names_to_skip(self):
@@ -252,6 +256,8 @@ class Command():
             help='source files and directories to scan; can use glob patterns; default: current directory')
         parser.add_argument('--verbose', '-v', action='store_true', help='explain what is being done')
         parser.add_argument('--version', action='version', version='%(prog)s ' + pygount.common.__version__)
+        parser.add_argument('--summary', action='store_true', default=False,
+            help='show summary')
         return parser
 
     def parsed_args(self, arguments):
@@ -301,6 +307,7 @@ class Command():
         self.set_output_format(args.format, 'option --format')
         self.set_source_patterns(args.source_patterns, 'option PATTERNS')
         self.set_suffixes(args.suffix, 'option --suffix')
+        self.set_show_summary(args.summary, 'option --summary')
 
     def execute(self):
         _log.setLevel(logging.INFO if self.is_verbose else logging.WARNING)
@@ -324,14 +331,48 @@ class Command():
                 assert self.output_format == 'sloccount'
                 writer_class = pygount.write.LineWriter
             with writer_class(target_file) as writer:
+                summary = {}
+
                 for source_path, group in source_paths_and_groups_to_analyze:
                     statistics = pygount.analysis.source_analysis(
                         source_path, group, self.default_encoding, self.fallback_encoding,
                         generated_regexes=self._generated_regexs,
                         duplicate_pool=duplicate_pool
                     )
-                    writer.add(statistics)
+                    if self._summary:
+                        if statistics.language not in summary:
+                            # summary[statistics.language] = statistics
+                            summary[statistics.language] = pygount.analysis.SourceAnalysis(
+                                path="",
+                                language=statistics.language,
+                                group=statistics.group,
+                                code=statistics.code,
+                                documentation=statistics.documentation,
+                                empty=statistics.empty,
+                                string=statistics.string,
+                                state=statistics.state,
+                                state_info=statistics.state_info
+                            )
+                        else:
+                            summary[statistics.language] = pygount.analysis.SourceAnalysis(
+                                path="",
+                                language=statistics.language,
+                                group=summary[statistics.language].group,
+                                code=summary[statistics.language].code + statistics.code,
+                                documentation=summary[statistics.language].documentation + statistics.documentation,
+                                empty=summary[statistics.language].empty + statistics.empty,
+                                string=summary[statistics.language].string + statistics.string,
+                                state=statistics.state,
+                                state_info=statistics.state_info
+                            )
+                    else:
+                        writer.add(statistics)
+
+                # Adding summary lines to output
+                for language,value in summary.items():
+                    writer.add(value)
         finally:
+            print(self._summary)
             if has_target_file_to_close:
                 try:
                     target_file.close()
