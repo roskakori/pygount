@@ -372,7 +372,6 @@ class Command():
                 for language,value in summary.items():
                     writer.add(value)
         finally:
-            print(self._summary)
             if has_target_file_to_close:
                 try:
                     target_file.close()
