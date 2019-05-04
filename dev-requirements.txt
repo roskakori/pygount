@@ -1,8 +1,8 @@
-chardet>=2.1
-coveralls>=1.1
-coverage>=4.0
-enum34>=1.1
-pep8>=1.5.0
+chardet>=3.0.4
+coveralls>=1.7.0
+coverage>=4.5.3
+enum34>=1.1.6
+pep8>=1.7.1
 nose>=1.3.7
-pygments>=2.0
-wheel>=0.29
+pygments>=2.3.1
+wheel>=0.33.1
