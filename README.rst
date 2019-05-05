@@ -250,6 +250,10 @@ Here's an example on how to analyze one of pygount's own source codes::
 Version history
 ---------------
 
+Version 2.0.0, 2019-05-TODO
+
+* TODO
+
 Version 1.0.0, 2017-07-04
 
 * Fixed confusing warning about XML file ``<unknown>`` caused by SAX parser.
