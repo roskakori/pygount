@@ -6,10 +6,6 @@
     :target: https://coveralls.io/r/roskakori/pygount?branch=master
     :alt: Test coverage
 
-.. image:: https://landscape.io/github/roskakori/pygount/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/roskakori/pygount/master
-    :alt: Code Health
-
 
 pygount
 =======
@@ -247,10 +243,40 @@ Here's an example on how to analyze one of pygount's own source codes::
   SourceAnalysis(path='pygount/analysis.py', language='Python', group='pygount', code=302, documentation=66, empty=62, string=23, state='analyzed', state_info=None)
 
 
+Contributions
+-------------
+
+In case you want to play with the source code or contribute changes proceed as
+follows:
+
+1. Check out the project from GitHub:
+   ```sh
+   $ git clone https://github.com/roskakori/pygount.git
+   $ cd pygount
+   ```
+1. Create and activate a virtual environment:
+   ```sh
+   $ python -m venv venv
+   $ source venv/bin/activate
+   ```
+1. Install the required packages:
+   ```sh
+   $ pip install --upgrade
+   $ pip install -r dev-requirements.txt
+   ```
+1. Install the pre-commit hook:
+   ```sh
+   pre-commit install
+   ```
+
+Use [black](https://black.readthedocs.io/en/stable/) to format the code or
+simple wait for the pre-commit hook to fix any formatting issues.
+
+
 Version history
 ---------------
 
-Version 2.0.0, 2019-05-TODO
+Version 2.0.0, 2019-06-TODO
 
 * TODO
 

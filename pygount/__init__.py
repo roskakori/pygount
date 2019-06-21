@@ -6,12 +6,4 @@ Pygount counts lines of source code using pygments lexers.
 from pygount.analysis import encoding_for, SourceAnalysis, SourceScanner, source_analysis
 from pygount.common import __version__, Error, OptionError
 
-__all__ = [
-    'encoding_for',
-    'Error',
-    'OptionError',
-    'SourceAnalysis',
-    'SourceScanner',
-    'source_analysis',
-    '__version__',
-]
+__all__ = ["encoding_for", "Error", "OptionError", "SourceAnalysis", "SourceScanner", "source_analysis", "__version__"]
