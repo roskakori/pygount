@@ -1,4 +1,4 @@
-black>=19.3b0
+black>=19.3b0; python_version >= '3.6'
 chardet>=3.0.4
 coverage>=4.5.3
 coveralls>=1.7.0
