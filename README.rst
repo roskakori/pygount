@@ -278,7 +278,8 @@ Version history
 
 Version 2.0.0, 2019-06-TODO
 
-* TODO
+* Dropped support for Python 3.3, mostly because it became hard to test
+  without going through major hoops.
 
 Version 1.0.0, 2017-07-04
 
