@@ -15,8 +15,9 @@ class IdlLexer(pygments.lexers.JavaLexer):
     existing Java lexer to find comments. While this is useless for syntax
     highlighting it is good enough for counting lines.
     """
-    name = 'IDL'
-    filenames = ['*.idl']
+
+    name = "IDL"
+    filenames = ["*.idl"]
 
 
 class MinimalisticM4Lexer(pygments.lexer.RegexLexer):
@@ -24,11 +25,12 @@ class MinimalisticM4Lexer(pygments.lexer.RegexLexer):
     Minimalistic lexer for m4 macro processor that can distinguish between
     comments and code. It does not recognize a redefined comment mark though.
     """
-    name = 'M4'
+
+    name = "M4"
     tokens = {
-        'root': [
-            (r'(.*)(#.*\n)', pygments.lexer.bygroups(pygments.token.Text, pygments.token.Comment.Single)),
-            (r'.*\n', pygments.token.Text),
+        "root": [
+            (r"(.*)(#.*\n)", pygments.lexer.bygroups(pygments.token.Text, pygments.token.Comment.Single)),
+            (r".*\n", pygments.token.Text),
         ]
     }
 
@@ -38,13 +40,9 @@ class MinimalisticVBScriptLexer(pygments.lexer.RegexLexer):
     Minimalistic lexer for VBScript that can distinguish between comments and
     code.
     """
-    name = 'VBScript'
-    tokens = {
-        'root': [
-            (r"\s*'.*\n", pygments.token.Comment.Single),
-            (r'.*\n', pygments.token.Text),
-        ]
-    }
+
+    name = "VBScript"
+    tokens = {"root": [(r"\s*'.*\n", pygments.token.Comment.Single), (r".*\n", pygments.token.Text)]}
 
 
 class MinimalisticWebFocusLexer(pygments.lexer.RegexLexer):
@@ -52,13 +50,9 @@ class MinimalisticWebFocusLexer(pygments.lexer.RegexLexer):
     Minimalistic lexer for WebFOCUS that can distinguish between comments and
     code.
     """
-    name = 'WebFOCUS'
-    tokens = {
-        'root': [
-            (r'-\*.*\n', pygments.token.Comment.Single),
-            (r'.*\n', pygments.token.Text),
-        ]
-    }
+
+    name = "WebFOCUS"
+    tokens = {"root": [(r"-\*.*\n", pygments.token.Comment.Single), (r".*\n", pygments.token.Text)]}
 
 
 class PlainTextLexer(pygments.lexer.RegexLexer):
@@ -70,10 +64,6 @@ class PlainTextLexer(pygments.lexer.RegexLexer):
 
     This way, plaint text files count as documentation.
     """
-    name = 'Text'
-    tokens = {
-        'root': [
-            (r'\s*\n', pygments.token.Text),
-            (r'.+\n', pygments.token.Comment.Single),
-        ]
-    }
+
+    name = "Text"
+    tokens = {"root": [(r"\s*\n", pygments.token.Text), (r".+\n", pygments.token.Comment.Single)]}

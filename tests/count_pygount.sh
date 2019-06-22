@@ -14,4 +14,3 @@ rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
 
 tests/.temp/env_count/bin/pygount --format=cloc-xml --out cloc.xml --verbose build.xml pygount setup.py tests
 rc=$?; if [[ $rc != 0 ]]; then exit $rc; fi
-

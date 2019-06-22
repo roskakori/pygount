@@ -7,22 +7,23 @@ import fnmatch
 import re
 
 
-__version__ = '2.0.0'
+__version__ = "2.0.0"
 
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
-ADDITIONAL_PATTERN = '[...]'
+ADDITIONAL_PATTERN = "[...]"
 
 #: Prefix to use for pattern strings to describe a regular expression instead of a shell pattern.
-REGEX_PATTERN_PREFIX = '[regex]'
+REGEX_PATTERN_PREFIX = "[regex]"
 
-_REGEX_TYPE = type(re.compile(''))
+_REGEX_TYPE = type(re.compile(""))
 
 
 class Error(Exception):
     """
     Error to indicate that something went wrong during a pygount run.
     """
+
     pass
 
 
@@ -31,9 +32,10 @@ class OptionError(Error):
     Error to indicate that a value passed to a command line option must be
     fixed.
     """
+
     def __init__(self, message, source=None):
         super().__init__(message)
-        self.option_error_message = (source + ': ') if source is not None else ''
+        self.option_error_message = (source + ": ") if source is not None else ""
         self.option_error_message += message
 
     def __str__(self):
@@ -43,7 +45,7 @@ class OptionError(Error):
 def as_list(items_or_text):
     if isinstance(items_or_text, str):
         # TODO: Allow to specify comma (,) in text using '[,]'.
-        result = [item.strip() for item in items_or_text.split(',') if item.strip() != '']
+        result = [item.strip() for item in items_or_text.split(",") if item.strip() != ""]
     else:
         result = list(items_or_text)
     return result
@@ -72,11 +74,11 @@ def regexes_from(patterns_text, default_patterns_text=None, source=None):
             patterns_text_without_prefixes = patterns_text
             if patterns_text_without_prefixes.startswith(REGEX_PATTERN_PREFIX):
                 is_shell_pattern = False
-                patterns_text_without_prefixes = patterns_text_without_prefixes[len(REGEX_PATTERN_PREFIX):]
+                patterns_text_without_prefixes = patterns_text_without_prefixes[len(REGEX_PATTERN_PREFIX) :]
             if patterns_text_without_prefixes.startswith(ADDITIONAL_PATTERN):
                 assert default_patterns_text is not None
                 default_regexes = regexes_from(default_patterns_text)
-                patterns_text_without_prefixes = patterns_text_without_prefixes[len(ADDITIONAL_PATTERN):]
+                patterns_text_without_prefixes = patterns_text_without_prefixes[len(ADDITIONAL_PATTERN) :]
 
             patterns = as_list(patterns_text_without_prefixes)
             for pattern in patterns:
@@ -87,13 +89,12 @@ def regexes_from(patterns_text, default_patterns_text=None, source=None):
                 default_regexes = regexes_from(default_patterns_text)
                 regexes = regexes[1:]
             for supposed_regex in regexes:
-                assert isinstance(supposed_regex, _REGEX_TYPE), \
-                    'patterns_text must a text or sequnce or regular expressions but contains: %a' % supposed_regex
+                assert isinstance(supposed_regex, _REGEX_TYPE), (
+                    "patterns_text must a text or sequnce or regular expressions but contains: %a" % supposed_regex
+                )
             result.extend(regexes)
     except re.error as error:
-        raise OptionError(
-            'cannot parse pattern for regular repression: {0}'.format(error),
-            source)
+        raise OptionError("cannot parse pattern for regular repression: {0}".format(error), source)
     result.extend(default_regexes)
     return result
 
@@ -105,13 +106,13 @@ def lines(text):
     per line basis in a memory efficient way.
     """
     assert text is not None
-    assert '\r' not in text
+    assert "\r" not in text
     previous_newline_index = 0
-    newline_index = text.find('\n')
+    newline_index = text.find("\n")
     while newline_index != -1:
         yield text[previous_newline_index:newline_index]
         previous_newline_index = newline_index + 1
-        newline_index = text.find('\n', previous_newline_index)
+        newline_index = text.find("\n", previous_newline_index)
     last_line = text[previous_newline_index:]
-    if last_line != '':
+    if last_line != "":
         yield last_line
