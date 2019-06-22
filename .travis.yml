@@ -16,7 +16,7 @@ matrix:
 
 install:
   - pip install --requirement dev-requirements.txt
-  - pip install --editable .
+  - python setup.py install
 
 script:
   # Build the distribution archive.
