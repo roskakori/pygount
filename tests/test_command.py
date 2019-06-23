@@ -12,11 +12,13 @@ from pygount import command
 from pygount.command import Command
 from pygount.common import OptionError
 
+_PYGOUNT_PROJECT_FOLDER = os.path.dirname(os.path.dirname(__file__))
+_PYGOUNT_SOURCE_FOLDER = os.path.join(_PYGOUNT_PROJECT_FOLDER, "pygount")
+
 
 class _BaseCommandTest(unittest.TestCase):
     def setUp(self):
-        self.pygount_folder = os.path.dirname(os.path.dirname(__file__))
-        self.tests_temp_folder = os.path.join(self.pygount_folder, "tests", ".temp")
+        self.tests_temp_folder = os.path.join(_PYGOUNT_PROJECT_FOLDER, "tests", ".temp")
         os.makedirs(self.tests_temp_folder, exist_ok=True)
 
 
@@ -41,7 +43,7 @@ class CommandTest(_BaseCommandTest):
         command = Command()
         command.set_output(output_path)
         command.set_output_format("cloc-xml")
-        command.set_source_patterns(self.pygount_folder)
+        command.set_source_patterns(_PYGOUNT_SOURCE_FOLDER)
         command.set_suffixes("py")
         command.execute()
         cloc_xml_root = ElementTree.parse(output_path)
@@ -62,7 +64,7 @@ class CommandTest(_BaseCommandTest):
     def test_can_use_chardet_for_encoding(self):
         command = Command()
         command.set_encodings("chardet")
-        command.set_source_patterns(self.pygount_folder)
+        command.set_source_patterns(_PYGOUNT_SOURCE_FOLDER)
         command.execute()
 
 
@@ -100,13 +102,12 @@ class PygountCommandTest(_BaseCommandTest):
         self.assertEqual(exit_code, 1)
 
     def test_can_analyze_pygount_setup_py(self):
-        pygount_setup_py_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "setup.py")
+        pygount_setup_py_path = os.path.join(_PYGOUNT_PROJECT_FOLDER, "setup.py")
         exit_code = command.pygount_command(["--verbose", pygount_setup_py_path])
         self.assertEqual(exit_code, 0)
 
     def test_can_analyze_pygount_source_code(self):
-        pygount_folder = os.path.dirname(os.path.dirname(__file__))
-        exit_code = command.pygount_command(["--verbose", pygount_folder])
+        exit_code = command.pygount_command(["--verbose", _PYGOUNT_SOURCE_FOLDER])
         self.assertEqual(exit_code, 0)
 
     def test_can_detect_generated_code(self):
@@ -155,10 +156,9 @@ class PygountCommandTest(_BaseCommandTest):
         self.assertNotEqual(len(file_elements), 0)
 
     def test_can_analyze_pygount_source_code_as_cloc_xml(self):
-        pygount_folder = os.path.dirname(os.path.dirname(__file__))
         cloc_xml_path = os.path.join(self.tests_temp_folder, "cloc.xml")
         exit_code = command.pygount_command(
-            ["--verbose", "--format", "cloc-xml", "--out", cloc_xml_path, pygount_folder]
+            ["--verbose", "--format", "cloc-xml", "--out", cloc_xml_path, _PYGOUNT_SOURCE_FOLDER]
         )
         self.assertEqual(exit_code, 0)
         self.assertTrue(os.path.exists(cloc_xml_path))

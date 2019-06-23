@@ -19,10 +19,12 @@ install:
   - python setup.py install
 
 script:
+  # Validate coding guidelines.
+  - pre-commit run --all-files
   # Build the distribution archive.
   - python setup.py bdist_wheel
   # Run the test suite.
-  - nosetests --cover-erase --with-coverage --cover-package=pygount
+  - pytest --verbose
 
 after_success:
   - coveralls
