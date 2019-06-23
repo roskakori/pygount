@@ -20,7 +20,7 @@ install:
 
 script:
   # Validate coding guidelines.
-  - pre-commit run --all-files
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pre-commit run --all-files; fi
   # Build the distribution archive.
   - python setup.py bdist_wheel
   # Run the test suite.
