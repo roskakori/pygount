@@ -1,9 +1,9 @@
-black>=19.3b0; python_version >= '3.6'
+black>=19.3b0
 chardet>=3.0.4
 coverage>=4.5.3
 coveralls>=1.8.1
 pre-commit>=1.17.0
-pygments>=2.2.0; python_version >= '3.4'  # Pygments 2.2.0 ist the version that supports Python 3.4.
+pygments>=2.5.0 # Pygments 2.5.0 changed Java's "{}" from Operator to Punctuation.
 pytest-cov>=2.7.1
 pytest>=4.6.3
 wheel>=0.33.4
