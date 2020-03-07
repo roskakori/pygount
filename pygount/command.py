@@ -311,10 +311,9 @@ class Command:
 
     def execute(self):
         _log.setLevel(logging.INFO if self.is_verbose else logging.WARNING)
-        source_scanner = pygount.analysis.SourceScanner(self.source_patterns, 
-                                                        self.suffixes, 
-                                                        self.folders_to_skip, 
-                                                        self.names_to_skip)
+        source_scanner = pygount.analysis.SourceScanner(
+            self.source_patterns, self.suffixes, self.folders_to_skip, self.names_to_skip
+        )
         source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
         duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
 

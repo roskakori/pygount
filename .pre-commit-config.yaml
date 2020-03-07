@@ -5,10 +5,15 @@ repos:
     rev: stable
     hooks:
     -   id: black
-        language_version: python3.6
+        language_version: python3.7
+
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.7.3
+    hooks:
+    -   id: flake8
 
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.2.3
+    rev: v2.5.0
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
@@ -18,5 +23,4 @@ repos:
     -   id: check-added-large-files
     -   id: check-ast
     -   id: check-byte-order-marker
-    -   id: flake8
     -   id: requirements-txt-fixer
