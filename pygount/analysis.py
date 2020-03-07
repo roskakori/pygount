@@ -127,12 +127,13 @@ for oracle_suffix in ("pck", "pkb", "pks", "pls"):
 
 
 class SourceScanner:
-    def __init__(self, 
-                 source_patterns, 
-                 suffixes='*',
-                 folders_to_skip=pygount.common.regexes_from(DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT),
-                 name_to_skip=pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
-                 ):
+    def __init__(
+        self,
+        source_patterns,
+        suffixes="*",
+        folders_to_skip=pygount.common.regexes_from(DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT),
+        name_to_skip=pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT),
+    ):
         self._source_patterns = source_patterns
         self._suffixes = pygount.common.regexes_from(suffixes)
         self._folder_regexps_to_skip = folders_to_skip
