@@ -9,15 +9,16 @@ python:
 
 install:
   - pip install --requirement dev-requirements.txt
-  - python setup.py install
 
 script:
   # Validate coding guidelines.
   - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then pre-commit run --all-files; fi
-  # Build the distribution archive.
-  - python setup.py bdist_wheel
   # Run the test suite.
+  - python setup.py develop
   - pytest --verbose
+  # Build and install the package.
+  - python setup.py bdist_wheel
+  - python setup.py install
 
 after_success:
   - coveralls
