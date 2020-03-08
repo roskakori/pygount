@@ -64,6 +64,10 @@ format similar to sloccount. To redirect the output to a file, use e.g.
 ``--out=counts.txt``. To change the format to an XML file similar to cloc, use
 ``--format=cloc-xml``.
 
+To just get a quick grasp of the languages used in a project and their
+respective importance use ``--format=summary`` which provides a language
+overview and a sum total.
+
 
 Patterns
 --------
@@ -284,6 +288,9 @@ Version 1.1.0, 2020-03-08
 * Fixed ``--folders_to_skip`` and ``--names-to-skip`` which simply were
   ignored (contributed by pclausen, issue
   `#17 <https://github.com/roskakori/pygount/issues/17>`_).
+* Added option ``--format=summary`` to get a language overview and sum total
+  (based on a contribution by Yuriy Petrovskiy, issue
+  `#16 <https://github.com/roskakori/pygount/issues/16>`_).
 * Added Python 3.7 and 3.8 to the list of supported versions.
 * Dropped support for Python 3.3 and 3.4, mostly because it became hard to
   test without going through major hoops.
