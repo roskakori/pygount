@@ -340,8 +340,17 @@ class Command:
                 assert self.output_format == "sloccount"
                 writer_class = pygount.write.LineWriter
             with writer_class(target_file) as writer:
-                summary = {}
-
+                language_to_summary_statistics_map = {}
+                empty_statistics = pygount.analysis.SourceAnalysis(
+                    path="",
+                    language="empty",
+                    code=0,
+                    documentation=0,
+                    empty=0,
+                    string=0,
+                    state=pygount.analysis.SourceState.analyzed.name,
+                    state_info=None,
+                )
                 for source_path, group in source_paths_and_groups_to_analyze:
                     statistics = pygount.analysis.source_analysis(
                         source_path,
@@ -352,38 +361,26 @@ class Command:
                         duplicate_pool=duplicate_pool,
                     )
                     if self.has_summary:
-                        print(statistics)
-                        if statistics.language not in summary:
-                            # summary[statistics.language] = statistics
-                            summary[statistics.language] = pygount.analysis.SourceAnalysis(
-                                path="",
-                                language=statistics.language,
-                                group=statistics.group,
-                                code=statistics.code,
-                                documentation=statistics.documentation,
-                                empty=statistics.empty,
-                                string=statistics.string,
-                                state=statistics.state,
-                                state_info=statistics.state_info,
-                            )
-                        else:
-                            summary[statistics.language] = pygount.analysis.SourceAnalysis(
-                                path="",
-                                language=statistics.language,
-                                group=summary[statistics.language].group,
-                                code=summary[statistics.language].code + statistics.code,
-                                documentation=summary[statistics.language].documentation + statistics.documentation,
-                                empty=summary[statistics.language].empty + statistics.empty,
-                                string=summary[statistics.language].string + statistics.string,
-                                state=statistics.state,
-                                state_info=statistics.state_info,
-                            )
+                        language_statistics = language_to_summary_statistics_map.get(
+                            statistics.language, empty_statistics
+                        )
+                        language_to_summary_statistics_map[statistics.language] = pygount.analysis.SourceAnalysis(
+                            path="",
+                            language=statistics.language,
+                            group=group,
+                            code=language_statistics.code + statistics.code,
+                            documentation=language_statistics.documentation + statistics.documentation,
+                            empty=language_statistics.empty + statistics.empty,
+                            string=language_statistics.string + statistics.string,
+                            state=statistics.state,
+                            state_info=statistics.state_info,
+                        )
                     else:
                         writer.add(statistics)
 
                 # Adding summary lines to output
-                for language, value in summary.items():
-                    writer.add(value)
+                for _, summary_statistics in sorted(language_to_summary_statistics_map.items()):
+                    writer.add(summary_statistics)
         finally:
             if has_target_file_to_close:
                 try:
