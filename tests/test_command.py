@@ -193,3 +193,7 @@ class PygountCommandTest(_BaseCommandTest):
         file_elements = cloc_xml_root.findall("files/file[@language='__duplicate__']")
         assert file_elements is not None
         assert len(file_elements) == 0
+
+    def test_can_show_summary(self):
+        exit_code = command.pygount_command(["--summary", _PYGOUNT_SOURCE_FOLDER])
+        self.assertEqual(exit_code, 0)

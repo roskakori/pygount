@@ -86,9 +86,10 @@ class Command:
 
     def __init__(self):
         self.set_encodings(_DEFAULT_ENCODING)
-        self._has_duplicates = False
         self._folders_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
         self._generated_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
+        self._has_duplicates = False
+        self._has_summary = False
         self._is_verbose = False
         self._names_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         self._output = _DEFAULT_OUTPUT
@@ -154,6 +155,13 @@ class Command:
 
     def set_has_duplicates(self, has_duplicates, source=None):
         self._has_duplicates = bool(has_duplicates)
+
+    @property
+    def has_summary(self):
+        return self._has_summary
+
+    def set_has_summary(self, show_summary, source=None):
+        self._has_summary = bool(show_summary)
 
     @property
     def is_verbose(self):
@@ -256,6 +264,7 @@ class Command:
             default=[os.getcwd()],
             help="source files and directories to scan; can use glob patterns; default: current directory",
         )
+        parser.add_argument("--summary", action="store_true", default=False, help="show summary")
         parser.add_argument("--verbose", "-v", action="store_true", help="explain what is being done")
         parser.add_argument("--version", action="version", version="%(prog)s " + pygount.common.__version__)
         return parser
@@ -306,6 +315,7 @@ class Command:
         self.set_names_to_skip(args.names_to_skip, "option --folders-to-skip")
         self.set_output(args.out, "option --out")
         self.set_output_format(args.format, "option --format")
+        self.set_has_summary(args.summary, "option --summary")
         self.set_source_patterns(args.source_patterns, "option PATTERNS")
         self.set_suffixes(args.suffix, "option --suffix")
 
@@ -316,7 +326,6 @@ class Command:
         )
         source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
         duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
-
         if self.output == "STDOUT":
             target_file = sys.stdout
             has_target_file_to_close = False
@@ -331,6 +340,8 @@ class Command:
                 assert self.output_format == "sloccount"
                 writer_class = pygount.write.LineWriter
             with writer_class(target_file) as writer:
+                summary = {}
+
                 for source_path, group in source_paths_and_groups_to_analyze:
                     statistics = pygount.analysis.source_analysis(
                         source_path,
@@ -340,7 +351,39 @@ class Command:
                         generated_regexes=self._generated_regexs,
                         duplicate_pool=duplicate_pool,
                     )
-                    writer.add(statistics)
+                    if self.has_summary:
+                        print(statistics)
+                        if statistics.language not in summary:
+                            # summary[statistics.language] = statistics
+                            summary[statistics.language] = pygount.analysis.SourceAnalysis(
+                                path="",
+                                language=statistics.language,
+                                group=statistics.group,
+                                code=statistics.code,
+                                documentation=statistics.documentation,
+                                empty=statistics.empty,
+                                string=statistics.string,
+                                state=statistics.state,
+                                state_info=statistics.state_info,
+                            )
+                        else:
+                            summary[statistics.language] = pygount.analysis.SourceAnalysis(
+                                path="",
+                                language=statistics.language,
+                                group=summary[statistics.language].group,
+                                code=summary[statistics.language].code + statistics.code,
+                                documentation=summary[statistics.language].documentation + statistics.documentation,
+                                empty=summary[statistics.language].empty + statistics.empty,
+                                string=summary[statistics.language].string + statistics.string,
+                                state=statistics.state,
+                                state_info=statistics.state_info,
+                            )
+                    else:
+                        writer.add(statistics)
+
+                # Adding summary lines to output
+                for language, value in summary.items():
+                    writer.add(value)
         finally:
             if has_target_file_to_close:
                 try:
