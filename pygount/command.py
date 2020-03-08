@@ -14,7 +14,7 @@ import pygount.write
 
 
 #: Valid formats for option --format.
-_VALID_FORMATS = ("cloc-xml", "sloccount")
+VALID_OUTPUT_FORMATS = ("cloc-xml", "sloccount", "summary")
 
 _DEFAULT_ENCODING = "automatic"
 _DEFAULT_OUTPUT_FORMAT = "sloccount"
@@ -35,7 +35,7 @@ _HELP_EPILOG = """SHELL-PATTERN is a pattern using *, ? and ranges like [a-z]
  existing default values."""
 
 _HELP_FORMAT = 'output format, one of: {0}; default: "%(default)s"'.format(
-    ", ".join(['"' + format + '"' for format in _VALID_FORMATS])
+    ", ".join(['"' + format + '"' for format in VALID_OUTPUT_FORMATS])
 )
 
 _HELP_GENERATED = """comma separated list of regular expressions to detect
@@ -52,6 +52,13 @@ _HELP_NAMES_TO_SKIP = """comma separated list of glob patterns for file names
 _HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
  separated LIST; shell patterns are possible; example: "py,sql"; default:
  "%(default)s"'''
+
+_OUTPUT_FORMAT_TO_WRITER_CLASS_MAP = {
+    "cloc-xml": pygount.write.ClocXmlWriter,
+    "sloccount": pygount.write.LineWriter,
+    "summary": pygount.write.SummaryWriter,
+}
+assert set(VALID_OUTPUT_FORMATS) == set(_OUTPUT_FORMAT_TO_WRITER_CLASS_MAP.keys())
 
 _log = logging.getLogger("pygount")
 
@@ -157,13 +164,6 @@ class Command:
         self._has_duplicates = bool(has_duplicates)
 
     @property
-    def has_summary(self):
-        return self._has_summary
-
-    def set_has_summary(self, show_summary, source=None):
-        self._has_summary = bool(show_summary)
-
-    @property
     def is_verbose(self):
         return self._is_verbose
 
@@ -193,9 +193,9 @@ class Command:
 
     def set_output_format(self, output_format, source=None):
         assert output_format is not None
-        if output_format not in _VALID_FORMATS:
+        if output_format not in VALID_OUTPUT_FORMATS:
             raise pygount.common.OptionError(
-                "format is {0} but must be one of: {1}".format(output_format, _VALID_FORMATS), source
+                "format is {0} but must be one of: {1}".format(output_format, VALID_OUTPUT_FORMATS), source
             )
         self._output_format = output_format
 
@@ -231,7 +231,7 @@ class Command:
             "--format",
             "-f",
             metavar="FORMAT",
-            choices=_VALID_FORMATS,
+            choices=VALID_OUTPUT_FORMATS,
             default=_DEFAULT_OUTPUT_FORMAT,
             help=_HELP_FORMAT,
         )
@@ -264,7 +264,6 @@ class Command:
             default=[os.getcwd()],
             help="source files and directories to scan; can use glob patterns; default: current directory",
         )
-        parser.add_argument("--summary", action="store_true", default=False, help="show summary")
         parser.add_argument("--verbose", "-v", action="store_true", help="explain what is being done")
         parser.add_argument("--version", action="version", version="%(prog)s " + pygount.common.__version__)
         return parser
@@ -315,7 +314,6 @@ class Command:
         self.set_names_to_skip(args.names_to_skip, "option --folders-to-skip")
         self.set_output(args.out, "option --out")
         self.set_output_format(args.format, "option --format")
-        self.set_has_summary(args.summary, "option --summary")
         self.set_source_patterns(args.source_patterns, "option PATTERNS")
         self.set_suffixes(args.suffix, "option --suffix")
 
@@ -334,24 +332,8 @@ class Command:
             has_target_file_to_close = True
 
         try:
-            if self.output_format == "cloc-xml":
-                writer_class = pygount.write.ClocXmlWriter
-            else:
-                assert self.output_format == "sloccount"
-                writer_class = pygount.write.LineWriter
+            writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
             with writer_class(target_file) as writer:
-                language_to_summary_statistics_map = {}
-                empty_statistics = pygount.analysis.SourceAnalysis(
-                    path="",
-                    language="empty",
-                    group="",
-                    code=0,
-                    documentation=0,
-                    empty=0,
-                    string=0,
-                    state=pygount.analysis.SourceState.analyzed.name,
-                    state_info=None,
-                )
                 for source_path, group in source_paths_and_groups_to_analyze:
                     statistics = pygount.analysis.source_analysis(
                         source_path,
@@ -361,27 +343,7 @@ class Command:
                         generated_regexes=self._generated_regexs,
                         duplicate_pool=duplicate_pool,
                     )
-                    if self.has_summary:
-                        language_statistics = language_to_summary_statistics_map.get(
-                            statistics.language, empty_statistics
-                        )
-                        language_to_summary_statistics_map[statistics.language] = pygount.analysis.SourceAnalysis(
-                            path="",
-                            language=statistics.language,
-                            group=group,
-                            code=language_statistics.code + statistics.code,
-                            documentation=language_statistics.documentation + statistics.documentation,
-                            empty=language_statistics.empty + statistics.empty,
-                            string=language_statistics.string + statistics.string,
-                            state=statistics.state,
-                            state_info=statistics.state_info,
-                        )
-                    else:
-                        writer.add(statistics)
-
-                # Adding summary lines to output
-                for _, summary_statistics in sorted(language_to_summary_statistics_map.items()):
-                    writer.add(summary_statistics)
+                    writer.add(statistics)
         finally:
             if has_target_file_to_close:
                 try:

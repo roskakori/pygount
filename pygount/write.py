@@ -1,11 +1,15 @@
 """
-
+Writers to store the resuls of a pygount analysis.
 """
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import datetime
+import functools
+import math
 import os
 from xml.etree import ElementTree
+
+from pygount.analysis import SourceState
 
 
 class BaseWriter:
@@ -128,3 +132,149 @@ class ClocXmlWriter(BaseWriter):
             self._target_stream.write('<?xml version="1.0" encoding="{0}"?>'.format(self._target_stream.encoding))
         xml_root = ElementTree.ElementTree(self._results_element)
         xml_root.write(self._target_stream, encoding="unicode", xml_declaration=False)
+
+
+#: Language statistics collected by ``SummaryWriter``.
+@functools.total_ordering
+class _LanguageStatistics:
+    def __init__(self, language):
+        self.language = language
+        self.code = 0
+        self.documentation = 0
+        self.empty = 0
+        self.string = 0
+
+    @property
+    def sloc(self):
+        return self.code + self.string
+
+    def sort_key(self):
+        return self.sloc, self.documentation, self.empty, self.language
+
+    def __eq__(self, other):
+        return self.sort_key() == other.sort_key()
+
+    def __lt__(self, other):
+        return self.sort_key() < other.sort_key()
+
+
+class SummaryWriter(BaseWriter):
+    """
+    Writer similar to ``LineWriter`` but summarizes the results per language.
+    """
+
+    _LANGUAGE_HEADING = "Language"
+    _SLOC_HEADING = "SLOC"
+    _DOCUMENTATION_HEADING = "Comment"
+    _SUM_TOTAL_PSEUDO_LANGUAGE = "Sum total"
+
+    def __init__(self, target_stream):
+        super().__init__(target_stream)
+        self._language_to_language_statistics_map = {}
+        self._max_language_width = max(
+            len(SummaryWriter._LANGUAGE_HEADING), len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE)
+        )
+        self._max_sloc_width = 0
+        self._max_documentation_width = 0
+
+    def add(self, source_analysis):
+        super().add(source_analysis)
+        if source_analysis.state in (SourceState.analyzed.name, SourceState.duplicate.name):
+            language_statistics = self._language_to_language_statistics_map.get(source_analysis.language)
+            if language_statistics is None:
+                language_statistics = _LanguageStatistics(source_analysis.language)
+                self._language_to_language_statistics_map[source_analysis.language] = language_statistics
+            language_statistics.code += source_analysis.code
+            language_statistics.documentation += source_analysis.documentation
+            language_statistics.empty += source_analysis.empty
+            language_statistics.string = source_analysis.string
+
+    def close(self):
+        super().close()
+
+        # Compute maximum column widths
+        max_language_width = max(len(SummaryWriter._LANGUAGE_HEADING), len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE),)
+        max_sloc_width = len(SummaryWriter._SLOC_HEADING)
+        max_documentation_width = len(SummaryWriter._DOCUMENTATION_HEADING)
+        for language, language_statistics in self._language_to_language_statistics_map.items():
+            language_width = len(language)
+            if language_width > max_language_width:
+                max_language_width = language_width
+            sloc_width = digit_width(language_statistics.sloc)
+            if sloc_width > max_sloc_width:
+                max_sloc_width = sloc_width
+            documentation_width = digit_width(language_statistics.documentation)
+            if documentation_width > max_documentation_width:
+                max_documentation_width = documentation_width
+        percentage_width = 6
+        digits_after_dot = 2
+        max_digits_before_dot = percentage_width - digits_after_dot - 1
+        assert max_digits_before_dot >= 3  # Must be able to hold "100".
+
+        summary_heading = (
+            "{0:^{max_language_width}s}  "
+            "{1:^{max_sloc_width}s}  "
+            "{2:^{percentage_width}s}  "
+            "{3:^{max_documentation_width}s}  "
+            "{2:^{percentage_width}s}"
+        ).format(
+            SummaryWriter._LANGUAGE_HEADING,
+            SummaryWriter._SLOC_HEADING,
+            "%",
+            SummaryWriter._DOCUMENTATION_HEADING,
+            max_documentation_width=max_documentation_width,
+            max_language_width=max_language_width,
+            max_sloc_width=max_sloc_width,
+            percentage_width=percentage_width,
+        )
+        self._target_stream.write(summary_heading + os.linesep)
+        language_line_template = (
+            "{0:{max_language_width}s}  "
+            "{1:>{max_sloc_width}d}  "
+            "{2:>{percentage_width}.0{digits_after_dot}f}  "
+            "{1:>{max_documentation_width}d}  "
+            "{2:>{percentage_width}.0{digits_after_dot}f}"
+        )
+        total_sloc = self.total_code_count + self.total_string_count
+        for language_statistics in sorted(self._language_to_language_statistics_map.values(), reverse=True):
+            language_sloc = language_statistics.code + language_statistics.string
+            sloc_percentage = language_sloc / total_sloc * 100 if total_sloc != 0 else 0.0
+            documentation_percentage = (
+                language_statistics.documentation / self.total_documentation_count * 100
+                if self.total_documentation_count != 0
+                else 0.0
+            )
+            line_to_write = language_line_template.format(
+                language_statistics.language,
+                language_sloc,
+                sloc_percentage,
+                language_statistics.documentation,
+                documentation_percentage,
+                digits_after_dot=digits_after_dot,
+                max_documentation_width=max_documentation_width,
+                max_language_width=max_language_width,
+                max_sloc_width=max_sloc_width,
+                percentage_width=percentage_width,
+            )
+            self._target_stream.write(line_to_write + os.linesep)
+        summary_footer = (
+            "{0:{max_language_width}s}  "
+            "{1:>{max_sloc_width}d}  "
+            "{2:{percentage_width}s}  "
+            "{3:>{max_documentation_width}d}"
+        ).format(
+            SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE,
+            total_sloc,
+            "",
+            self.total_documentation_count,
+            max_documentation_width=max_documentation_width,
+            max_language_width=max_language_width,
+            max_sloc_width=max_sloc_width,
+            percentage_width=percentage_width,
+        )
+        self._target_stream.write(summary_footer + os.linesep)
+
+
+def digit_width(line_count):
+    assert line_count >= 0
+    return math.ceil(math.log10(line_count + 1)) if line_count != 0 else 1
