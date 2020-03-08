@@ -160,7 +160,8 @@ class _LanguageStatistics:
 
 class SummaryWriter(BaseWriter):
     """
-    Writer similar to ``LineWriter`` but summarizes the results per language.
+    Writer to summarize the analysis per language in a format that can easily
+    be read by humans.
     """
 
     _LANGUAGE_HEADING = "Language"

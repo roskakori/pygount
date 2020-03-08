@@ -63,6 +63,12 @@ class SummaryTest(TempFolderTest):
                 "other.py", "Python", "some", 100, 200, 300, 400, analysis.SourceState.analyzed.name, None
             ),
         )
+        lines = self._summary_lines_for(source_analyses)
+        assert len(lines) == 4, "lines={}".format(lines)
+        assert lines[1].startswith("Python")
+        assert lines[2].startswith("Bash")
+
+    def _summary_lines_for(self, source_analyses):
         # NOTE: We need to write to a file because the lines containing the
         # actual data are only during close() at which point they would not be
         # accessible to StringIO.getvalue().
@@ -72,7 +78,26 @@ class SummaryTest(TempFolderTest):
                 for source_analysis in source_analyses:
                     writer.add(source_analysis)
         with open(summary_path, "r", encoding="utf-8") as source_summary_file:
-            lines = [line.rstrip("\n") for line in source_summary_file]
-            assert len(lines) == 4, "lines={}".format(lines)
-            assert lines[1].startswith("Python")
-            assert lines[2].startswith("Bash")
+            result = [line.rstrip("\n") for line in source_summary_file]
+        return result
+
+    def test_can_format_data_longer_than_headings(self):
+        huge_number = int("1234567890" * 10)
+        long_language_name = "x" * 100
+        min_line_length = len(long_language_name) + 2 * write.digit_width(huge_number)
+
+        source_analyses = (
+            analysis.SourceAnalysis(
+                "x",
+                long_language_name,
+                "some",
+                huge_number,
+                huge_number,
+                0,
+                0,
+                analysis.SourceState.analyzed.name,
+                None,
+            ),
+        )
+        for line in self._summary_lines_for(source_analyses):
+            assert len(line) > min_line_length, "line={0}".format(line)
