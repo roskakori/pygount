@@ -233,8 +233,8 @@ class SummaryWriter(BaseWriter):
             "{0:{max_language_width}s}  "
             "{1:>{max_sloc_width}d}  "
             "{2:>{percentage_width}.0{digits_after_dot}f}  "
-            "{1:>{max_documentation_width}d}  "
-            "{2:>{percentage_width}.0{digits_after_dot}f}"
+            "{3:>{max_documentation_width}d}  "
+            "{4:>{percentage_width}.0{digits_after_dot}f}"
         )
         total_sloc = self.total_code_count + self.total_string_count
         for language_statistics in sorted(self._language_to_language_statistics_map.values(), reverse=True):
