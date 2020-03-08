@@ -37,6 +37,7 @@ nosetests.xml
 .pydevproject
 
 # Various
+/build/
 /dist/
 /cloc.xml
 /tests/.temp/

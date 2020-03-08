@@ -19,6 +19,11 @@ script:
   # Build and install the package.
   - python setup.py bdist_wheel
   - python setup.py install
+  # Test drive the installed pygount.
+  - pygount --version
+  - pygount --help
+  - pygount pygount *.cfg *.yaml
+  - pygount --format=summary pygount *.cfg *.yaml
 
 after_success:
-  - coveralls
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then coveralls; fi

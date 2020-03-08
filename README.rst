@@ -64,6 +64,10 @@ format similar to sloccount. To redirect the output to a file, use e.g.
 ``--out=counts.txt``. To change the format to an XML file similar to cloc, use
 ``--format=cloc-xml``.
 
+To just get a quick grasp of the languages used in a project and their
+respective importance use ``--format=summary`` which provides a language
+overview and a sum total.
+
 
 Patterns
 --------
@@ -74,25 +78,25 @@ By default, patterns are shell patterns using ``*``, ``?`` and ranges like
 ``[a-z]`` as placeholders. Depending on your platform, the are case sensitive
 (Unix) or not (Mac OS, Windows).
 
-If a pattern starts with ``[regex]`` you can specifiy a comma separated list
+If a pattern starts with ``[regex]`` you can specify a comma separated list
 of regular expressions instead using all the constructs supported by the
 `Python regular expression syntax <https://docs.python.org/3/library/re.html#regular-expression-syntax>`_.
 Regular expressions are case sensitive unless they include a ``(?i)`` flag.
 
-If the first actual pattern is ``[...]`` default patterns are included.
-Without it, defaults are ignored and only the pattern explicitely stated are
+If the first actual pattern is ``[...]``, default patterns are included.
+Without it, defaults are ignored and only the pattern explicitly stated are
 taken into account.
 
 So for example to specify that generated code can also contain the German word
-"Generiert" in a case insensivie way use
-``--generated=[regex][...](?i).*generiert``.
+"generiert" in a case insensivie way use
+``--generated="[regex][...](?i).*generiert"``.
 
 
 Source code encoding
 --------------------
 
 When reading source code, pygount automatically detects the encoding. It uses
-a simple algorithm where it recognizes BOM, XML declaractions such as::
+a simple algorithm where it recognizes BOM, XML declarations such as::
 
   <?xml encoding='cp1252'?>
 
@@ -107,7 +111,7 @@ default CP1252) and ignores any encoding errors.
 You can change this behavior using the ``--encoding`` option:
 
 * To keep the automatic analysis and use a different fallback encoding specify
-  for example ``--encoding=automatic;iso-8859-15``
+  for example ``--encoding=automatic;iso-8859-15``.
 * To use an automatic detection based on heuristic, use
   ``--encoding=chardet``. For this to work, the
   `chardet <https://pypi.python.org/pypi/chardet>`_ package must be installed,
@@ -127,9 +131,9 @@ shown is a pseudo language indicating the reason:
   within the initial 8192 bytes of the file.
 * __duplicate__ - the source code is a bytewise identical copy of another
   file; enable the command line option ``--duplicates`` to also count code in
-  duplicates (and gain a minor performance improvement)
+  duplicates (and gain a minor performance improvement).
 * __empty__ - the source code is an empty file with a size of 0 bytes.
-* __error__ - the source code could not be parsed e.g. due an I/O error.
+* __error__ - the source code could not be parsed e.g. due to an I/O error.
 * __generated__ - the source code is generated according to the command line
   option ``--generated``.
 * __unknown__ - pygments does not provide a lexer to parse the source code.
@@ -217,7 +221,7 @@ or cloc because it builds on ``pygments``, which provides lexers for hundreds
 of languages. This also makes it easy to support another language: simply
 `write your own lexer <http://pygments.org/docs/lexerdevelopment/>`_.
 
-For certain corner cases pygount give more accurate results because it
+For certain corner cases pygount gives more accurate results because it
 actually lexes the code unlike other tools that mostly look for comment
 markers and can get confused when they show up inside strings. In practice
 though this should not make much of a difference.
@@ -249,25 +253,28 @@ Contributions
 In case you want to play with the source code or contribute changes proceed as
 follows:
 
-1. Check out the project from GitHub:
-   ```sh
+1. Check out the project from GitHub::
+
    $ git clone https://github.com/roskakori/pygount.git
    $ cd pygount
-   ```
-1. Create and activate a virtual environment:
-   ```sh
+
+2. Create and activate a virtual environment::
+
    $ python -m venv venv
-   $ source venv/bin/activate
-   ```
-1. Install the required packages:
-   ```sh
+   $ . venv/bin/activate
+
+3. Install the required packages::
+
    $ pip install --upgrade
    $ pip install -r dev-requirements.txt
-   ```
-1. Install the pre-commit hook:
-   ```sh
-   pre-commit install
-   ```
+
+4. Install the pre-commit hook::
+
+   $ pre-commit install
+
+5. Run the test suite::
+
+   $ pytest
 
 Use [black](https://black.readthedocs.io/en/stable/) to format the code or
 simple wait for the pre-commit hook to fix any formatting issues.
@@ -276,10 +283,17 @@ simple wait for the pre-commit hook to fix any formatting issues.
 Version history
 ---------------
 
-Version 2.0.0, 2019-06-TODO
+Version 1.1.0, 2020-03-08
 
-* Dropped support for Python 3.3, mostly because it became hard to test
-  without going through major hoops.
+* Fixed ``--folders_to_skip`` and ``--names-to-skip`` which simply were
+  ignored (contributed by pclausen, issue
+  `#17 <https://github.com/roskakori/pygount/issues/17>`_).
+* Added option ``--format=summary`` to get a language overview and sum total
+  (based on a contribution by Yuriy Petrovskiy, issue
+  `#16 <https://github.com/roskakori/pygount/issues/16>`_).
+* Added Python 3.7 and 3.8 to the list of supported versions.
+* Dropped support for Python 3.3 and 3.4, mostly because it became hard to
+  test without going through major hoops.
 
 Version 1.0.0, 2017-07-04
 

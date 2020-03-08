@@ -14,7 +14,7 @@ import pygount.write
 
 
 #: Valid formats for option --format.
-_VALID_FORMATS = ("cloc-xml", "sloccount")
+VALID_OUTPUT_FORMATS = ("cloc-xml", "sloccount", "summary")
 
 _DEFAULT_ENCODING = "automatic"
 _DEFAULT_OUTPUT_FORMAT = "sloccount"
@@ -35,7 +35,7 @@ _HELP_EPILOG = """SHELL-PATTERN is a pattern using *, ? and ranges like [a-z]
  existing default values."""
 
 _HELP_FORMAT = 'output format, one of: {0}; default: "%(default)s"'.format(
-    ", ".join(['"' + format + '"' for format in _VALID_FORMATS])
+    ", ".join(['"' + format + '"' for format in VALID_OUTPUT_FORMATS])
 )
 
 _HELP_GENERATED = """comma separated list of regular expressions to detect
@@ -52,6 +52,13 @@ _HELP_NAMES_TO_SKIP = """comma separated list of glob patterns for file names
 _HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
  separated LIST; shell patterns are possible; example: "py,sql"; default:
  "%(default)s"'''
+
+_OUTPUT_FORMAT_TO_WRITER_CLASS_MAP = {
+    "cloc-xml": pygount.write.ClocXmlWriter,
+    "sloccount": pygount.write.LineWriter,
+    "summary": pygount.write.SummaryWriter,
+}
+assert set(VALID_OUTPUT_FORMATS) == set(_OUTPUT_FORMAT_TO_WRITER_CLASS_MAP.keys())
 
 _log = logging.getLogger("pygount")
 
@@ -86,9 +93,10 @@ class Command:
 
     def __init__(self):
         self.set_encodings(_DEFAULT_ENCODING)
-        self._has_duplicates = False
         self._folders_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
         self._generated_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
+        self._has_duplicates = False
+        self._has_summary = False
         self._is_verbose = False
         self._names_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         self._output = _DEFAULT_OUTPUT
@@ -185,9 +193,9 @@ class Command:
 
     def set_output_format(self, output_format, source=None):
         assert output_format is not None
-        if output_format not in _VALID_FORMATS:
+        if output_format not in VALID_OUTPUT_FORMATS:
             raise pygount.common.OptionError(
-                "format is {0} but must be one of: {1}".format(output_format, _VALID_FORMATS), source
+                "format is {0} but must be one of: {1}".format(output_format, VALID_OUTPUT_FORMATS), source
             )
         self._output_format = output_format
 
@@ -223,7 +231,7 @@ class Command:
             "--format",
             "-f",
             metavar="FORMAT",
-            choices=_VALID_FORMATS,
+            choices=VALID_OUTPUT_FORMATS,
             default=_DEFAULT_OUTPUT_FORMAT,
             help=_HELP_FORMAT,
         )
@@ -316,7 +324,6 @@ class Command:
         )
         source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
         duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
-
         if self.output == "STDOUT":
             target_file = sys.stdout
             has_target_file_to_close = False
@@ -325,11 +332,7 @@ class Command:
             has_target_file_to_close = True
 
         try:
-            if self.output_format == "cloc-xml":
-                writer_class = pygount.write.ClocXmlWriter
-            else:
-                assert self.output_format == "sloccount"
-                writer_class = pygount.write.LineWriter
+            writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
             with writer_class(target_file) as writer:
                 for source_path, group in source_paths_and_groups_to_analyze:
                     statistics = pygount.analysis.source_analysis(

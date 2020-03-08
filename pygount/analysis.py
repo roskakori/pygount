@@ -75,7 +75,7 @@ _log = logging.getLogger("pygount")
 _MARK_TO_NAME_MAP = (("c", "code"), ("d", "documentation"), ("e", "empty"), ("s", "string"))
 _BOM_TO_ENCODING_MAP = collections.OrderedDict(
     (
-        # NOTE: We need an ordered dict due the overlap between utf-32-le and utf-16-be.
+        # NOTE: We need an ordered dict due to the overlap between utf-32-le and utf-16-be.
         (codecs.BOM_UTF8, "utf-8-sig"),
         (codecs.BOM_UTF32_LE, "utf-32-le"),
         (codecs.BOM_UTF16_BE, "utf-16-be"),
@@ -179,7 +179,7 @@ class SourceScanner:
             if not os.path.islink(path):
                 is_folder = os.path.isdir(path)
                 if self._is_path_to_skip(os.path.basename(path), is_folder):
-                    _log.debug("skip due matching skip pattern: %s", path)
+                    _log.debug("skip due to matching skip pattern: %s", path)
                 elif is_folder:
                     yield from self._paths_and_group_to_analyze_in(path, group)
                 else:
@@ -192,7 +192,7 @@ class SourceScanner:
             else:
                 is_folder = os.path.isdir(path_to_analyse)
                 if self._is_path_to_skip(os.path.basename(path_to_analyse), is_folder):
-                    _log.debug("skip due matching skip pattern: %s", path_to_analyse)
+                    _log.debug("skip due to matching skip pattern: %s", path_to_analyse)
                 else:
                     actual_group = group
                     if is_folder:
@@ -229,7 +229,7 @@ class SourceScanner:
             if is_suffix_to_analyze:
                 yield source_path, group
             else:
-                _log.info("skip due suffix: %s", source_path)
+                _log.info("skip due to suffix: %s", source_path)
 
 
 _LANGUAGE_TO_WHITE_WORDS_MAP = {"batchfile": ["@"], "python": ["pass"], "sql": ["begin", "end"]}

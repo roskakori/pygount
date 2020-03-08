@@ -4,11 +4,13 @@ Test to write results of pygount analyses.
 # Copyright (c) 2016, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import io
+import os
 import tempfile
 from xml.etree import ElementTree
 
 from pygount import analysis
 from pygount import write
+from tests._common import TempFolderTest
 
 
 def test_can_collect_totals():
@@ -40,3 +42,62 @@ def test_can_write_cloc_xml():
     file_elements = cloc_results_root.findall("files/file")
     assert file_elements is not None
     assert len(file_elements) == len(source_analyses)
+
+
+def test_can_compute_digit_width():
+    assert write.digit_width(0) == 1
+    assert write.digit_width(1) == 1
+    assert write.digit_width(9) == 1
+    assert write.digit_width(999) == 3
+    assert write.digit_width(1000) == 4
+
+
+class SummaryTest(TempFolderTest):
+    def test_can_write_summary(self):
+        source_analyses = (
+            analysis.SourceAnalysis("script.sh", "Bash", "some", 1, 2, 3, 4, analysis.SourceState.analyzed.name, None),
+            analysis.SourceAnalysis(
+                "some.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed.name, None
+            ),
+            analysis.SourceAnalysis(
+                "other.py", "Python", "some", 100, 200, 300, 400, analysis.SourceState.analyzed.name, None
+            ),
+        )
+        lines = self._summary_lines_for(source_analyses)
+        assert len(lines) == 4, "lines={}".format(lines)
+        assert lines[1].startswith("Python")
+        assert lines[2].startswith("Bash")
+
+    def _summary_lines_for(self, source_analyses):
+        # NOTE: We need to write to a file because the lines containing the
+        # actual data are only during close() at which point they would not be
+        # accessible to StringIO.getvalue().
+        summary_path = os.path.join(self.tests_temp_folder, "summary.tmp")
+        with open(summary_path, "w", encoding="utf-8") as target_summary_file:
+            with write.SummaryWriter(target_summary_file) as writer:
+                for source_analysis in source_analyses:
+                    writer.add(source_analysis)
+        with open(summary_path, "r", encoding="utf-8") as source_summary_file:
+            result = [line.rstrip("\n") for line in source_summary_file]
+        return result
+
+    def test_can_format_data_longer_than_headings(self):
+        huge_number = int("1234567890" * 10)
+        long_language_name = "x" * 100
+        min_line_length = len(long_language_name) + 2 * write.digit_width(huge_number)
+
+        source_analyses = (
+            analysis.SourceAnalysis(
+                "x",
+                long_language_name,
+                "some",
+                huge_number,
+                huge_number,
+                0,
+                0,
+                analysis.SourceState.analyzed.name,
+                None,
+            ),
+        )
+        for line in self._summary_lines_for(source_analyses):
+            assert len(line) > min_line_length, "line={0}".format(line)
