@@ -344,6 +344,7 @@ class Command:
                 empty_statistics = pygount.analysis.SourceAnalysis(
                     path="",
                     language="empty",
+                    group="",
                     code=0,
                     documentation=0,
                     empty=0,
