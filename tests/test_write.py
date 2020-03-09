@@ -6,6 +6,9 @@ Test to write results of pygount analyses.
 import io
 import os
 import tempfile
+from collections import namedtuple
+
+import pytest
 from xml.etree import ElementTree
 
 from pygount import analysis
@@ -52,21 +55,46 @@ def test_can_compute_digit_width():
     assert write.digit_width(1000) == 4
 
 
-class SummaryTest(TempFolderTest):
+_LineData = namedtuple(
+    "LineData", ["language", "code_count", "code_percent", "documentation_count", "documentation_percent"]
+)
+
+
+def _line_data_from(line):
+    line_parts = line.split()
+    assert len(line_parts) == 5, "line_parts={0}".format(line_parts)
+    return _LineData(line_parts[0], int(line_parts[1]), float(line_parts[2]), int(line_parts[3]), float(line_parts[4]),)
+
+
+class SummaryWriterTest(TempFolderTest):
     def test_can_write_summary(self):
         source_analyses = (
-            analysis.SourceAnalysis("script.sh", "Bash", "some", 1, 2, 3, 4, analysis.SourceState.analyzed.name, None),
             analysis.SourceAnalysis(
-                "some.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed.name, None
+                "script.sh", "Bash", "some", 200, 25, 0, 0, analysis.SourceState.analyzed.name, None
             ),
             analysis.SourceAnalysis(
-                "other.py", "Python", "some", 100, 200, 300, 400, analysis.SourceState.analyzed.name, None
+                "some.py", "Python", "some", 300, 45, 0, 0, analysis.SourceState.analyzed.name, None
+            ),
+            analysis.SourceAnalysis(
+                "other.py", "Python", "some", 500, 30, 0, 0, analysis.SourceState.analyzed.name, None
             ),
         )
         lines = self._summary_lines_for(source_analyses)
         assert len(lines) == 4, "lines={}".format(lines)
-        assert lines[1].startswith("Python")
-        assert lines[2].startswith("Bash")
+
+        python_data = _line_data_from(lines[1])
+        assert python_data.language == "Python"
+        assert python_data.code_count == 800
+        assert python_data.documentation_count == 75
+        assert python_data.code_percent == pytest.approx(80.0)
+        assert python_data.documentation_percent == pytest.approx(75.0)
+
+        bash_data = _line_data_from(lines[2])
+        assert bash_data.language == "Bash"
+        assert bash_data.code_count == 200
+        assert bash_data.documentation_count == 25
+        assert bash_data.code_percent == pytest.approx(20.0)
+        assert bash_data.documentation_percent == pytest.approx(25.0)
 
     def _summary_lines_for(self, source_analyses):
         # NOTE: We need to write to a file because the lines containing the
