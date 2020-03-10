@@ -66,7 +66,22 @@ format similar to sloccount. To redirect the output to a file, use e.g.
 
 To just get a quick grasp of the languages used in a project and their
 respective importance use ``--format=summary`` which provides a language
-overview and a sum total.
+overview and a sum total. For example pygount's summary looks like this::
+
+    Language          Code    %     Comment    %
+    ----------------  ----  ------  -------  ------
+    Python            1730   83.94      250   78.12
+    reStructuredText   271   13.15        0    0.00
+    Ant                 38    1.84        1    0.31
+    INI                 10    0.49        1    0.31
+    Bash                 8    0.39        2    0.62
+    TOML                 4    0.19        0    0.00
+    Text                 0    0.00       66   20.62
+    ----------------  ----  ------  -------  ------
+    Sum total         2061              320
+
+The summary output is designed for human readers and the column widths adjust
+to the data.
 
 
 Patterns
@@ -276,14 +291,14 @@ follows:
 
    $ pytest
 
-Use [black](https://black.readthedocs.io/en/stable/) to format the code or
+Use `black <https://black.readthedocs.io/en/stable/>`_ to format the code or
 simple wait for the pre-commit hook to fix any formatting issues.
 
 
 Version history
 ---------------
 
-Version 1.1.0, 2020-03-08
+Version 1.1.0, 2020-03-10
 
 * Fixed ``--folders_to_skip`` and ``--names-to-skip`` which simply were
   ignored (contributed by pclausen, issue
