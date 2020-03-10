@@ -56,7 +56,7 @@ def test_can_compute_digit_width():
 
 
 _LineData = namedtuple(
-    "LineData", ["language", "code_count", "code_percent", "documentation_count", "documentation_percent"]
+    "_LineData", ["language", "code_count", "code_percent", "documentation_count", "documentation_percent"]
 )
 
 
@@ -70,31 +70,35 @@ class SummaryWriterTest(TempFolderTest):
     def test_can_write_summary(self):
         source_analyses = (
             analysis.SourceAnalysis(
-                "script.sh", "Bash", "some", 200, 25, 0, 0, analysis.SourceState.analyzed.name, None
+                "script.sh", "Bash", "some", 200, 25, 1, 2, analysis.SourceState.analyzed.name, None
             ),
             analysis.SourceAnalysis(
-                "some.py", "Python", "some", 300, 45, 0, 0, analysis.SourceState.analyzed.name, None
+                "some.py", "Python", "some", 300, 45, 3, 4, analysis.SourceState.analyzed.name, None
             ),
             analysis.SourceAnalysis(
-                "other.py", "Python", "some", 500, 30, 0, 0, analysis.SourceState.analyzed.name, None
+                "other.py", "Python", "some", 500, 30, 5, 6, analysis.SourceState.analyzed.name, None
             ),
         )
         lines = self._summary_lines_for(source_analyses)
-        assert len(lines) == 4, "lines={}".format(lines)
+        assert len(lines) == 6, "lines={}".format(lines)
 
-        python_data = _line_data_from(lines[1])
+        python_data = _line_data_from(lines[2])
         assert python_data.language == "Python"
         assert python_data.code_count == 800
         assert python_data.documentation_count == 75
         assert python_data.code_percent == pytest.approx(80.0)
         assert python_data.documentation_percent == pytest.approx(75.0)
 
-        bash_data = _line_data_from(lines[2])
+        bash_data = _line_data_from(lines[3])
         assert bash_data.language == "Bash"
         assert bash_data.code_count == 200
         assert bash_data.documentation_count == 25
         assert bash_data.code_percent == pytest.approx(20.0)
         assert bash_data.documentation_percent == pytest.approx(25.0)
+
+        sum_total_data = lines[-1].split()
+        assert len(sum_total_data) >= 3
+        assert sum_total_data[-2:] == ["1000", "100"]
 
     def _summary_lines_for(self, source_analyses):
         # NOTE: We need to write to a file because the lines containing the
