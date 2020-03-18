@@ -11,7 +11,8 @@ Tag a release (simply replace ``1.x.x`` with the current version number)::
 
 Upload release to PyPI::
 
-  $ python3 setup.py bdist_wheel upload
+  $ python3 setup.py bdist_wheel
+  $ twine upload dist/*.whl
 """
 # Copyright (c) 2016-2020, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
@@ -23,7 +24,7 @@ from pygount import __version__
 
 # Read the long description from the README file.
 _setup_folder = os.path.dirname(__file__)
-with open(os.path.join(_setup_folder, "README.rst"), encoding="utf-8") as readme_file:
+with open(os.path.join(_setup_folder, "README.md"), encoding="utf-8") as readme_file:
     long_description = readme_file.read()
 
 setup(
@@ -49,8 +50,9 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Topic :: Software Development",
     ],
-    keywords="code analysis count SLOC",
+    keywords=["code analysis", "count", "SLOC"],
     packages=find_packages(exclude=["tests"]),
     install_requires=["pygments>=2.0"],
+    python_requires=">=3.5",
     entry_points={"console_scripts": ["pygount=pygount.command:main"]},
 )
