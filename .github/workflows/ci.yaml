@@ -1,6 +1,6 @@
 name: pygount continuous integration
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -26,7 +26,7 @@ jobs:
         pytest --verbose
     - name: Check code quality
       run: |
-        pre-commit run --all-files
+        if [[ ${{ matrix.python-version }} == 3.7 ]]; then pre-commit run --all-files; fi
     - name: Build and install pygount package
       run: |
         python setup.py bdist_wheel
