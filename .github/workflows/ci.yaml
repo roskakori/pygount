@@ -23,6 +23,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r dev-requirements.txt
     - name: Run the test suite
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         python setup.py develop
         pytest --verbose
