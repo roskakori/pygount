@@ -1,4 +1,5 @@
-name: CI
+# Continuous integration build for pygount.
+name: Build
 
 on: [push, pull_request]
 
