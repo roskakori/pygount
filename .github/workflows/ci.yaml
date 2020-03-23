@@ -1,4 +1,4 @@
-name: pygount continuous integration
+name: CI
 
 on: [push, pull_request]
 
@@ -9,6 +9,8 @@ jobs:
     strategy:
       matrix:
         python-version: [3.5, 3.6, 3.7, 3.8]
+    env:
+      MAIN_PYTHON_VERSION: 3.7
 
     steps:
     - uses: actions/checkout@v2
@@ -24,9 +26,10 @@ jobs:
       run: |
         python setup.py develop
         pytest --verbose
+        if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then coveralls; fi
     - name: Check code quality
       run: |
-        if [[ ${{ matrix.python-version }} == 3.7 ]]; then pre-commit run --all-files; fi
+        if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then pre-commit run --all-files; fi
     - name: Build and install pygount package
       run: |
         python setup.py bdist_wheel
