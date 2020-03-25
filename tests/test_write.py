@@ -13,7 +13,7 @@ from xml.etree import ElementTree
 
 from pygount import analysis
 from pygount import write
-from tests._common import TempFolderTest
+from ._common import TempFolderTest
 
 
 def test_can_collect_totals():

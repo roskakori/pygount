@@ -313,7 +313,12 @@ Version 1.2.0, 2020-03-TODO
 
 * Changed installation to fail when attempting to install on Python earlier
   than 3.5.
-* Changed README format from reStructuredText to Markdown.
+* Cleaned up project:
+  * Changed continuous integration from Travis CI to Github actions in the hope
+    that the CI build does not automatically break after a while because
+    things constantly change in the CI backend.
+  * Changed README format from reStructuredText to Markdown.
+  * Removed obsolete development files (for ant, tox etc).
 
 Version 1.1.0, 2020-03-10
 
