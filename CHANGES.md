@@ -9,6 +9,8 @@ Version 1.2.0, 2020-03-TODO
     that the CI build does not automatically break after a while because
     things constantly change in the CI backend.
   * Changed README format from reStructuredText to Markdown.
+  * Improved badges in README: added a badge for supported Python versions
+    and unified the layout by using <https://shields.io>.
   * Removed obsolete development files (for ant, tox etc).
 
 Version 1.1.0, 2020-03-10

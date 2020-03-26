@@ -1,6 +1,7 @@
-![Build Status](https://github.com/roskakori/pygount/workflows/Build/badge.svg)
-[![Test Coverage](https://coveralls.io/repos/roskakori/pygount/badge.png?branch=master)](https://coveralls.io/r/roskakori/pygount?branch=master)
-[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+![Python Versions](https://img.shields.io/pypi/pyversions/pygount.svg)
+![Build Status](https://img.shields.io/github/workflow/status/roskakori/pygount/Build)
+[![Test Coverage](https://img.shields.io/coveralls/github/roskakori/pygount)](https://coveralls.io/r/roskakori/pygount?branch=master)
+[![License](https://img.shields.io/github/license/roskakori/pygount)](https://opensource.org/licenses/BSD-3-Clause)
 
 # pygount
 
@@ -104,8 +105,7 @@ So for example to specify that generated code can also contain the German word
 `--generated="[regex][...](?i).*generiert"`.
 
 
-Source code encoding
---------------------
+## Source code encoding
 
 When reading source code, pygount automatically detects the encoding. It uses
 a simple algorithm where it recognizes BOM, XML declarations such as:
@@ -154,8 +154,7 @@ shown is a pseudo language indicating the reason:
 * `__unknown__` - pygments does not provide a lexer to parse the source code.
 
 
-Other information
------------------
+## Other information
 
 To get a description of all the available command line options, run:
 
@@ -171,8 +170,7 @@ $ pygount --version
 ```
 
 
-Continuous integration
-----------------------
+## Continuous integration
 
 Pygount can produce output that can be processed by the
 [SLOCCount plug-in](https://wiki.jenkins-ci.org/display/JENKINS/SLOCCount+Plugin)
@@ -192,8 +190,7 @@ Then add a post-build action "Publish SLOCCount analysis results" and set
 "SLOCCount report" to "cloc.xml".
 
 
-How pygount counts code
------------------------
+## How pygount counts code
 
 Pygount basically counts physical lines of source code.
 
@@ -275,10 +272,10 @@ SourceAnalysis(path='pygount/analysis.py', language='Python', group='pygount', c
 
 ## Contributions
 
-In case you want to play with the source code or contribute changes see
+In case you want to play with the source code or contribute improvements, see
 [CONTRIBUTING](CONTRIBUTING.md).
 
 
-##Version history
+## Version history
 
 See [CHANGES](CHANGES.md).
