@@ -36,3 +36,5 @@ jobs:
     - name: Build and install pygount package
       run: |
         python setup.py bdist_wheel
+        twine check dist/pygount-*.whl
+        pip install dist/pygount-*.whl

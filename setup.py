@@ -12,6 +12,7 @@ Tag a release (simply replace ``1.x.x`` with the current version number)::
 Upload release to PyPI::
 
   $ python3 setup.py bdist_wheel
+  $ twine check dist/*.whl
   $ twine upload dist/*.whl
 """
 # Copyright (c) 2016-2020, Thomas Aglassinger.
