@@ -3,40 +3,22 @@ Tests for pygount source code analysis.
 """
 # Copyright (c) 2016-2020, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
-import atexit
 import glob
 import os
 import pytest
-import shutil
-import tempfile
 import unittest
 
 from pygments import lexers, token
 
-from ._common import TempFolderTest
+from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
 from .test_xmldialect import EXAMPLE_ANT_CODE
 from pygount import analysis
 from pygount import common
 
 
-_TESTS_FOLDER = os.path.dirname(__file__)
-_TESTS_TEMP_FOLDER = os.path.join(_TESTS_FOLDER, ".temp")
-
-
-def _test_path(name, suffix="tmp"):
-    result = os.path.join(tempfile.gettempdir(), "pygount_tests_EncodingTest_" + name + "." + suffix)
-    atexit.register(os.remove, result)
-    return result
-
-
-def _write_test_file(path, lines=list(), encoding="utf-8"):
-    with open(path, "w", encoding=encoding) as test_file:
-        for line in lines:
-            test_file.write(line + "\n")
-
-
-class SourceScannerTest(unittest.TestCase):
+class SourceScannerTest(TempFolderTest):
     def setUp(self):
+        super().setUp()
         self._tests_folder = os.path.dirname(__file__)
 
     def test_can_find_no_files(self):
@@ -45,30 +27,30 @@ class SourceScannerTest(unittest.TestCase):
         assert actual_paths == []
 
     def test_can_find_any_files(self):
-        scanner = analysis.SourceScanner([self._tests_folder])
+        scanner = analysis.SourceScanner([PYGOUNT_SOURCE_FOLDER])
         actual_paths = list(scanner.source_paths())
         assert actual_paths != []
 
     def test_can_find_python_files(self):
-        scanner = analysis.SourceScanner([self._tests_folder], "py")
+        scanner = analysis.SourceScanner([PYGOUNT_SOURCE_FOLDER], "py")
         actual_paths = list(scanner.source_paths())
         assert actual_paths != []
         for python_path, _ in actual_paths:
             actual_suffix = os.path.splitext(python_path)[1]
             assert actual_suffix == ".py"
 
-    def test_can_skip_folder(self):
-        NAME_TO_SKIP = "source_to_skip.py"
-        folder_to_skip = os.path.join(self._tests_folder, ".test_can_skip_folder")
-        os.makedirs(folder_to_skip, exist_ok=True)
-        try:
-            _write_test_file(os.path.join(folder_to_skip, NAME_TO_SKIP), ["# Test", "print(1)"])
-            scanner = analysis.SourceScanner([self._tests_folder], "py")
-            for python_path, _ in scanner.source_paths():
-                actual_name = os.path.basename(python_path)
-                assert actual_name != NAME_TO_SKIP
-        finally:
-            shutil.rmtree(folder_to_skip)
+    def test_can_skip_dot_folder(self):
+        project_folder_name = "project"
+        project_folder = os.path.join(self.tests_temp_folder, project_folder_name)
+        name_to_include = "include.py"
+        relative_path_to_include = os.path.join(project_folder_name, "include", name_to_include)
+        self.create_temp_file(relative_path_to_include, "include = 1", do_create_folder=True)
+        relative_path_to_skip = os.path.join(project_folder_name, ".skip", "skip.py")
+        self.create_temp_file(relative_path_to_skip, "skip = 2", do_create_folder=True)
+
+        scanner = analysis.SourceScanner([project_folder])
+        scanned_names = [os.path.basename(source_path) for source_path, _ in scanner.source_paths()]
+        assert scanned_names == [name_to_include]
 
 
 class AnalysisTest(unittest.TestCase):
@@ -116,28 +98,29 @@ class AnalysisTest(unittest.TestCase):
         expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"d"}, {"c", "s"}]
         assert actual_line_parts == expected_line_parts
 
+
+class FileAnalysisTest(TempFolderTest):
     def test_can_analyze_encoding_error(self):
-        test_path = _test_path("encoding_error", "py")
-        with open(test_path, "w", encoding="cp1252") as test_file:
-            test_file.write('print("\N{EURO SIGN}")')
+        test_path = self.create_temp_file("encoding_error.py", 'print("\N{EURO SIGN}")', encoding="cp1252")
         source_analysis = analysis.source_analysis(test_path, "test", encoding="utf-8")
         assert source_analysis.language == "__error__"
         assert source_analysis.state == analysis.SourceState.error.name
         assert "0x80" in str(source_analysis.state_info)
 
     def test_can_detect_silent_dos_batch_remarks(self):
-        test_bat_path = _test_path("test_can_detect_silent_dos_batch_remarks", "bat")
-        _write_test_file(test_bat_path, ["rem normal comment", "@rem silent comment", "echo some code"])
+        test_bat_path = self.create_temp_file(
+            "test_can_detect_silent_dos_batch_remarks.bat",
+            ["rem normal comment", "@rem silent comment", "echo some code"],
+        )
         source_analysis = analysis.source_analysis(test_bat_path, "test", encoding="utf-8")
         assert source_analysis.language == "Batchfile"
         assert source_analysis.code == 1
         assert source_analysis.documentation == 2
 
     def test_fails_on_unknown_magic_encoding_comment(self):
-        test_path = _test_path("unknown_magic_encoding_comment", "py")
-        with open(test_path, "w", encoding="utf-8") as test_file:
-            test_file.write("# -*- coding: no_such_encoding -*-")
-            test_file.write('print("hello")')
+        test_path = self.create_temp_file(
+            "unknown_magic_encoding_comment.py", ["# -*- coding: no_such_encoding -*-", 'print("hello")']
+        )
         no_such_encoding = analysis.encoding_for(test_path)
         assert no_such_encoding == "no_such_encoding"
         source_analysis = analysis.source_analysis(test_path, "test", encoding=no_such_encoding)
@@ -146,9 +129,8 @@ class AnalysisTest(unittest.TestCase):
         assert "unknown encoding" in str(source_analysis.state_info)
 
     def test_can_analyze_oracle_sql(self):
-        test_oracle_sql_path = _test_path("test_can_analyze_oracle_sql", "pls")
-        _write_test_file(
-            test_oracle_sql_path, ["-- Oracle SQL example using an obscure suffix.", "select *", "from some_table;"]
+        test_oracle_sql_path = self.create_temp_file(
+            "some_oracle_sql.pls", ["-- Oracle SQL example using an obscure suffix.", "select *", "from some_table;"],
         )
         source_analysis = analysis.source_analysis(test_oracle_sql_path, "test", encoding="utf-8")
         assert source_analysis.language.lower().endswith("sql")
@@ -156,15 +138,14 @@ class AnalysisTest(unittest.TestCase):
         assert source_analysis.documentation == 1
 
     def test_can_analyze_webfocus(self):
-        test_fex_path = _test_path("test_can_analyze_webfocus", "fex")
-        _write_test_file(test_fex_path, ["-* comment", "-type some text", "table file some print * end;"])
+        test_fex_path = self.create_temp_file(
+            "some.fex", ["-* comment", "-type some text", "table file some print * end;"]
+        )
         source_analysis = analysis.source_analysis(test_fex_path, "test", encoding="utf-8")
         assert source_analysis.language == "WebFOCUS"
         assert source_analysis.code == 2
         assert source_analysis.documentation == 1
 
-
-class FileAnalysisTest(TempFolderTest):
     def test_can_analyze_xml_dialect(self):
         build_xml_path = self.create_temp_file("build.xml", EXAMPLE_ANT_CODE)
         source_analysis = analysis.source_analysis(build_xml_path, "test")
@@ -172,28 +153,23 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.language == "Ant"
 
     def test_can_analyze_unknown_language(self):
-        lines = ["some", "lines", "of", "text"]
-        unknown_language_path = self.create_temp_file("some.unknown_language", "\n".join(lines))
+        unknown_language_path = self.create_temp_file("some.unknown_language", ["some", "lines", "of", "text"])
         source_analysis = analysis.source_analysis(unknown_language_path, "test")
         assert source_analysis.state == analysis.SourceState.unknown.name
 
-
-class BinaryTest(unittest.TestCase):
     def test_can_detect_binary_source_code(self):
-        binary_path = _test_path("some_django", "mo")
-        with open(binary_path, "wb") as binary_file:
-            binary_file.write(b"hello\0world!")
+        binary_path = self.create_temp_binary_file("some_django.mo", b"hello\0world!")
         source_analysis = analysis.source_analysis(binary_path, "test", encoding="utf-8")
         assert source_analysis.state == analysis.SourceState.binary.name
         assert source_analysis.code == 0
 
 
-class EncodingTest(unittest.TestCase):
+class EncodingTest(TempFolderTest):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
     _TEST_CODE = "x = '\u00fd \u20ac'"
 
     def _test_can_detect_bom_encoding(self, encoding):
-        test_path = _test_path(encoding)
+        test_path = os.path.join(self.tests_temp_folder, encoding)
         with open(test_path, "wb") as test_file:
             if encoding != "utf-8-sig":
                 bom = EncodingTest._ENCODING_TO_BOM_MAP[encoding]
@@ -208,37 +184,26 @@ class EncodingTest(unittest.TestCase):
 
     def test_can_detect_plain_encoding(self):
         for encoding in ("cp1252", "utf-8"):
-            test_path = _test_path(encoding)
-            with open(test_path, "w", encoding=encoding) as test_file:
-                test_file.write(EncodingTest._TEST_CODE)
+            test_path = self.create_temp_file(encoding, EncodingTest._TEST_CODE, encoding)
             actual_encoding = analysis.encoding_for(test_path)
             assert actual_encoding == encoding
 
     def test_can_detect_xml_prolog(self):
         encoding = "iso-8859-15"
-        test_path = _test_path("xml-" + encoding)
-        with open(test_path, "w", encoding=encoding) as test_file:
-            xml_code = '<?xml encoding="{0}" standalone="yes"?><some>{1}</some>'.format(
-                encoding, EncodingTest._TEST_CODE
-            )
-            test_file.write(xml_code)
+        xml_code = '<?xml encoding="{0}" standalone="yes"?><some>{1}</some>'.format(encoding, EncodingTest._TEST_CODE)
+        test_path = self.create_temp_file(encoding + ".xml", xml_code, encoding)
         actual_encoding = analysis.encoding_for(test_path)
         assert actual_encoding == encoding
 
     def test_can_detect_magic_comment(self):
         encoding = "iso-8859-15"
-        test_path = _test_path("magic-" + encoding)
-        with open(test_path, "w", encoding=encoding) as test_file:
-            test_file.write("#!/usr/bin/python\n")
-            test_file.write("# -*- coding: {0} -*-\n".format(encoding))
-            test_file.write(EncodingTest._TEST_CODE)
+        lines = ["#!/usr/bin/python", "# -*- coding: {0} -*-".format(encoding), EncodingTest._TEST_CODE]
+        test_path = self.create_temp_file("magic-" + encoding, lines, encoding)
         actual_encoding = analysis.encoding_for(test_path)
         assert actual_encoding == encoding
 
     def test_can_detect_automatic_encoding_for_empty_source(self):
-        test_path = _test_path("empty")
-        with open(test_path, "wb") as _:
-            pass  # Write empty file.
+        test_path = self.create_temp_binary_file("empty", b"")
         actual_encoding = analysis.encoding_for(test_path)
         assert actual_encoding == "utf-8"
 
@@ -248,20 +213,17 @@ class EncodingTest(unittest.TestCase):
         assert actual_encoding == "utf-8"
 
     def test_can_detect_utf8_when_cp1252_would_fail(self):
-        test_path = _test_path("utf-8_ok_cp1252_broken")
-        with open(test_path, "wb") as test_file:
-            # Write closing double quote in UTF-8, which contains 0x9d,
-            # which fails when read as CP1252.
-            test_file.write(b"\xe2\x80\x9d")
+        # Write closing double quote in UTF-8, which contains 0x9d,
+        # which fails when read as CP1252.
+        content = b"\xe2\x80\x9d"
+        test_path = self.create_temp_binary_file("utf-8_ok_cp1252_broken", content)
         actual_encoding = analysis.encoding_for(test_path, encoding="automatic", fallback_encoding=None)
         assert actual_encoding == "utf-8"
         actual_encoding = analysis.encoding_for(test_path, encoding="automatic", fallback_encoding="cp1252")
         assert actual_encoding == "cp1252"
 
     def test_can_use_hardcoded_ending(self):
-        test_path = _test_path("hardcoded_cp1252")
-        with open(test_path, "w", encoding="cp1252") as test_file:
-            test_file.write("\N{EURO SIGN}")
+        test_path = self.create_temp_file("hardcoded_cp1252", "\N{EURO SIGN}", "cp1252")
         actual_encoding = analysis.encoding_for(test_path, "utf-8")
         assert actual_encoding == "utf-8"
         # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
@@ -270,19 +232,15 @@ class EncodingTest(unittest.TestCase):
                 broken_test_file.read()
 
     def test_can_detect_binary_with_zero_byte(self):
-        test_path = _test_path("binary")
-        with open(test_path, "wb") as test_file:
-            test_file.write(b"hello\0world")
+        test_path = self.create_temp_binary_file("binary", b"hello\0world")
         assert analysis.is_binary_file(test_path)
 
     def test_can_detect_utf16_as_non_binary(self):
-        test_path = _test_path("utf-16")
-        with open(test_path, "w", encoding="utf-16") as test_file:
-            test_file.write("Hello world!")
+        test_path = self.create_temp_file("utf-16", "Hello world!", "utf-16")
         assert not analysis.is_binary_file(test_path)
 
 
-class GeneratedCodeTest(unittest.TestCase):
+class GeneratedCodeTest(TempFolderTest):
     _STANDARD_SOURCE_LINES = """#!/bin/python3
     # Example code for
     # generated source code.
@@ -319,67 +277,59 @@ class GeneratedCodeTest(unittest.TestCase):
         assert non_matching_number_line_and_regex is None
 
     def test_can_analyze_generated_code_with_own_pattern(self):
-        generated_sql_path = _test_path("generated", "sql")
-        with open(generated_sql_path, "w", encoding="utf-8") as generated_sql_file:
-            generated_sql_file.write("-- Generiert mit Hau-Ruck-Franz-Deutsch.\n")
-            generated_sql_file.write("select * from sauerkraut;\n")
+        lines = ["-- Generiert mit Hau-Ruck-Franz-Deutsch.", "select * from sauerkraut;"]
+        generated_sql_path = self.create_temp_file("generated.sql", lines)
         source_analysis = analysis.source_analysis(
             generated_sql_path, "test", generated_regexes=common.regexes_from("[regex](?i).*generiert")
         )
         assert source_analysis.state == analysis.SourceState.generated.name
 
 
-class SizeTest(unittest.TestCase):
+class SizeTest(TempFolderTest):
     def test_can_detect_empty_source_code(self):
-        empty_py_path = _test_path("empty", "py")
-        _write_test_file(empty_py_path)
+        empty_py_path = self.create_temp_binary_file("empty.py", b"")
         source_analysis = analysis.source_analysis(empty_py_path, "test", encoding="utf-8")
         assert source_analysis.state == analysis.SourceState.empty.name
         assert source_analysis.code == 0
 
 
-class TextTest(unittest.TestCase):
-    def test_can_analyze_project_text_files(self):
-        project_root_folder = os.path.dirname(_TESTS_FOLDER)
-        for text_path in glob.glob(os.path.join(project_root_folder, "*.txt")):
-            source_analysis = analysis.source_analysis(text_path, "test")
-            assert source_analysis.state == analysis.SourceState.analyzed.name
-            assert source_analysis.documentation > 0
-            if "requirements.txt" not in text_path:
-                assert source_analysis.empty > 0
+def test_can_analyze_project_markdown_files():
+    project_root_folder = os.path.dirname(PYGOUNT_PROJECT_FOLDER)
+    for text_path in glob.glob(os.path.join(project_root_folder, "*.md")):
+        source_analysis = analysis.source_analysis(text_path, "test")
+        assert source_analysis.state == analysis.SourceState.analyzed.name
+        assert source_analysis.documentation > 0
+        assert source_analysis.empty > 0
 
 
-class DuplicatePoolTest(unittest.TestCase):
+def test_has_no_duplicate_in_pygount_source():
+    duplicate_pool = analysis.DuplicatePool()
+    source_paths = []
+    for sub_folder_name in ("pygount", "tests"):
+        source_paths.extend(
+            [
+                os.path.join(PYGOUNT_PROJECT_FOLDER, sub_folder_name, source_name)
+                for source_name in os.listdir(os.path.join(PYGOUNT_PROJECT_FOLDER, sub_folder_name))
+            ]
+        )
+    for source_path in source_paths:
+        if source_path.endswith(".py"):
+            duplicate_path = duplicate_pool.duplicate_path(source_path)
+            assert duplicate_path is None, "{0} must not be duplicate of {1}".format(source_path, duplicate_path)
+
+
+class DuplicatePoolTest(TempFolderTest):
     def test_can_distinguish_different_files(self):
-        some_path = _test_path(__name__ + "_some")
-        _write_test_file(some_path, [])
-        other_path = _test_path(__name__ + "_other")
-        _write_test_file(other_path, ["x"])
+        some_path = self.create_temp_file(__name__ + "_some", "some")
+        other_path = self.create_temp_file(__name__ + "_other", "other")
         duplicate_pool = analysis.DuplicatePool()
         assert duplicate_pool.duplicate_path(some_path) is None
         assert duplicate_pool.duplicate_path(other_path) is None
 
     def test_can_detect_duplicate(self):
-        original_path = _test_path(__name__ + "_original")
-        _write_test_file(original_path, ["x"])
-        duplicate_path = _test_path(__name__ + "_duplicate")
-        _write_test_file(duplicate_path, ["x"])
+        same_content = "same"
+        original_path = self.create_temp_file("original", same_content)
+        duplicate_path = self.create_temp_file("duplicate", same_content)
         duplicate_pool = analysis.DuplicatePool()
         assert duplicate_pool.duplicate_path(original_path) is None
         assert original_path == duplicate_pool.duplicate_path(duplicate_path)
-
-    def test_has_no_duplicate_in_pygount_source(self):
-        project_folder = os.path.dirname(os.path.dirname(__file__))
-        duplicate_pool = analysis.DuplicatePool()
-        source_paths = []
-        for sub_folder_name in ("pygount", "tests"):
-            source_paths.extend(
-                [
-                    os.path.join(project_folder, sub_folder_name, source_name)
-                    for source_name in os.listdir(os.path.join(project_folder, sub_folder_name))
-                ]
-            )
-        for source_path in source_paths:
-            if source_path.endswith(".py"):
-                duplicate_path = duplicate_pool.duplicate_path(source_path)
-                assert duplicate_path is None, "{0} must not be duplicate of {1}".format(source_path, duplicate_path)
