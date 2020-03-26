@@ -3,9 +3,14 @@ Tests for function to obtain the language dialect used by XML source code.
 """
 # Copyright (c) 2016-2020, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
-import os
-
 import pygount.xmldialect
+
+EXAMPLE_ANT_CODE = """<project name="hello">
+    <target name="hello">
+        <echo message="Hello world!" />
+    </target>
+</project>
+"""
 
 _EXAMPLE_POM_CODE = """<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -40,11 +45,7 @@ print('Hello World!')
 
 
 def test_can_detect_ant():
-    project_folder = os.path.dirname(os.path.dirname(__file__))
-    build_xml_path = os.path.join(project_folder, "build.xml")
-    with open(build_xml_path, encoding="utf-8") as build_xml_file:
-        build_xml_code = build_xml_file.read()
-    assert pygount.xmldialect.xml_dialect(build_xml_path, build_xml_code) == "Ant"
+    assert pygount.xmldialect.xml_dialect("<ant>", EXAMPLE_ANT_CODE) == "Ant"
 
 
 def test_can_detect_maven():

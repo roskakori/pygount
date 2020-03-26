@@ -11,7 +11,7 @@ from xml.etree import ElementTree
 from pygount import command
 from pygount.command import Command, VALID_OUTPUT_FORMATS
 from pygount.common import OptionError
-from tests._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
+from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
 
 
 class CommandTest(TempFolderTest):
