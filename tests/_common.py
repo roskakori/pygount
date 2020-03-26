@@ -14,5 +14,11 @@ class TempFolderTest(unittest.TestCase):
         self.tests_temp_folder = os.path.join(PYGOUNT_PROJECT_FOLDER, "tests", ".temp")
         os.makedirs(self.tests_temp_folder, exist_ok=True)
 
+    def create_temp_file(self, relative_target_path, content):
+        result = os.path.join(self.tests_temp_folder, relative_target_path)
+        with open(result, "w", encoding="utf-8") as target_file:
+            target_file.write(content)
+        return result
+
     def tearDown(self):
         shutil.rmtree(self.tests_temp_folder)

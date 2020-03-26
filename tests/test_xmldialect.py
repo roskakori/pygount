@@ -5,7 +5,7 @@ Tests for function to obtain the language dialect used by XML source code.
 # All rights reserved. Distributed under the BSD License.
 import pygount.xmldialect
 
-_EXAMPLE_ANT_CODE = """<project name="hello">
+EXAMPLE_ANT_CODE = """<project name="hello">
     <target name="hello">
         <echo message="Hello world!" />
     </target>
@@ -45,7 +45,7 @@ print('Hello World!')
 
 
 def test_can_detect_ant():
-    assert pygount.xmldialect.xml_dialect("<ant>", _EXAMPLE_ANT_CODE) == "Ant"
+    assert pygount.xmldialect.xml_dialect("<ant>", EXAMPLE_ANT_CODE) == "Ant"
 
 
 def test_can_detect_maven():

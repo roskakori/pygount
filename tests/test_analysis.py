@@ -13,6 +13,8 @@ import unittest
 
 from pygments import lexers, token
 
+from ._common import TempFolderTest
+from .test_xmldialect import EXAMPLE_ANT_CODE
 from pygount import analysis
 from pygount import common
 
@@ -160,6 +162,20 @@ class AnalysisTest(unittest.TestCase):
         assert source_analysis.language == "WebFOCUS"
         assert source_analysis.code == 2
         assert source_analysis.documentation == 1
+
+
+class FileAnalysisTest(TempFolderTest):
+    def test_can_analyze_xml_dialect(self):
+        build_xml_path = self.create_temp_file("build.xml", EXAMPLE_ANT_CODE)
+        source_analysis = analysis.source_analysis(build_xml_path, "test")
+        assert source_analysis.state == analysis.SourceState.analyzed.name
+        assert source_analysis.language == "Ant"
+
+    def test_can_analyze_unknown_language(self):
+        lines = ["some", "lines", "of", "text"]
+        unknown_language_path = self.create_temp_file("some.unknown_language", "\n".join(lines))
+        source_analysis = analysis.source_analysis(unknown_language_path, "test")
+        assert source_analysis.state == analysis.SourceState.unknown.name
 
 
 class BinaryTest(unittest.TestCase):
