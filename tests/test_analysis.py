@@ -104,7 +104,7 @@ class FileAnalysisTest(TempFolderTest):
         test_path = self.create_temp_file("encoding_error.py", 'print("\N{EURO SIGN}")', encoding="cp1252")
         source_analysis = analysis.source_analysis(test_path, "test", encoding="utf-8")
         assert source_analysis.language == "__error__"
-        assert source_analysis.state == analysis.SourceState.error.name
+        assert source_analysis.state == analysis.SourceState.error
         assert "0x80" in str(source_analysis.state_info)
 
     def test_can_detect_silent_dos_batch_remarks(self):
@@ -125,7 +125,7 @@ class FileAnalysisTest(TempFolderTest):
         assert no_such_encoding == "no_such_encoding"
         source_analysis = analysis.source_analysis(test_path, "test", encoding=no_such_encoding)
         assert source_analysis.language == "__error__"
-        assert source_analysis.state == analysis.SourceState.error.name
+        assert source_analysis.state == analysis.SourceState.error
         assert "unknown encoding" in str(source_analysis.state_info)
 
     def test_can_analyze_oracle_sql(self):
@@ -149,18 +149,18 @@ class FileAnalysisTest(TempFolderTest):
     def test_can_analyze_xml_dialect(self):
         build_xml_path = self.create_temp_file("build.xml", EXAMPLE_ANT_CODE)
         source_analysis = analysis.source_analysis(build_xml_path, "test")
-        assert source_analysis.state == analysis.SourceState.analyzed.name
+        assert source_analysis.state == analysis.SourceState.analyzed
         assert source_analysis.language == "Ant"
 
     def test_can_analyze_unknown_language(self):
         unknown_language_path = self.create_temp_file("some.unknown_language", ["some", "lines", "of", "text"])
         source_analysis = analysis.source_analysis(unknown_language_path, "test")
-        assert source_analysis.state == analysis.SourceState.unknown.name
+        assert source_analysis.state == analysis.SourceState.unknown
 
     def test_can_detect_binary_source_code(self):
         binary_path = self.create_temp_binary_file("some_django.mo", b"hello\0world!")
         source_analysis = analysis.source_analysis(binary_path, "test", encoding="utf-8")
-        assert source_analysis.state == analysis.SourceState.binary.name
+        assert source_analysis.state == analysis.SourceState.binary
         assert source_analysis.code == 0
 
 
@@ -282,14 +282,14 @@ class GeneratedCodeTest(TempFolderTest):
         source_analysis = analysis.source_analysis(
             generated_sql_path, "test", generated_regexes=common.regexes_from("[regex](?i).*generiert")
         )
-        assert source_analysis.state == analysis.SourceState.generated.name
+        assert source_analysis.state == analysis.SourceState.generated
 
 
 class SizeTest(TempFolderTest):
     def test_can_detect_empty_source_code(self):
         empty_py_path = self.create_temp_binary_file("empty.py", b"")
         source_analysis = analysis.source_analysis(empty_py_path, "test", encoding="utf-8")
-        assert source_analysis.state == analysis.SourceState.empty.name
+        assert source_analysis.state == analysis.SourceState.empty
         assert source_analysis.code == 0
 
 
@@ -297,7 +297,7 @@ def test_can_analyze_project_markdown_files():
     project_root_folder = os.path.dirname(PYGOUNT_PROJECT_FOLDER)
     for text_path in glob.glob(os.path.join(project_root_folder, "*.md")):
         source_analysis = analysis.source_analysis(text_path, "test")
-        assert source_analysis.state == analysis.SourceState.analyzed.name
+        assert source_analysis.state == analysis.SourceState.analyzed
         assert source_analysis.documentation > 0
         assert source_analysis.empty > 0
 

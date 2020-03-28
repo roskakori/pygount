@@ -5,13 +5,13 @@ Functions to analyze source code and count lines in it.
 # All rights reserved. Distributed under the BSD License.
 import codecs
 import collections
-import enum
 import glob
 import hashlib
 import itertools
 import logging
 import os
 import re
+from enum import Enum, auto
 
 import pygments.lexer
 import pygments.lexers
@@ -39,21 +39,17 @@ DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
     [".*", "_svn", "__pycache__"]  # Subversion hack for Windows  # Python byte code
 )
 
-SourceState = enum.Enum(
-    "SourceState",
-    " ".join(
-        [
-            "analyzed",  # successfully analyzed
-            "binary",  # source code is a binary
-            "duplicate",  # source code is an identical copy of another
-            "empty",  # source code is empty (file size = 0)
-            "error",  # source could not be parsed
-            "generated",  # source code has been generated
-            # TODO: 'huge',  # source code exceeds size limit
-            "unknown",  # pygments does not offer any lexer to analyze the source
-        ]
-    ),
-)
+
+class SourceState(Enum):
+    analyzed = auto()  # successfully analyzed
+    binary = auto()  # source code is a binary
+    duplicate = auto()  # source code is an identical copy of another
+    empty = auto()  # source code is empty (file size = 0)
+    error = auto()  # source could not be parsed
+    generated = auto()  # source code has been generated
+    # TODO: 'huge' = auto()  # source code exceeds size limit
+    unknown = auto()  # pygments does not offer any lexer to analyze the source
+
 
 #: Default patterns for regular expressions to detect generated code.
 #: The '(?i)' indicates that the patterns are case insensitive.
@@ -425,7 +421,7 @@ def pseudo_source_analysis(source_path, group, state, state_info=None):
         documentation=0,
         empty=0,
         string=0,
-        state=state.name,
+        state=state,
         state_info=state_info,
     )
 
@@ -552,7 +548,7 @@ def source_analysis(
             documentation=mark_to_count_map["d"],
             empty=mark_to_count_map["e"],
             string=mark_to_count_map["s"],
-            state=SourceState.analyzed.name,
+            state=SourceState.analyzed,
             state_info=None,
         )
 

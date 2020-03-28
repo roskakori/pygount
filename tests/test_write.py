@@ -18,8 +18,8 @@ from ._common import TempFolderTest
 
 def test_can_collect_totals():
     source_analyses = (
-        analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed.name, None),
-        analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed.name, None),
+        analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed, None),
+        analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed, None),
     )
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", prefix="pygount_", suffix=".tmp") as target_stream:
         with write.BaseWriter(target_stream) as writer:
@@ -31,8 +31,8 @@ def test_can_collect_totals():
 
 def test_can_write_cloc_xml():
     source_analyses = (
-        analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed.name, None),
-        analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed.name, None),
+        analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed, None),
+        analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed, None),
     )
     with io.StringIO() as target_stream:
         with write.ClocXmlWriter(target_stream) as writer:
@@ -69,15 +69,9 @@ def _line_data_from(line):
 class SummaryWriterTest(TempFolderTest):
     def test_can_write_summary(self):
         source_analyses = (
-            analysis.SourceAnalysis(
-                "script.sh", "Bash", "some", 200, 25, 1, 2, analysis.SourceState.analyzed.name, None
-            ),
-            analysis.SourceAnalysis(
-                "some.py", "Python", "some", 300, 45, 3, 4, analysis.SourceState.analyzed.name, None
-            ),
-            analysis.SourceAnalysis(
-                "other.py", "Python", "some", 500, 30, 5, 6, analysis.SourceState.analyzed.name, None
-            ),
+            analysis.SourceAnalysis("script.sh", "Bash", "some", 200, 25, 1, 2, analysis.SourceState.analyzed, None),
+            analysis.SourceAnalysis("some.py", "Python", "some", 300, 45, 3, 4, analysis.SourceState.analyzed, None),
+            analysis.SourceAnalysis("other.py", "Python", "some", 500, 30, 5, 6, analysis.SourceState.analyzed, None),
         )
         lines = self._summary_lines_for(source_analyses)
         assert len(lines) == 6, "lines={}".format(lines)
@@ -120,15 +114,7 @@ class SummaryWriterTest(TempFolderTest):
 
         source_analyses = (
             analysis.SourceAnalysis(
-                "x",
-                long_language_name,
-                "some",
-                huge_number,
-                huge_number,
-                0,
-                0,
-                analysis.SourceState.analyzed.name,
-                None,
+                "x", long_language_name, "some", huge_number, huge_number, 0, 0, analysis.SourceState.analyzed, None,
             ),
         )
         for line in self._summary_lines_for(source_analyses):

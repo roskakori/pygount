@@ -176,7 +176,7 @@ class SummaryWriter(BaseWriter):
 
     def add(self, source_analysis):
         super().add(source_analysis)
-        if source_analysis.state in (SourceState.analyzed.name, SourceState.duplicate.name):
+        if source_analysis.state in (SourceState.analyzed, SourceState.duplicate):
             language_statistics = self._language_to_language_statistics_map.get(source_analysis.language)
             if language_statistics is None:
                 language_statistics = _LanguageStatistics(source_analysis.language)
