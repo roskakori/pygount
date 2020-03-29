@@ -25,8 +25,8 @@ def test_can_collect_totals():
         with write.BaseWriter(target_stream) as writer:
             for source_analysis in source_analyses:
                 writer.add(source_analysis)
-    assert writer.total_source_count == 2
-    assert writer.total_line_count == 110
+    assert writer.project_summary.total_file_count == 2
+    assert writer.project_summary.total_line_count == 110
 
 
 def test_can_write_cloc_xml():

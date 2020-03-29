@@ -12,6 +12,7 @@ import logging
 import os
 import re
 from enum import Enum, auto
+from typing import Optional, List, Dict
 
 import pygments.lexer
 import pygments.lexers
@@ -105,10 +106,6 @@ _PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAMES) + "$)"
 #: Regular expression to detect plain text files by name.
 _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
 
-#: Results of a source analysis derived by :py:func:`source_analysis`.
-SourceAnalysis = collections.namedtuple(
-    "SourceAnalysis", ["path", "language", "group", "code", "documentation", "empty", "string", "state", "state_info"]
-)
 
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
@@ -118,8 +115,92 @@ _SUFFIX_TO_FALLBACK_LEXER_MAP = {
     "vbe": pygount.lexers.MinimalisticVBScriptLexer(),
     "vbs": pygount.lexers.MinimalisticVBScriptLexer(),
 }
-for oracle_suffix in ("pck", "pkb", "pks", "pls"):
-    _SUFFIX_TO_FALLBACK_LEXER_MAP[oracle_suffix] = pygments.lexers.get_lexer_by_name("plpgsql")
+for _oracle_suffix in ("pck", "pkb", "pks", "pls"):
+    _SUFFIX_TO_FALLBACK_LEXER_MAP[_oracle_suffix] = pygments.lexers.get_lexer_by_name("plpgsql")
+
+
+class SourceAnalysis:
+    """
+    Results of a source analysis derived by :py:func:`source_analysis`.
+    """
+
+    def __init__(
+        self,
+        path: str,
+        language: str,
+        group: str,
+        code: int,
+        documentation: int,
+        empty: int,
+        string: int,
+        state: SourceState,
+        state_info: Optional[str] = None,
+    ):
+        self._path = path
+        self._language = language
+        self._group = group
+        self._code = code
+        self._documentation = documentation
+        self._empty = empty
+        self._string = string
+        self._state = state
+        self._state_info = state_info
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    @property
+    def language(self) -> str:
+        return self._language
+
+    @property
+    def group(self) -> int:
+        return self._group
+
+    @property
+    def code(self) -> int:
+        return self._code
+
+    @property
+    def documentation(self) -> int:
+        return self._documentation
+
+    @property
+    def empty(self) -> int:
+        return self._empty
+
+    @property
+    def string(self) -> int:
+        return self._string
+
+    @property
+    def state(self) -> str:
+        return self._state
+
+    @property
+    def state_info(self) -> str:
+        return self._state_info
+
+    @property
+    def is_countable(self) -> bool:
+        """
+        ``True`` if source counts can be counted towards a total.
+        """
+        return self.state in (SourceState.analyzed, SourceState.duplicate)
+
+    def __repr__(self):
+        result = "{0}(path={1!r}, language={2!r}, group={3!r}, state={4}".format(
+            self.__class__.__name__, self.path, self.language, self.group, self.state.name
+        )
+        if self.state == SourceState.analyzed:
+            result += ", code={0}, documentation={1}, empty={2}, string={3}".format(
+                self.code, self.documentation, self.empty, self.string
+            )
+        if self.state_info is not None:
+            result += ", state_info={0!r}".format(self.state_info)
+        result += ")"
+        return result
 
 
 class SourceScanner:
@@ -228,9 +309,53 @@ class SourceScanner:
                 _log.info("skip due to suffix: %s", source_path)
 
 
+class DuplicatePool:
+    """
+    A pool that collects information about potential duplicate files.
+    """
+
+    def __init__(self):
+        self._size_to_paths_map = {}
+        self._size_and_hash_to_path_map = {}
+
+    @staticmethod
+    def _hash_for(path_to_hash):
+        buffer_size = 1024 * 1024
+        md5_hash = hashlib.md5()
+        with open(path_to_hash, "rb", buffer_size) as file_to_hash:
+            data = file_to_hash.read(buffer_size)
+            while len(data) >= 1:
+                md5_hash.update(data)
+                data = file_to_hash.read(buffer_size)
+        return md5_hash.digest()
+
+    def duplicate_path(self, source_path: str) -> Optional[str]:
+        """
+        Path to a duplicate for ``source_path`` or ``None`` if no duplicate exists.
+
+        Internally information is stored to identify possible future duplicates of
+        ``source_path``.
+        """
+        result = None
+        source_size = os.path.getsize(source_path)
+        paths_with_same_size = self._size_to_paths_map.get(source_size)
+        if paths_with_same_size is None:
+            self._size_to_paths_map[source_size] = [source_path]
+        else:
+            source_hash = DuplicatePool._hash_for(source_path)
+            if len(paths_with_same_size) == 1:
+                # Retrofit the initial path with the same size and its hash.
+                initial_path_with_same_size = paths_with_same_size[0]
+                initial_hash = DuplicatePool._hash_for(initial_path_with_same_size)
+                self._size_and_hash_to_path_map[(source_size, initial_hash)] = initial_path_with_same_size
+            result = self._size_and_hash_to_path_map.get((source_size, source_hash))
+            self._size_and_hash_to_path_map[(source_size, source_hash)] = source_path
+        return result
+
+
 _LANGUAGE_TO_WHITE_WORDS_MAP = {"batchfile": ["@"], "python": ["pass"], "sql": ["begin", "end"]}
-for language in _LANGUAGE_TO_WHITE_WORDS_MAP.keys():
-    assert language.islower()
+for _language in _LANGUAGE_TO_WHITE_WORDS_MAP.keys():
+    assert _language.islower()
 
 
 def matching_number_line_and_regex(source_lines, generated_regexes, max_line_count=15):
@@ -256,7 +381,7 @@ def matching_number_line_and_regex(source_lines, generated_regexes, max_line_cou
     return result
 
 
-def white_characters(language_id):
+def white_characters(language_id) -> str:
     """
     Characters that count as white space if they are the only characters in a
     line.
@@ -266,7 +391,7 @@ def white_characters(language_id):
     return "(),:;[]{}"
 
 
-def white_code_words(language_id):
+def white_code_words(language_id) -> Dict[str, List[str]]:
     """
     Words that do not count as code if it is the only word in a line.
     """
@@ -327,7 +452,7 @@ def _line_parts(lexer, text):
         yield line_marks
 
 
-def encoding_for(source_path, encoding="automatic", fallback_encoding=None):
+def encoding_for(source_path: str, encoding: str = "automatic", fallback_encoding: Optional[str] = None) -> str:
     """
     The encoding used by the text file stored in ``source_path``.
 
@@ -453,7 +578,7 @@ def has_lexer(source_path):
     return result
 
 
-def guess_lexer(source_path, text):
+def guess_lexer(source_path: str, text: str) -> pygments.lexer.Lexer:
     if is_plain_text(source_path):
         result = pygount.lexers.PlainTextLexer()
     else:
@@ -471,7 +596,7 @@ def source_analysis(
     encoding="automatic",
     fallback_encoding="cp1252",
     generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT),
-    duplicate_pool=None,
+    duplicate_pool: Optional[DuplicatePool] = None,
 ):
     """
     Analysis for line counts in source code stored in ``source_path``.
@@ -482,6 +607,9 @@ def source_analysis(
     :param encoding: encoding according to :func:`encoding_for`
     :param fallback_encoding: fallback encoding according to
       :func:`encoding_for`
+    :param generated_regexes: list of regular expression that if found within the first few lines
+      if a source code identify is as generated source code for which SLOC should not be counted
+    :param duplicate_pool:
     :return: a :class:`SourceAnalysis`
     """
     assert encoding is not None
@@ -554,37 +682,3 @@ def source_analysis(
 
     assert result is not None
     return result
-
-
-class DuplicatePool:
-    def __init__(self):
-        self._size_to_paths_map = {}
-        self._size_and_hash_to_path_map = {}
-
-    @staticmethod
-    def _hash_for(path_to_hash):
-        buffer_size = 1024 * 1024
-        md5_hash = hashlib.md5()
-        with open(path_to_hash, "rb", buffer_size) as file_to_hash:
-            data = file_to_hash.read(buffer_size)
-            while len(data) >= 1:
-                md5_hash.update(data)
-                data = file_to_hash.read(buffer_size)
-        return md5_hash.digest()
-
-    def duplicate_path(self, source_path):
-        result = None
-        source_size = os.path.getsize(source_path)
-        paths_with_same_size = self._size_to_paths_map.get(source_size)
-        if paths_with_same_size is None:
-            self._size_to_paths_map[source_size] = [source_path]
-        else:
-            source_hash = DuplicatePool._hash_for(source_path)
-            if len(paths_with_same_size) == 1:
-                # Retrofit the initial path with the same size and its hash.
-                initial_path_with_same_size = paths_with_same_size[0]
-                initial_hash = DuplicatePool._hash_for(initial_path_with_same_size)
-                self._size_and_hash_to_path_map[(source_size, initial_hash)] = initial_path_with_same_size
-            result = self._size_and_hash_to_path_map.get((source_size, source_hash))
-            self._size_and_hash_to_path_map[(source_size, source_hash)] = source_path
-        return result

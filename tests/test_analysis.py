@@ -12,6 +12,7 @@ from pygments import lexers, token
 
 from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
 from .test_xmldialect import EXAMPLE_ANT_CODE
+from pygount.analysis import guess_lexer
 from pygount import analysis
 from pygount import common
 
@@ -162,6 +163,46 @@ class FileAnalysisTest(TempFolderTest):
         source_analysis = analysis.source_analysis(binary_path, "test", encoding="utf-8")
         assert source_analysis.state == analysis.SourceState.binary
         assert source_analysis.code == 0
+
+
+def test_can_repr_source_analysis():
+    source_analysis = analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed)
+    expected_source_analysis_repr = (
+        "SourceAnalysis(path='some.py', language='Python', group='some', "
+        "state=analyzed, code=1, documentation=2, empty=3, string=4)"
+    )
+    assert repr(source_analysis) == expected_source_analysis_repr
+    assert repr(source_analysis) == str(source_analysis)
+
+
+def test_can_repr_empty_source_analysis():
+    source_analysis = analysis.SourceAnalysis("some.py", "__empty__", "some", 0, 0, 0, 0, analysis.SourceState.empty)
+    expected_source_analysis_repr = "SourceAnalysis(path='some.py', language='__empty__', group='some', state=empty)"
+    assert repr(source_analysis) == expected_source_analysis_repr
+    assert repr(source_analysis) == str(source_analysis)
+
+
+def test_can_repr_error_source_analysis():
+    source_analysis = analysis.SourceAnalysis(
+        "some.py", "__error__", "some", 0, 0, 0, 0, analysis.SourceState.error, "error details"
+    )
+    expected_source_analysis_repr = (
+        "SourceAnalysis(path='some.py', language='__error__', group='some', state=error, state_info='error details')"
+    )
+    assert repr(source_analysis) == expected_source_analysis_repr
+    assert repr(source_analysis) == str(source_analysis)
+
+
+def test_can_guess_lexer_for_python():
+    lexer = guess_lexer("some.py", "pass")
+    assert lexer is not None
+    assert lexer.name == "Python"
+
+
+def test_can_guess_lexer_for_plain_text():
+    lexer = guess_lexer("README.1st", "hello!")
+    assert lexer is not None
+    assert lexer.name == "Text"
 
 
 class EncodingTest(TempFolderTest):
