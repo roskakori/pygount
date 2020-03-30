@@ -5,7 +5,6 @@ Summaries of analyses of multiple source codes.
 # All rights reserved. Distributed under the BSD License.
 import functools
 import re
-from typing import Dict
 
 from .analysis import SourceAnalysis
 
@@ -61,13 +60,13 @@ class ProjectSummary:
     """
 
     def __init__(self):
-        self.language_to_language_summary_map: Dict[str, LanguageSummary] = {}
-        self.total_code_count: int = 0
-        self.total_documentation_count: int = 0
-        self.total_empty_count: int = 0
-        self.total_string_count: int = 0
-        self.total_file_count: int = 0
-        self.total_line_count: int = 0
+        self.language_to_language_summary_map = {}
+        self.total_code_count = 0
+        self.total_documentation_count = 0
+        self.total_empty_count = 0
+        self.total_string_count = 0
+        self.total_file_count = 0
+        self.total_line_count = 0
 
     def add(self, source_analysis: SourceAnalysis):
         self.total_file_count += 1
