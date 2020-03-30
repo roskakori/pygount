@@ -11,8 +11,7 @@ from collections import namedtuple
 import pytest
 from xml.etree import ElementTree
 
-from pygount import analysis
-from pygount import write
+from pygount import analysis, write
 from ._common import TempFolderTest
 
 
@@ -56,14 +55,31 @@ def test_can_compute_digit_width():
 
 
 _LineData = namedtuple(
-    "_LineData", ["language", "code_count", "code_percent", "documentation_count", "documentation_percent"]
+    "_LineData",
+    [
+        "language",
+        "file_count",
+        "file_percent",
+        "code_count",
+        "code_percent",
+        "documentation_count",
+        "documentation_percent",
+    ],
 )
 
 
 def _line_data_from(line):
     line_parts = line.split()
-    assert len(line_parts) == 5, "line_parts={0}".format(line_parts)
-    return _LineData(line_parts[0], int(line_parts[1]), float(line_parts[2]), int(line_parts[3]), float(line_parts[4]),)
+    assert len(line_parts) == 7, "line_parts={0}".format(line_parts)
+    return _LineData(
+        line_parts[0],
+        int(line_parts[1]),
+        float(line_parts[2]),
+        int(line_parts[3]),
+        float(line_parts[4]),
+        int(line_parts[5]),
+        float(line_parts[6]),
+    )
 
 
 class SummaryWriterTest(TempFolderTest):
@@ -78,15 +94,19 @@ class SummaryWriterTest(TempFolderTest):
 
         python_data = _line_data_from(lines[2])
         assert python_data.language == "Python"
+        assert python_data.file_count == 2
         assert python_data.code_count == 800
         assert python_data.documentation_count == 75
+        assert python_data.file_percent == pytest.approx(66.67)
         assert python_data.code_percent == pytest.approx(80.0)
         assert python_data.documentation_percent == pytest.approx(75.0)
 
         bash_data = _line_data_from(lines[3])
         assert bash_data.language == "Bash"
+        assert bash_data.file_count == 1
         assert bash_data.code_count == 200
         assert bash_data.documentation_count == 25
+        assert bash_data.file_percent == pytest.approx(33.33)
         assert bash_data.code_percent == pytest.approx(20.0)
         assert bash_data.documentation_percent == pytest.approx(25.0)
 

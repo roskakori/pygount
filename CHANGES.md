@@ -1,11 +1,13 @@
 # Pygount version history
 
-Version 1.2.0, 2020-03-TODO
+Version 1.2.0, 2020-03-30
 
+* Added file count to summary.
 * Changed installation to fail when attempting to install on Python earlier
   than 3.5.
 * Improved API:
-  * `SourceAnalysis.state` is now a proper enum instead of a string.
+  * Changed `SourceAnalysis.state` to be a proper enum instead of a string.
+  * Added`ProjectSummary` to summarize multiple files.
 * Cleaned up project:
   * Changed continuous integration from Travis CI to Github actions in the hope
     that the CI build does not automatically break after a while because

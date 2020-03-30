@@ -127,6 +127,7 @@ class SummaryWriter(BaseWriter):
     """
 
     _LANGUAGE_HEADING = "Language"
+    _FILE_COUNT_HEADING = "Files"
     _CODE_HEADING = "Code"
     _DOCUMENTATION_HEADING = "Comment"
     _SUM_TOTAL_PSEUDO_LANGUAGE = "Sum total"
@@ -145,12 +146,16 @@ class SummaryWriter(BaseWriter):
 
         # Compute maximum column widths
         max_language_width = max(len(SummaryWriter._LANGUAGE_HEADING), len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE),)
+        max_file_count_width = len(SummaryWriter._FILE_COUNT_HEADING)
         max_code_width = len(SummaryWriter._CODE_HEADING)
         max_documentation_width = len(SummaryWriter._DOCUMENTATION_HEADING)
         for language, language_summary in self.project_summary.language_to_language_summary_map.items():
             language_width = len(language)
             if language_width > max_language_width:
                 max_language_width = language_width
+            file_count_width = digit_width(language_summary.file_count)
+            if file_count_width > max_file_count_width:
+                max_file_count_width = file_count_width
             code_width = digit_width(language_summary.code)
             if code_width > max_code_width:
                 max_code_width = code_width
@@ -162,18 +167,22 @@ class SummaryWriter(BaseWriter):
 
         summary_heading = (
             "{0:^{max_language_width}s}  "
-            "{1:^{max_code_width}s}  "
+            "{1:^{max_file_count_width}s}  "
             "{2:^{percentage_width}s}  "
-            "{3:^{max_documentation_width}s}  "
+            "{3:^{max_code_width}s}  "
+            "{2:^{percentage_width}s}  "
+            "{4:^{max_documentation_width}s}  "
             "{2:^{percentage_width}s}"
         ).format(
             SummaryWriter._LANGUAGE_HEADING,
-            SummaryWriter._CODE_HEADING,
+            SummaryWriter._FILE_COUNT_HEADING,
             "%",
+            SummaryWriter._CODE_HEADING,
             SummaryWriter._DOCUMENTATION_HEADING,
+            max_code_width=max_code_width,
+            max_file_count_width=max_file_count_width,
             max_documentation_width=max_documentation_width,
             max_language_width=max_language_width,
-            max_code_width=max_code_width,
             percentage_width=percentage_width,
         )
         self._target_stream.write(summary_heading + os.linesep)
@@ -182,6 +191,8 @@ class SummaryWriter(BaseWriter):
                 "-" * width
                 for width in (
                     max_language_width,
+                    max_file_count_width,
+                    percentage_width,
                     max_code_width,
                     percentage_width,
                     max_documentation_width,
@@ -192,10 +203,12 @@ class SummaryWriter(BaseWriter):
         self._target_stream.write(separator_line + os.linesep)
         language_line_template = (
             "{0:{max_language_width}s}  "
-            "{1:>{max_code_width}d}  "
+            "{1:>{max_file_count_width}d}  "
             "{2:>{percentage_width}.0{digits_after_dot}f}  "
-            "{3:>{max_documentation_width}d}  "
-            "{4:>{percentage_width}.0{digits_after_dot}f}"
+            "{3:>{max_code_width}d}  "
+            "{4:>{percentage_width}.0{digits_after_dot}f}  "
+            "{5:>{max_documentation_width}d}  "
+            "{6:>{percentage_width}.0{digits_after_dot}f}"
         )
         for language_summary in sorted(self.project_summary.language_to_language_summary_map.values(), reverse=True):
             code_count = language_summary.code
@@ -204,6 +217,11 @@ class SummaryWriter(BaseWriter):
                 if self.project_summary.total_code_count != 0
                 else 0.0
             )
+            file_count = language_summary.file_count
+            assert (
+                self.project_summary.total_file_count != 0
+            ), "if there is at least 1 language summary, there must be a file count too"
+            file_percentage = file_count / self.project_summary.total_file_count * 100
             documentation_percentage = (
                 language_summary.documentation / self.project_summary.total_documentation_count * 100
                 if self.project_summary.total_documentation_count != 0
@@ -211,29 +229,36 @@ class SummaryWriter(BaseWriter):
             )
             line_to_write = language_line_template.format(
                 language_summary.language,
+                file_count,
+                file_percentage,
                 code_count,
                 code_percentage,
                 language_summary.documentation,
                 documentation_percentage,
                 digits_after_dot=digits_after_dot,
-                max_documentation_width=max_documentation_width,
-                max_language_width=max_language_width,
                 max_code_width=max_code_width,
+                max_documentation_width=max_documentation_width,
+                max_file_count_width=max_file_count_width,
+                max_language_width=max_language_width,
                 percentage_width=percentage_width,
             )
             self._target_stream.write(line_to_write + os.linesep)
         self._target_stream.write(separator_line + os.linesep)
         summary_footer = (
             "{0:{max_language_width}s}  "
-            "{1:>{max_code_width}d}  "
+            "{1:>{max_file_count_width}d}  "
             "{2:{percentage_width}s}  "
-            "{3:>{max_documentation_width}d}"
+            "{3:>{max_code_width}d}  "
+            "{2:{percentage_width}s}  "
+            "{4:>{max_documentation_width}d}"
         ).format(
             SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE,
-            self.project_summary.total_code_count,
+            self.project_summary.total_file_count,
             "",
+            self.project_summary.total_code_count,
             self.project_summary.total_documentation_count,
             max_documentation_width=max_documentation_width,
+            max_file_count_width=max_file_count_width,
             max_language_width=max_language_width,
             max_code_width=max_code_width,
             percentage_width=percentage_width,
