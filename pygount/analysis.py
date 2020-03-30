@@ -11,7 +11,7 @@ import itertools
 import logging
 import os
 import re
-from enum import Enum, auto
+from enum import Enum
 from typing import Optional, List, Dict
 
 import pygments.lexer
@@ -42,14 +42,14 @@ DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
 
 
 class SourceState(Enum):
-    analyzed = auto()  # successfully analyzed
-    binary = auto()  # source code is a binary
-    duplicate = auto()  # source code is an identical copy of another
-    empty = auto()  # source code is empty (file size = 0)
-    error = auto()  # source could not be parsed
-    generated = auto()  # source code has been generated
+    analyzed = 1  # successfully analyzed
+    binary = 2  # source code is a binary
+    duplicate = 3  # source code is an identical copy of another
+    empty = 4  # source code is empty (file size = 0)
+    error = 5  # source could not be parsed
+    generated = 6  # source code has been generated
     # TODO: 'huge' = auto()  # source code exceeds size limit
-    unknown = auto()  # pygments does not offer any lexer to analyze the source
+    unknown = 7  # pygments does not offer any lexer to analyze the source
 
 
 #: Default patterns for regular expressions to detect generated code.
