@@ -11,28 +11,27 @@ from collections import namedtuple
 import pytest
 from xml.etree import ElementTree
 
-from pygount import analysis
-from pygount import write
+from pygount import analysis, write
 from ._common import TempFolderTest
 
 
 def test_can_collect_totals():
     source_analyses = (
-        analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed.name, None),
-        analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed.name, None),
+        analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed, None),
+        analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed, None),
     )
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", prefix="pygount_", suffix=".tmp") as target_stream:
         with write.BaseWriter(target_stream) as writer:
             for source_analysis in source_analyses:
                 writer.add(source_analysis)
-    assert writer.total_source_count == 2
-    assert writer.total_line_count == 110
+    assert writer.project_summary.total_file_count == 2
+    assert writer.project_summary.total_line_count == 110
 
 
 def test_can_write_cloc_xml():
     source_analyses = (
-        analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed.name, None),
-        analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed.name, None),
+        analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed, None),
+        analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed, None),
     )
     with io.StringIO() as target_stream:
         with write.ClocXmlWriter(target_stream) as writer:
@@ -56,43 +55,58 @@ def test_can_compute_digit_width():
 
 
 _LineData = namedtuple(
-    "_LineData", ["language", "code_count", "code_percent", "documentation_count", "documentation_percent"]
+    "_LineData",
+    [
+        "language",
+        "file_count",
+        "file_percent",
+        "code_count",
+        "code_percent",
+        "documentation_count",
+        "documentation_percent",
+    ],
 )
 
 
 def _line_data_from(line):
     line_parts = line.split()
-    assert len(line_parts) == 5, "line_parts={0}".format(line_parts)
-    return _LineData(line_parts[0], int(line_parts[1]), float(line_parts[2]), int(line_parts[3]), float(line_parts[4]),)
+    assert len(line_parts) == 7, "line_parts={0}".format(line_parts)
+    return _LineData(
+        line_parts[0],
+        int(line_parts[1]),
+        float(line_parts[2]),
+        int(line_parts[3]),
+        float(line_parts[4]),
+        int(line_parts[5]),
+        float(line_parts[6]),
+    )
 
 
 class SummaryWriterTest(TempFolderTest):
     def test_can_write_summary(self):
         source_analyses = (
-            analysis.SourceAnalysis(
-                "script.sh", "Bash", "some", 200, 25, 1, 2, analysis.SourceState.analyzed.name, None
-            ),
-            analysis.SourceAnalysis(
-                "some.py", "Python", "some", 300, 45, 3, 4, analysis.SourceState.analyzed.name, None
-            ),
-            analysis.SourceAnalysis(
-                "other.py", "Python", "some", 500, 30, 5, 6, analysis.SourceState.analyzed.name, None
-            ),
+            analysis.SourceAnalysis("script.sh", "Bash", "some", 200, 25, 1, 2, analysis.SourceState.analyzed, None),
+            analysis.SourceAnalysis("some.py", "Python", "some", 300, 45, 3, 4, analysis.SourceState.analyzed, None),
+            analysis.SourceAnalysis("other.py", "Python", "some", 500, 30, 5, 6, analysis.SourceState.analyzed, None),
         )
         lines = self._summary_lines_for(source_analyses)
         assert len(lines) == 6, "lines={}".format(lines)
 
         python_data = _line_data_from(lines[2])
         assert python_data.language == "Python"
+        assert python_data.file_count == 2
         assert python_data.code_count == 800
         assert python_data.documentation_count == 75
+        assert python_data.file_percent == pytest.approx(66.67)
         assert python_data.code_percent == pytest.approx(80.0)
         assert python_data.documentation_percent == pytest.approx(75.0)
 
         bash_data = _line_data_from(lines[3])
         assert bash_data.language == "Bash"
+        assert bash_data.file_count == 1
         assert bash_data.code_count == 200
         assert bash_data.documentation_count == 25
+        assert bash_data.file_percent == pytest.approx(33.33)
         assert bash_data.code_percent == pytest.approx(20.0)
         assert bash_data.documentation_percent == pytest.approx(25.0)
 
@@ -120,15 +134,7 @@ class SummaryWriterTest(TempFolderTest):
 
         source_analyses = (
             analysis.SourceAnalysis(
-                "x",
-                long_language_name,
-                "some",
-                huge_number,
-                huge_number,
-                0,
-                0,
-                analysis.SourceState.analyzed.name,
-                None,
+                "x", long_language_name, "some", huge_number, huge_number, 0, 0, analysis.SourceState.analyzed, None,
             ),
         )
         for line in self._summary_lines_for(source_analyses):

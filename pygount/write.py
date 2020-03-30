@@ -4,12 +4,11 @@ Writers to store the resuls of a pygount analysis.
 # Copyright (c) 2016-2020, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import datetime
-import functools
 import math
 import os
 from xml.etree import ElementTree
 
-from pygount.analysis import SourceState
+from .summary import ProjectSummary
 
 
 class BaseWriter:
@@ -19,15 +18,9 @@ class BaseWriter:
             self.target_name = self._target_stream.name
         except AttributeError:
             self.target_name = "<io>"
-        self.source_count = 0
+        self.project_summary = ProjectSummary()
         self.start_time = datetime.datetime.now()
         self.end_time = None
-        self.total_code_count = 0
-        self.total_documentation_count = 0
-        self.total_empty_count = 0
-        self.total_string_count = 0
-        self.total_source_count = 0
-        self.total_line_count = 0
         self.sources_per_second = 0
         self.lines_per_second = 0
         self.duration = None
@@ -40,14 +33,7 @@ class BaseWriter:
         self.close()
 
     def add(self, source_analysis):
-        self.total_code_count += source_analysis.code
-        self.total_documentation_count += source_analysis.documentation
-        self.total_empty_count += source_analysis.empty
-        self.total_source_count += 1
-        self.total_line_count += (
-            source_analysis.code + source_analysis.documentation + source_analysis.empty + source_analysis.string
-        )
-        self.total_string_count += source_analysis.string
+        self.project_summary.add(source_analysis)
 
     def close(self):
         self.end_time = datetime.datetime.now()
@@ -56,8 +42,8 @@ class BaseWriter:
             (1e-6 * self.duration.microseconds) + self.duration.seconds + self.duration.days * 3600 * 24
         )
         if self.duration_in_seconds > 0:
-            self.lines_per_second = self.total_line_count / self.duration_in_seconds
-            self.sources_per_second = self.total_source_count / self.duration_in_seconds
+            self.lines_per_second = self.project_summary.total_file_count / self.duration_in_seconds
+            self.sources_per_second = self.project_summary.total_file_count / self.duration_in_seconds
 
 
 class LineWriter(BaseWriter):
@@ -112,17 +98,17 @@ class ClocXmlWriter(BaseWriter):
         super().close()
         # Add various statistics to <header>.
         ElementTree.SubElement(self._header_element, "elapsed_seconds", text="%.f" % self.duration_in_seconds)
-        ElementTree.SubElement(self._header_element, "n_files", text="%d" % self.total_source_count)
-        ElementTree.SubElement(self._header_element, "n_lines", text="%d" % self.total_line_count)
+        ElementTree.SubElement(self._header_element, "n_files", text="%d" % self.project_summary.total_file_count)
+        ElementTree.SubElement(self._header_element, "n_lines", text="%d" % self.project_summary.total_line_count)
         ElementTree.SubElement(self._header_element, "files_per_second", text="%.f" % self.sources_per_second)
         ElementTree.SubElement(self._header_element, "lines_per_second", text="%.f" % self.lines_per_second)
         ElementTree.SubElement(self._header_element, "report_file", text=self.target_name)
 
         # Add totals to <files>.
         file_attributes = {
-            "blank": str(self.total_empty_count),
-            "code": str(self.total_code_count + self.total_string_count),
-            "comment": str(self.total_documentation_count),
+            "blank": str(self.project_summary.total_empty_count),
+            "code": str(self.project_summary.total_code_count + self.project_summary.total_string_count),
+            "comment": str(self.project_summary.total_documentation_count),
         }
         ElementTree.SubElement(self._files_element, "total", attrib=file_attributes)
 
@@ -134,26 +120,6 @@ class ClocXmlWriter(BaseWriter):
         xml_root.write(self._target_stream, encoding="unicode", xml_declaration=False)
 
 
-#: Language statistics collected by ``SummaryWriter``.
-@functools.total_ordering
-class _LanguageStatistics:
-    def __init__(self, language):
-        self.language = language
-        self.code = 0
-        self.documentation = 0
-        self.empty = 0
-        self.string = 0
-
-    def sort_key(self):
-        return self.code, self.documentation, self.string, self.empty, self.language
-
-    def __eq__(self, other):
-        return self.sort_key() == other.sort_key()
-
-    def __lt__(self, other):
-        return self.sort_key() < other.sort_key()
-
-
 class SummaryWriter(BaseWriter):
     """
     Writer to summarize the analysis per language in a format that can easily
@@ -161,67 +127,62 @@ class SummaryWriter(BaseWriter):
     """
 
     _LANGUAGE_HEADING = "Language"
+    _FILE_COUNT_HEADING = "Files"
     _CODE_HEADING = "Code"
     _DOCUMENTATION_HEADING = "Comment"
     _SUM_TOTAL_PSEUDO_LANGUAGE = "Sum total"
+    _PERCENTAGE_DIGITS_AFTER_DOT = 2
 
     def __init__(self, target_stream):
         super().__init__(target_stream)
-        self._language_to_language_statistics_map = {}
         self._max_language_width = max(
             len(SummaryWriter._LANGUAGE_HEADING), len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE)
         )
         self._max_code_width = 0
         self._max_documentation_width = 0
 
-    def add(self, source_analysis):
-        super().add(source_analysis)
-        if source_analysis.state in (SourceState.analyzed.name, SourceState.duplicate.name):
-            language_statistics = self._language_to_language_statistics_map.get(source_analysis.language)
-            if language_statistics is None:
-                language_statistics = _LanguageStatistics(source_analysis.language)
-                self._language_to_language_statistics_map[source_analysis.language] = language_statistics
-            language_statistics.code += source_analysis.code
-            language_statistics.documentation += source_analysis.documentation
-            language_statistics.empty += source_analysis.empty
-            language_statistics.string += source_analysis.string
-
     def close(self):
         super().close()
 
         # Compute maximum column widths
         max_language_width = max(len(SummaryWriter._LANGUAGE_HEADING), len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE),)
+        max_file_count_width = len(SummaryWriter._FILE_COUNT_HEADING)
         max_code_width = len(SummaryWriter._CODE_HEADING)
         max_documentation_width = len(SummaryWriter._DOCUMENTATION_HEADING)
-        for language, language_statistics in self._language_to_language_statistics_map.items():
+        for language, language_summary in self.project_summary.language_to_language_summary_map.items():
             language_width = len(language)
             if language_width > max_language_width:
                 max_language_width = language_width
-            code_width = digit_width(language_statistics.code)
+            file_count_width = digit_width(language_summary.file_count)
+            if file_count_width > max_file_count_width:
+                max_file_count_width = file_count_width
+            code_width = digit_width(language_summary.code)
             if code_width > max_code_width:
                 max_code_width = code_width
-            documentation_width = digit_width(language_statistics.documentation)
+            documentation_width = digit_width(language_summary.documentation)
             if documentation_width > max_documentation_width:
                 max_documentation_width = documentation_width
-        percentage_width = 6
-        digits_after_dot = 2
-        max_digits_before_dot = percentage_width - digits_after_dot - 1
-        assert max_digits_before_dot >= 3  # Must be able to hold "100".
+        digits_after_dot = self._PERCENTAGE_DIGITS_AFTER_DOT
+        percentage_width = 4 + digits_after_dot  # To represent "100." we need 4 characters.
 
         summary_heading = (
             "{0:^{max_language_width}s}  "
-            "{1:^{max_code_width}s}  "
+            "{1:^{max_file_count_width}s}  "
             "{2:^{percentage_width}s}  "
-            "{3:^{max_documentation_width}s}  "
+            "{3:^{max_code_width}s}  "
+            "{2:^{percentage_width}s}  "
+            "{4:^{max_documentation_width}s}  "
             "{2:^{percentage_width}s}"
         ).format(
             SummaryWriter._LANGUAGE_HEADING,
-            SummaryWriter._CODE_HEADING,
+            SummaryWriter._FILE_COUNT_HEADING,
             "%",
+            SummaryWriter._CODE_HEADING,
             SummaryWriter._DOCUMENTATION_HEADING,
+            max_code_width=max_code_width,
+            max_file_count_width=max_file_count_width,
             max_documentation_width=max_documentation_width,
             max_language_width=max_language_width,
-            max_code_width=max_code_width,
             percentage_width=percentage_width,
         )
         self._target_stream.write(summary_heading + os.linesep)
@@ -230,6 +191,8 @@ class SummaryWriter(BaseWriter):
                 "-" * width
                 for width in (
                     max_language_width,
+                    max_file_count_width,
+                    percentage_width,
                     max_code_width,
                     percentage_width,
                     max_documentation_width,
@@ -240,44 +203,62 @@ class SummaryWriter(BaseWriter):
         self._target_stream.write(separator_line + os.linesep)
         language_line_template = (
             "{0:{max_language_width}s}  "
-            "{1:>{max_code_width}d}  "
+            "{1:>{max_file_count_width}d}  "
             "{2:>{percentage_width}.0{digits_after_dot}f}  "
-            "{3:>{max_documentation_width}d}  "
-            "{4:>{percentage_width}.0{digits_after_dot}f}"
+            "{3:>{max_code_width}d}  "
+            "{4:>{percentage_width}.0{digits_after_dot}f}  "
+            "{5:>{max_documentation_width}d}  "
+            "{6:>{percentage_width}.0{digits_after_dot}f}"
         )
-        for language_statistics in sorted(self._language_to_language_statistics_map.values(), reverse=True):
-            code_count = language_statistics.code
-            code_percentage = code_count / self.total_code_count * 100 if self.total_code_count != 0 else 0.0
+        for language_summary in sorted(self.project_summary.language_to_language_summary_map.values(), reverse=True):
+            code_count = language_summary.code
+            code_percentage = (
+                code_count / self.project_summary.total_code_count * 100
+                if self.project_summary.total_code_count != 0
+                else 0.0
+            )
+            file_count = language_summary.file_count
+            assert (
+                self.project_summary.total_file_count != 0
+            ), "if there is at least 1 language summary, there must be a file count too"
+            file_percentage = file_count / self.project_summary.total_file_count * 100
             documentation_percentage = (
-                language_statistics.documentation / self.total_documentation_count * 100
-                if self.total_documentation_count != 0
+                language_summary.documentation / self.project_summary.total_documentation_count * 100
+                if self.project_summary.total_documentation_count != 0
                 else 0.0
             )
             line_to_write = language_line_template.format(
-                language_statistics.language,
+                language_summary.language,
+                file_count,
+                file_percentage,
                 code_count,
                 code_percentage,
-                language_statistics.documentation,
+                language_summary.documentation,
                 documentation_percentage,
                 digits_after_dot=digits_after_dot,
-                max_documentation_width=max_documentation_width,
-                max_language_width=max_language_width,
                 max_code_width=max_code_width,
+                max_documentation_width=max_documentation_width,
+                max_file_count_width=max_file_count_width,
+                max_language_width=max_language_width,
                 percentage_width=percentage_width,
             )
             self._target_stream.write(line_to_write + os.linesep)
         self._target_stream.write(separator_line + os.linesep)
         summary_footer = (
             "{0:{max_language_width}s}  "
-            "{1:>{max_code_width}d}  "
+            "{1:>{max_file_count_width}d}  "
             "{2:{percentage_width}s}  "
-            "{3:>{max_documentation_width}d}"
+            "{3:>{max_code_width}d}  "
+            "{2:{percentage_width}s}  "
+            "{4:>{max_documentation_width}d}"
         ).format(
             SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE,
-            self.total_code_count,
+            self.project_summary.total_file_count,
             "",
-            self.total_documentation_count,
+            self.project_summary.total_code_count,
+            self.project_summary.total_documentation_count,
             max_documentation_width=max_documentation_width,
+            max_file_count_width=max_file_count_width,
             max_language_width=max_language_width,
             max_code_width=max_code_width,
             percentage_width=percentage_width,
