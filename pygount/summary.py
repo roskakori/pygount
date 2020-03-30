@@ -87,7 +87,7 @@ class ProjectSummary:
             self.total_string_count += source_analysis.string
 
     def __repr__(self):
-        return ("{0}(total_file_count={1}, total_line_count={2}, " "languages={3}").format(
+        return "{0}(total_file_count={1}, total_line_count={2}, " "languages={3}".format(
             self.__class__.__name__,
             self.total_file_count,
             self.total_line_count,
