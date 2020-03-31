@@ -38,3 +38,8 @@ jobs:
         python setup.py bdist_wheel
         if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then twine check dist/pygount-*.whl; fi
         pip install dist/pygount-*.whl
+    - name: Build documentation
+      run: |
+        cd docs
+        pip install -r requirements.txt
+        make html

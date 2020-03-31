@@ -39,6 +39,7 @@ nosetests.xml
 # Various
 /build/
 /dist/
+/docs/_build/
 /cloc.xml
 /tests/.temp/
 /.idea
