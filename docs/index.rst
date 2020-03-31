@@ -10,7 +10,12 @@ Welcome to pygount's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+   usage
+   continuous-integration
+   background
+   api
+   contributing
+   changes
 
 Indices and tables
 ==================

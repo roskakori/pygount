@@ -42,14 +42,25 @@ DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
 
 
 class SourceState(Enum):
-    analyzed = 1  # successfully analyzed
-    binary = 2  # source code is a binary
-    duplicate = 3  # source code is an identical copy of another
-    empty = 4  # source code is empty (file size = 0)
-    error = 5  # source could not be parsed
-    generated = 6  # source code has been generated
+    """
+    Possible values for :py:attr:`SourceAnalysis.state`.
+    """
+
+    #: successfully analyzed
+    analyzed = 1
+    #: source code is a binary
+    binary = 2
+    #: source code is an identical copy of another
+    duplicate = 3
+    #: source code is empty (file size = 0)
+    empty = 4
+    #: source could not be parsed
+    error = 5
+    #: source code has been generated
+    generated = 6
     # TODO: 'huge' = auto()  # source code exceeds size limit
-    unknown = 7  # pygments does not offer any lexer to analyze the source
+    #: pygments does not offer any lexer to analyze the source
+    unknown = 7
 
 
 #: Default patterns for regular expressions to detect generated code.
