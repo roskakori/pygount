@@ -47,17 +47,19 @@ To just get a quick grasp of the languages used in a project and their
 respective importance use ``--format=summary`` which provides a language
 overview and a sum total. For example pygount's summary looks like this::
 
-    Language      Code    %     Comment    %
-    ----------------  ----  ------  -------  ------
-    Python            1730   83.94      250   78.12
-    reStructuredText   271   13.15        0    0.00
-    Ant                 38    1.84        1    0.31
-    INI                 10    0.49        1    0.31
-    Bash                 8    0.39        2    0.62
-    TOML                 4    0.19        0    0.00
-    Text                 0    0.00       66   20.62
-    ----------------  ----  ------  -------  ------
-    Sum total         2061              320
+    Language          Files    %     Code    %     Comment    %
+    ----------------  -----  ------  ----  ------  -------  ------
+    Python               19   51.35  1924   72.99      322   86.10
+    reStructuredText      7   18.92   332   12.59        7    1.87
+    markdown              3    8.11   327   12.41        1    0.27
+    Batchfile             1    2.70    24    0.91        1    0.27
+    YAML                  1    2.70    11    0.42        2    0.53
+    Makefile              1    2.70     9    0.34        7    1.87
+    INI                   1    2.70     5    0.19        0    0.00
+    TOML                  1    2.70     4    0.15        0    0.00
+    Text                  3    8.11     0    0.00       34    9.09
+    ----------------  -----  ------  ----  ------  -------  ------
+    Sum total            37          2636              374
 
 The summary output is designed for human readers and the column widths adjust
 to the data.

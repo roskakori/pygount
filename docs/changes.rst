@@ -9,6 +9,15 @@ Version 1.2.1, 2020-03-31
 
 * Fixed broken links in README on PyPI my moving the documentation to
   `ReadTheDocs <https://pygount.readthedocs.io/en/latest/index.html>`_.
+* Cleaned up API:
+
+  * Changed factory functions to methods and added deprecation warnings:
+
+    * :py:func:`source_analysis` --> :py:meth:`SourceAnalysis.from_file`
+    * :py:func:`pseudo_source_analysis` --> :py:meth:`SourceAnalysis.from_state`
+
+  * Added API reference to documentation.
+  * Added a couple of type hints and assertions.
 
 Version 1.2.0, 2020-03-30
 

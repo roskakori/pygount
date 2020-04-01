@@ -335,7 +335,7 @@ class Command:
             writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
             with writer_class(target_file) as writer:
                 for source_path, group in source_paths_and_groups_to_analyze:
-                    statistics = pygount.analysis.source_analysis(
+                    statistics = pygount.analysis.SourceAnalysis.from_file(
                         source_path,
                         group,
                         self.default_encoding,

@@ -47,6 +47,24 @@ To get a summary of each programming language with sum counts and percentage:
 $ pygount --format=summary ~/projects/exammple
 ```
 
+As an example here is the summary output for pygount's own source code:
+
+```
+    Language      Files    %     Code    %     Comment    %
+----------------  -----  ------  ----  ------  -------  ------
+Python               19   51.35  1924   72.99      322   86.10
+reStructuredText      7   18.92   332   12.59        7    1.87
+markdown              3    8.11   327   12.41        1    0.27
+Batchfile             1    2.70    24    0.91        1    0.27
+YAML                  1    2.70    11    0.42        2    0.53
+Makefile              1    2.70     9    0.34        7    1.87
+INI                   1    2.70     5    0.19        0    0.00
+TOML                  1    2.70     4    0.15        0    0.00
+Text                  3    8.11     0    0.00       34    9.09
+----------------  -----  ------  ----  ------  -------  ------
+Sum total            37          2636              374
+```
+
 Plenty of tools can post process SLOC information, for example the
 [SLOCCount plug-in](https://wiki.jenkins-ci.org/display/JENKINS/SLOCCount+Plugin)
 for the [Jenkins](https://jenkins.io/) continuous integration server.

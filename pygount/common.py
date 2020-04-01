@@ -4,10 +4,14 @@ Common classes and functions for pygount.
 # Copyright (c) 2016-2020, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import fnmatch
+import functools
+import inspect
 import re
+import warnings
+from typing import Generator, List, Optional, Pattern, Sequence, Union
 
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
@@ -42,7 +46,7 @@ class OptionError(Error):
         return self.option_error_message
 
 
-def as_list(items_or_text):
+def as_list(items_or_text: Union[str, Sequence[str]]) -> List[str]:
     if isinstance(items_or_text, str):
         # TODO: Allow to specify comma (,) in text using '[,]'.
         result = [item.strip() for item in items_or_text.split(",") if item.strip() != ""]
@@ -51,7 +55,7 @@ def as_list(items_or_text):
     return result
 
 
-def regex_from(pattern, is_shell_pattern=False):
+def regex_from(pattern: Union[str, Pattern], is_shell_pattern=False) -> Pattern:
     assert pattern is not None
     if isinstance(pattern, str):
         if is_shell_pattern:
@@ -63,7 +67,11 @@ def regex_from(pattern, is_shell_pattern=False):
     return result
 
 
-def regexes_from(patterns_text, default_patterns_text=None, source=None):
+def regexes_from(
+    patterns_text: Union[str, Sequence[str]],
+    default_patterns_text: Optional[Union[str, Sequence[str]]] = None,
+    source: Optional[str] = None,
+) -> List[Pattern]:
     assert patterns_text is not None
 
     result = []
@@ -99,7 +107,7 @@ def regexes_from(patterns_text, default_patterns_text=None, source=None):
     return result
 
 
-def lines(text):
+def lines(text: str) -> Generator[str, None, None]:
     """
     Generator function to yield lines (delimited with ``'\n'``) stored in
     ``text``. This is useful when a regular expression should only match on a
@@ -116,3 +124,67 @@ def lines(text):
     last_line = text[previous_newline_index:]
     if last_line != "":
         yield last_line
+
+
+def deprecated(reason: Optional[str]):
+    """
+    Decorator to mark functions as deprecated and log a warning in case it is called.
+
+    Source: https://stackoverflow.com/questions/2536307/decorators-in-the-python-standard-lib-deprecated-specifically
+    """
+
+    if isinstance(reason, str):
+
+        # The @deprecated is used with a 'reason'.
+        #
+        # .. code-block:: python
+        #
+        #    @deprecated("please, use another function")
+        #    def old_function(x, y):
+        #      pass
+
+        def decorator(func1):
+            if inspect.isclass(func1):
+                fmt1 = "Call to deprecated class {name} ({reason})."
+            else:
+                fmt1 = "Call to deprecated function {name} ({reason})."
+
+            @functools.wraps(func1)
+            def new_func1(*args, **kwargs):
+                warnings.simplefilter("always", DeprecationWarning)
+                warnings.warn(
+                    fmt1.format(name=func1.__name__, reason=reason), category=DeprecationWarning, stacklevel=2
+                )
+                warnings.simplefilter("default", DeprecationWarning)
+                return func1(*args, **kwargs)
+
+            return new_func1
+
+        return decorator
+    elif inspect.isclass(reason) or inspect.isfunction(reason):
+
+        # The @deprecated is used without any 'reason'.
+        #
+        # .. code-block:: python
+        #
+        #    @deprecated
+        #    def old_function(x, y):
+        #      pass
+
+        func2 = reason
+
+        if inspect.isclass(func2):
+            fmt2 = "Call to deprecated class {name}."
+        else:
+            fmt2 = "Call to deprecated function {name}."
+
+        @functools.wraps(func2)
+        def new_func2(*args, **kwargs):
+            warnings.simplefilter("always", DeprecationWarning)
+            warnings.warn(fmt2.format(name=func2.__name__), category=DeprecationWarning, stacklevel=2)
+            warnings.simplefilter("default", DeprecationWarning)
+            return func2(*args, **kwargs)
+
+        return new_func2
+    else:
+        raise TypeError(repr(type(reason)))

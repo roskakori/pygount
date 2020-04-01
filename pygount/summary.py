@@ -5,6 +5,7 @@ Summaries of analyses of multiple source codes.
 # All rights reserved. Distributed under the BSD License.
 import functools
 import re
+from typing import Dict
 
 from .analysis import SourceAnalysis
 
@@ -19,13 +20,17 @@ class LanguageSummary:
     """
 
     def __init__(self, language: str):
-        self.language = language
+        self._language = language
         self.code = 0
         self.documentation = 0
         self.file_count = 0
         self.empty = 0
         self.string = 0
         self.is_pseudo_language = _PSEUDO_LANGUAGE_REGEX.match(self.language) is not None
+
+    @property
+    def language(self) -> str:
+        return self._language
 
     def sort_key(self):
         return self.code, self.documentation, self.string, self.empty, self.language
@@ -36,7 +41,13 @@ class LanguageSummary:
     def __lt__(self, other):
         return self.sort_key() < other.sort_key()
 
-    def add(self, source_analysis: SourceAnalysis):
+    def add(self, source_analysis: SourceAnalysis) -> None:
+        """
+        Add counts from ``source_analysis`` to total counts for this language.
+        """
+        assert source_analysis is not None
+        assert source_analysis.language == self.language
+
         self.file_count += 1
         if source_analysis.is_countable:
             self.code += source_analysis.code
@@ -60,7 +71,7 @@ class ProjectSummary:
     """
 
     def __init__(self):
-        self.language_to_language_summary_map = {}
+        self._language_to_language_summary_map = {}
         self.total_code_count = 0
         self.total_documentation_count = 0
         self.total_empty_count = 0
@@ -68,7 +79,17 @@ class ProjectSummary:
         self.total_file_count = 0
         self.total_line_count = 0
 
-    def add(self, source_analysis: SourceAnalysis):
+    @property
+    def language_to_language_summary_map(self) -> Dict[str, LanguageSummary]:
+        """
+        A map containing summarized counts for each language added with :py:meth:`add()` so far.
+        """
+        return self._language_to_language_summary_map
+
+    def add(self, source_analysis: SourceAnalysis) -> None:
+        """
+        Add counts from ``source_analysis`` to total counts.
+        """
         self.total_file_count += 1
         language_summary = self.language_to_language_summary_map.get(source_analysis.language)
         if language_summary is None:
