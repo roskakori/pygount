@@ -126,7 +126,7 @@ def lines(text: str) -> Generator[str, None, None]:
         yield last_line
 
 
-def deprecated(reason: Optional[str]):
+def deprecated(reason: Optional[str]):  # pragma: no cover
     """
     Decorator to mark functions as deprecated and log a warning in case it is called.
 
