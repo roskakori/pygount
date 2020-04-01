@@ -4,6 +4,8 @@ Usage
 General
 -------
 
+.. program:: pygount
+
 Simply run and specify the folder to analyze recursively, for example:
 
 .. code-block:: bash
@@ -19,14 +21,22 @@ Certain files and folders are automatically excluded from the analysis:
 * files starting with dot (``.``) or ending in tilda (``~``)
 * folders starting with dot (``.``) or named ``_svn``.
 
+.. option:: --folders-to-skip LIST
+.. option:: --names-to-skip LIST
+
 To specify alternative patterns, use ``--folders-to-skip`` and
 ``--names-to-skip``. Both take a comma separated list of patterns, see below
 on the pattern syntax. To for example also prevent folders starting with two
 underscores (``_``) from being analyzed, specify
 ``--folders-to-skip=[...],__*``.
 
+.. option:: --suffix LIST
+
 To limit the analysis on certain file types, you can specify a comma separated
 list of suffixes to take into account, for example ``--suffix=py,sql,xml``.
+
+.. option:: --out FILE
+.. option:: --format FORMAT
 
 By default the result of the analysis are written to the standard output in a
 format similar to sloccount. To redirect the output to a file, use e.g.
@@ -71,13 +81,42 @@ If the first actual pattern is ``[...]``, default patterns are included.
 Without it, defaults are ignored and only the pattern explicitly stated are
 taken into account.
 
+.. option:: --generated
+
 So for example to specify that generated code can also contain the German word
 "generiert" in a case insensivie way use
 ``--generated="[regex][...](?i).*generiert"``.
 
 
+Counting duplicates
+-------------------
+
+.. option:: --duplicates
+
+By default pygount prevents multiple source files with exactly the same content
+to be counted again.
+
+For two files to be considered duplicates the following conditions must be met:
+
+#. Both files have the same size.
+#. Both files have the same `MD5 <https://en.wikipedia.org/wiki/MD5>`_
+   hashcode.
+
+This allows for an efficient detection with a very small possibility for false
+positives.
+
+However it also prevents detection of files with only minor differences as
+duplicates. Examples are files that are identical except for additional white
+space, empty lines or different line endings.
+
+If you still want to count duplicates multiple times, specify
+:option:`--duplicates`. This will also result in a minor performance gain of
+the analysis.
+
 Source code encoding
 ----------------------
+
+.. option:: --encoding ENCODING[;FALLBACK]
 
 When reading source code, pygount automatically detects the encoding. It uses
 a simple algorithm where it recognizes BOM, XML declarations such as:
@@ -96,15 +135,15 @@ If the file does not have an appropriate heading, pygount attempts to read it
 using UTF-8. If this fails, it reads the file using a fallback encoding (by
 default CP1252) and ignores any encoding errors.
 
-You can change this behavior using the ``--encoding`` option:
+You can change this behavior using the :option:`--encoding` option:
 
 * To keep the automatic analysis and use a different fallback encoding specify
-  for example ``--encoding=automatic;iso-8859-15``.
+  for example :option:`--encoding=automatic;iso-8859-15 <--encoding>`.
 * To use an automatic detection based on heuristic, use
-  ``--encoding=chardet``. For this to work, the
+  :option:`--encoding=chardet <--encoding>`. For this to work, the
   `chardet <https://pypi.python.org/pypi/chardet>`_ package must be installed,
 * To use a specific encoding (for all files analyzed), use for example
-  ``--encoding=iso-8859-15``.
+  :option:`--encoding=iso-8859-15 <--encoding>`.
 
 
 Pseudo languages
@@ -117,9 +156,8 @@ shown is a pseudo language indicating the reason:
   first ensures that file does not start with a BOM for UTF-8, UTF-16 or
   UTF-32 (which indicates text files). After that it checks for zero bytes
   within the initial 8192 bytes of the file.
-* ``__duplicate__`` - the source code is a bytewise identical copy of another
-  file; enable the command line option ``--duplicates`` to also count code in
-  duplicates (and gain a minor performance improvement).
+* ``__duplicate__`` - the source code duplicate as described at the command line
+  option :option:`--duplicates`.
 * ``__empty__`` - the source code is an empty file with a size of 0 bytes.
 * ``__error__`` - the source code could not be parsed e.g. due to an I/O error.
 * ``__generated__`` - the source code is generated according to the command line
@@ -127,7 +165,15 @@ shown is a pseudo language indicating the reason:
 * ``__unknown__`` - pygments does not provide a lexer to parse the source code.
 
 
-## Other information
+Other information
+-----------------
+
+.. option:: --verbose
+
+If :option:`--verbose` is specified, pygount logs detailed information about
+what it is doing.
+
+.. option:: --help
 
 To get a description of all the available command line options, run:
 
@@ -135,7 +181,9 @@ To get a description of all the available command line options, run:
 
     $ pygount --help
 
-To get the version number, run:
+.. option:: --version
+
+To get pygount's current version number, run:
 
 .. code-block:: bash
 

@@ -470,10 +470,13 @@ def encoding_for(source_path: str, encoding: str = "automatic", fallback_encodin
     The algorithm used is:
 
     * If ``encoding`` is ``'automatic``, attempt the following:
+
       1. Check BOM for UTF-8, UTF-16 and UTF-32.
       2. Look for XML prolog or magic heading like ``# -*- coding: cp1252 -*-``
       3. Read the file using UTF-8.
-      4. If all this fails, use assume the ``fallback_encoding``.
+      4. If all this fails, use the ``fallback_encoding`` and ignore any
+         further encoding errors.
+
     * If ``encoding`` is ``'chardet`` use :mod:`chardet` to obtain the encoding.
     * For any other ``encoding`` simply use the specified value.
     """

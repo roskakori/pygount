@@ -1,7 +1,14 @@
 Changes
 =======
 
+.. program:: pygount
+
 This chapter describes the changes coming with each new version of pygount.
+
+Version 1.2.1, 2020-03-31
+
+* Fixed broken links in README on PyPI my moving the documentation to
+  `ReadTheDocs <https://pygount.readthedocs.io/en/latest/index.html>`_.
 
 Version 1.2.0, 2020-03-30
 
@@ -25,7 +32,7 @@ Version 1.2.0, 2020-03-30
 
 Version 1.1.0, 2020-03-10
 
-* Fixed :option:`--folders_to_skip` and :option:`--names-to-skip` which simply
+* Fixed :option:`--folders-to-skip` and :option:`--names-to-skip` which simply
   were ignored (contributed by pclausen, issue
   `#17 <https://github.com/roskakori/pygount/issues/17>`_).
 * Added option ``--format=summary`` to get a language overview and sum total
@@ -45,8 +52,8 @@ Version 1.0.0, 2017-07-04
 
 Version 0.9, 2017-05-04
 
-* Fixed :py:exc:`AssertionError` when option :option:`--encoding=chardet` was
-  specified.
+* Fixed :py:exc:`AssertionError` when option
+  :option:`--encoding=chardet <--encoding>` was specified.
 * Changed warning message "no fallback encoding specified, using](encoding>"
   to a debug message because it did not add any interesting information as
   the encoding actually used is visible in the info message for each file.
@@ -60,7 +67,7 @@ Version 0.9, 2017-05-04
   `Oracle FAQ entry on file extensions <http://www.orafaq.com/wiki/File_extensions>`_
   (issue `#12 <https://github.com/roskakori/pygount/issues/12>`_).
 * Added possibility to specify a fallback encoding for encoding 'chardet'. Use
-  e.g. ``--encoding=chardet;cp1252``.
+  e.g. :option:`--encoding=chardet;cp1252 <--encoding>`.
 
 Version 0.8, 2016-10-07
 
@@ -107,7 +114,7 @@ Version 0.5, 2016-09-22
 * Added workaround for pygments sometimes detecting the same XML file as XML
   and other times as XML+Evoque (probably depending on the hash seed). Now
   XML+Evoque  is always changed to XML.
-* Added :file:`__pycache__` as default :option:`--folder-to-skip`.
+* Added :file:`__pycache__` as default :option:`--folders-to-skip`.
 * Added notes on pseudo languages for source code that cannot be analyzed.
 
 Version 0.4, 2016-09-11
