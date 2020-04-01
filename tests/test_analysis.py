@@ -359,6 +359,20 @@ def test_has_no_duplicate_in_pygount_source():
             assert duplicate_path is None, "{0} must not be duplicate of {1}".format(source_path, duplicate_path)
 
 
+def test_can_match_deprecated_functions():
+    source_path = __file__
+    group = "some"
+    assert str(analysis.source_analysis(source_path, group)) == str(
+        analysis.SourceAnalysis.from_file(source_path, group)
+    )
+
+    missing_path = "missing.py"
+    reason = "missing"
+    assert str(analysis.pseudo_source_analysis(missing_path, group, analysis.SourceState.error, reason)) == str(
+        analysis.SourceAnalysis.from_state(missing_path, group, analysis.SourceState.error, reason)
+    )
+
+
 class DuplicatePoolTest(TempFolderTest):
     def test_can_distinguish_different_files(self):
         some_path = self.create_temp_file(__name__ + "_some", "some")
