@@ -12,7 +12,7 @@ import logging
 import os
 import re
 from enum import Enum
-from typing import Optional, List, Dict
+from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, Tuple
 
 import pygments.lexer
 import pygments.lexers
@@ -22,8 +22,10 @@ import pygments.util
 import pygount.common
 import pygount.lexers
 import pygount.xmldialect
+from pygount.common import deprecated
 
 # Attempt to import chardet.
+
 try:
     import chardet.universaldetector
 
@@ -39,6 +41,10 @@ DEFAULT_FALLBACK_ENCODING = "cp1252"
 DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
     [".*", "_svn", "__pycache__"]  # Subversion hack for Windows  # Python byte code
 )
+
+
+#: Pygments token type; we need to define our own type because pygments' ``_TokenType`` is internal.
+TokenType = type(pygments.token.Token)
 
 
 class SourceState(Enum):
@@ -130,9 +136,56 @@ for _oracle_suffix in ("pck", "pkb", "pks", "pls"):
     _SUFFIX_TO_FALLBACK_LEXER_MAP[_oracle_suffix] = pygments.lexers.get_lexer_by_name("plpgsql")
 
 
+class DuplicatePool:
+    """
+    A pool that collects information about potential duplicate files.
+    """
+
+    def __init__(self):
+        self._size_to_paths_map = {}
+        self._size_and_hash_to_path_map = {}
+
+    @staticmethod
+    def _hash_for(path_to_hash):
+        buffer_size = 1024 * 1024
+        md5_hash = hashlib.md5()
+        with open(path_to_hash, "rb", buffer_size) as file_to_hash:
+            data = file_to_hash.read(buffer_size)
+            while len(data) >= 1:
+                md5_hash.update(data)
+                data = file_to_hash.read(buffer_size)
+        return md5_hash.digest()
+
+    def duplicate_path(self, source_path: str) -> Optional[str]:
+        """
+        Path to a duplicate for ``source_path`` or ``None`` if no duplicate exists.
+
+        Internally information is stored to identify possible future duplicates of
+        ``source_path``.
+        """
+        result = None
+        source_size = os.path.getsize(source_path)
+        paths_with_same_size = self._size_to_paths_map.get(source_size)
+        if paths_with_same_size is None:
+            self._size_to_paths_map[source_size] = [source_path]
+        else:
+            source_hash = DuplicatePool._hash_for(source_path)
+            if len(paths_with_same_size) == 1:
+                # Retrofit the initial path with the same size and its hash.
+                initial_path_with_same_size = paths_with_same_size[0]
+                initial_hash = DuplicatePool._hash_for(initial_path_with_same_size)
+                self._size_and_hash_to_path_map[(source_size, initial_hash)] = initial_path_with_same_size
+            result = self._size_and_hash_to_path_map.get((source_size, source_hash))
+            self._size_and_hash_to_path_map[(source_size, source_hash)] = source_path
+        return result
+
+
 class SourceAnalysis:
     """
-    Results of a source analysis derived by :py:func:`source_analysis`.
+    Results from analyzing a source path.
+
+    Prefer the factory methods :py:meth:`from_file()` and :py:meth:`from_state` to
+    calling the constructor.
     """
 
     def __init__(
@@ -147,6 +200,7 @@ class SourceAnalysis:
         state: SourceState,
         state_info: Optional[str] = None,
     ):
+        SourceAnalysis._check_state_info(state, state_info)
         self._path = path
         self._language = language
         self._group = group
@@ -157,6 +211,133 @@ class SourceAnalysis:
         self._state = state
         self._state_info = state_info
 
+    @staticmethod
+    def from_state(
+        source_path: str, group: str, state: SourceState, state_info: Optional[str] = None
+    ) -> "SourceAnalysis":
+        """
+        Factory method to create a :py:class:`SourceAnalysis` with all counts
+        set to 0 and everything else according to the specified parameters.
+        """
+        assert source_path is not None
+        assert group is not None
+        assert state != SourceState.analyzed, "use from() for analyzable sources"
+        SourceAnalysis._check_state_info(state, state_info)
+        return SourceAnalysis(
+            path=source_path,
+            language="__{0}__".format(state.name),
+            group=group,
+            code=0,
+            documentation=0,
+            empty=0,
+            string=0,
+            state=state,
+            state_info=state_info,
+        )
+
+    @staticmethod
+    def _check_state_info(state: SourceState, state_info: Optional[str]):
+        states_that_require_state_info = [SourceState.duplicate, SourceState.error, SourceState.generated]
+        assert (state in states_that_require_state_info) == (state_info is not None), (
+            "state=%s and state_info=%s but state_info must be specified for the following states: %s"
+            % (state, state_info, states_that_require_state_info)
+        )
+
+    @staticmethod
+    def from_file(
+        source_path: str,
+        group: str,
+        encoding: str = "automatic",
+        fallback_encoding: str = "cp1252",
+        generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT),
+        duplicate_pool: Optional[DuplicatePool] = None,
+    ) -> "SourceAnalysis":
+        """
+        Factory method to create a :py:class:`SourceAnalysis` by analyzing
+        the source code in ``source_path``.
+
+        :param source_path: path to source code to analyze
+        :param group: name of a logical group the sourc code belongs to, e.g. a
+          package.
+        :param encoding: encoding according to :func:`encoding_for`
+        :param fallback_encoding: fallback encoding according to
+          :func:`encoding_for`
+        :param generated_regexes: list of regular expression that if found within the first few lines
+          if a source code identify is as generated source code for which SLOC should not be counted
+        :param duplicate_pool: a :class:`DuplicatePool` where information about possible duplicates is
+          collected, or ``None`` if possible duplicates should be counted multiple times.
+        """
+        assert encoding is not None
+        assert generated_regexes is not None
+
+        result = None
+        lexer = None
+        source_code = None
+        source_size = os.path.getsize(source_path)
+        if source_size == 0:
+            _log.info("%s: is empty", source_path)
+            result = SourceAnalysis.from_state(source_path, group, SourceState.empty)
+        elif is_binary_file(source_path):
+            _log.info("%s: is binary", source_path)
+            result = SourceAnalysis.from_state(source_path, group, SourceState.binary)
+        elif not has_lexer(source_path):
+            _log.info("%s: unknown language", source_path)
+            result = SourceAnalysis.from_state(source_path, group, SourceState.unknown)
+        elif duplicate_pool is not None:
+            duplicate_path = duplicate_pool.duplicate_path(source_path)
+            if duplicate_path is not None:
+                _log.info("%s: is a duplicate of %s", source_path, duplicate_path)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.duplicate, duplicate_path)
+        if result is None:
+            if encoding in ("automatic", "chardet"):
+                encoding = encoding_for(source_path, encoding, fallback_encoding)
+            try:
+                with open(source_path, "r", encoding=encoding) as source_file:
+                    source_code = source_file.read()
+            except (LookupError, OSError, UnicodeError) as error:
+                _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
+            if result is None:
+                lexer = guess_lexer(source_path, source_code)
+                assert lexer is not None
+        if (result is None) and (len(generated_regexes) != 0):
+            number_line_and_regex = matching_number_line_and_regex(pygount.common.lines(source_code), generated_regexes)
+            if number_line_and_regex is not None:
+                number, _, regex = number_line_and_regex
+                message = "line {0} matches {1}".format(number, regex)
+                _log.info("%s: is generated code because %s", source_path, message)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.generated, message)
+        if result is None:
+            assert lexer is not None
+            assert source_code is not None
+            language = lexer.name
+            if ("xml" in language.lower()) or (language == "Genshi"):
+                dialect = pygount.xmldialect.xml_dialect(source_path, source_code)
+                if dialect is not None:
+                    language = dialect
+            _log.info("%s: analyze as %s using encoding %s", source_path, language, encoding)
+            mark_to_count_map = {"c": 0, "d": 0, "e": 0, "s": 0}
+            for line_parts in _line_parts(lexer, source_code):
+                mark_to_increment = "e"
+                for mark_to_check in ("d", "s", "c"):
+                    if mark_to_check in line_parts:
+                        mark_to_increment = mark_to_check
+                mark_to_count_map[mark_to_increment] += 1
+            result = SourceAnalysis(
+                path=source_path,
+                language=language,
+                group=group,
+                code=mark_to_count_map["c"],
+                documentation=mark_to_count_map["d"],
+                empty=mark_to_count_map["e"],
+                string=mark_to_count_map["s"],
+                state=SourceState.analyzed,
+                state_info=None,
+            )
+
+        assert result is not None
+        return result
+
     @property
     def path(self) -> str:
         return self._path
@@ -166,7 +347,7 @@ class SourceAnalysis:
         return self._language
 
     @property
-    def group(self) -> int:
+    def group(self) -> str:
         return self._group
 
     @property
@@ -186,11 +367,17 @@ class SourceAnalysis:
         return self._string
 
     @property
-    def state(self) -> str:
+    def state(self) -> SourceState:
+        """
+        The state of the analysis after parsing the source file.
+        """
         return self._state
 
     @property
-    def state_info(self) -> str:
+    def state_info(self) -> Optional[str]:
+        """
+        Possible additional information about :py:attr:`state`.
+        """
         return self._state_info
 
     @property
@@ -215,6 +402,10 @@ class SourceAnalysis:
 
 
 class SourceScanner:
+    """
+    Scanner for source code files matching certain conditions.
+    """
+
     def __init__(
         self,
         source_patterns,
@@ -240,7 +431,7 @@ class SourceScanner:
         return self._folder_regexps_to_skip
 
     @folder_regexps_to_skip.setter
-    def set_folder_pattern_to_skip(self, regexps_or_pattern_text):
+    def folder_regexps_to_skip(self, regexps_or_pattern_text):
         self._folder_regexps_to_skip.append = pygount.common.regexes_from(
             regexps_or_pattern_text, self.folder_regexps_to_skip
         )
@@ -250,7 +441,7 @@ class SourceScanner:
         return self._name_regexps_to_skip
 
     @name_regexps_to_skip.setter
-    def set_name_regexps_to_skip(self, regexps_or_pattern_text):
+    def name_regexps_to_skip(self, regexps_or_pattern_text):
         self._name_regexp_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
 
     def _is_path_to_skip(self, name, is_folder):
@@ -308,7 +499,10 @@ class SourceScanner:
         result = sorted(set(result))
         return result
 
-    def source_paths(self):
+    def source_paths(self) -> Generator[str, None, None]:
+        """
+        Paths to source code files matching all the conditions for this scanner.
+        """
         source_paths_and_groups_to_analyze = self._source_paths_and_groups_to_analyze(self.source_patterns)
 
         for source_path, group in source_paths_and_groups_to_analyze:
@@ -320,56 +514,14 @@ class SourceScanner:
                 _log.info("skip due to suffix: %s", source_path)
 
 
-class DuplicatePool:
-    """
-    A pool that collects information about potential duplicate files.
-    """
-
-    def __init__(self):
-        self._size_to_paths_map = {}
-        self._size_and_hash_to_path_map = {}
-
-    @staticmethod
-    def _hash_for(path_to_hash):
-        buffer_size = 1024 * 1024
-        md5_hash = hashlib.md5()
-        with open(path_to_hash, "rb", buffer_size) as file_to_hash:
-            data = file_to_hash.read(buffer_size)
-            while len(data) >= 1:
-                md5_hash.update(data)
-                data = file_to_hash.read(buffer_size)
-        return md5_hash.digest()
-
-    def duplicate_path(self, source_path: str) -> Optional[str]:
-        """
-        Path to a duplicate for ``source_path`` or ``None`` if no duplicate exists.
-
-        Internally information is stored to identify possible future duplicates of
-        ``source_path``.
-        """
-        result = None
-        source_size = os.path.getsize(source_path)
-        paths_with_same_size = self._size_to_paths_map.get(source_size)
-        if paths_with_same_size is None:
-            self._size_to_paths_map[source_size] = [source_path]
-        else:
-            source_hash = DuplicatePool._hash_for(source_path)
-            if len(paths_with_same_size) == 1:
-                # Retrofit the initial path with the same size and its hash.
-                initial_path_with_same_size = paths_with_same_size[0]
-                initial_hash = DuplicatePool._hash_for(initial_path_with_same_size)
-                self._size_and_hash_to_path_map[(source_size, initial_hash)] = initial_path_with_same_size
-            result = self._size_and_hash_to_path_map.get((source_size, source_hash))
-            self._size_and_hash_to_path_map[(source_size, source_hash)] = source_path
-        return result
-
-
-_LANGUAGE_TO_WHITE_WORDS_MAP = {"batchfile": ["@"], "python": ["pass"], "sql": ["begin", "end"]}
+_LANGUAGE_TO_WHITE_WORDS_MAP = {"batchfile": {"@"}, "python": {"pass"}, "sql": {"begin", "end"}}
 for _language in _LANGUAGE_TO_WHITE_WORDS_MAP.keys():
     assert _language.islower()
 
 
-def matching_number_line_and_regex(source_lines, generated_regexes, max_line_count=15):
+def matching_number_line_and_regex(
+    source_lines: Sequence[str], generated_regexes: Sequence[Pattern], max_line_count: int = 15
+) -> Optional[Tuple[int, str, Pattern]]:
     """
     The first line and its number (starting with 0) in the source code that
     indicated that the source code is generated.
@@ -388,11 +540,13 @@ def matching_number_line_and_regex(source_lines, generated_regexes, max_line_cou
         if matching_regex.match(line)
     )
     possible_first_matching_number_line_and_regexp = list(itertools.islice(matching_number_line_and_regexps, 1))
-    result = (possible_first_matching_number_line_and_regexp + [None])[0]
+    result = (
+        possible_first_matching_number_line_and_regexp[0] if possible_first_matching_number_line_and_regexp else None
+    )
     return result
 
 
-def white_characters(language_id) -> str:
+def white_characters(language_id: str) -> str:
     """
     Characters that count as white space if they are the only characters in a
     line.
@@ -402,7 +556,7 @@ def white_characters(language_id) -> str:
     return "(),:;[]{}"
 
 
-def white_code_words(language_id) -> Dict[str, List[str]]:
+def white_code_words(language_id: str) -> Dict[str, List[str]]:
     """
     Words that do not count as code if it is the only word in a line.
     """
@@ -411,7 +565,7 @@ def white_code_words(language_id) -> Dict[str, List[str]]:
     return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
 
 
-def _delined_tokens(tokens):
+def _delined_tokens(tokens: Sequence[Tuple[TokenType, str]]) -> Generator[TokenType, None, None]:
     for token_type, token_text in tokens:
         newline_index = token_text.find("\n")
         while newline_index != -1:
@@ -422,7 +576,7 @@ def _delined_tokens(tokens):
             yield token_type, token_text
 
 
-def _pythonized_comments(tokens):
+def _pythonized_comments(tokens: Sequence[Tuple[TokenType, str]]) -> Generator[TokenType, None, None]:
     """
     Similar to tokens but converts strings after a colon (:) to comments.
     """
@@ -439,7 +593,7 @@ def _pythonized_comments(tokens):
         yield token_type, token_text
 
 
-def _line_parts(lexer, text):
+def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Generator[Set[str], None, None]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
     if lexer.name == "Python":
@@ -470,10 +624,13 @@ def encoding_for(source_path: str, encoding: str = "automatic", fallback_encodin
     The algorithm used is:
 
     * If ``encoding`` is ``'automatic``, attempt the following:
+
       1. Check BOM for UTF-8, UTF-16 and UTF-32.
       2. Look for XML prolog or magic heading like ``# -*- coding: cp1252 -*-``
       3. Read the file using UTF-8.
-      4. If all this fails, use assume the ``fallback_encoding``.
+      4. If all this fails, use the ``fallback_encoding`` and ignore any
+         further encoding errors.
+
     * If ``encoding`` is ``'chardet`` use :mod:`chardet` to obtain the encoding.
     * For any other ``encoding`` simply use the specified value.
     """
@@ -545,28 +702,16 @@ def encoding_for(source_path: str, encoding: str = "automatic", fallback_encodin
     return result
 
 
+@deprecated("use {0}.{1}".format(SourceAnalysis.__name__, SourceAnalysis.from_state.__name__))
 def pseudo_source_analysis(source_path, group, state, state_info=None):
-    assert source_path is not None
-    assert group is not None
-    assert isinstance(state, SourceState)
-    return SourceAnalysis(
-        path=source_path,
-        language="__" + state.name + "__",
-        group=group,
-        code=0,
-        documentation=0,
-        empty=0,
-        string=0,
-        state=state,
-        state_info=state_info,
-    )
+    return SourceAnalysis.from_state(source_path, group, state, state_info)
 
 
 #: BOMs to indicate that a file is a text file even if it contains zero bytes.
 _TEXT_BOMS = (codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE, codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF8)
 
 
-def is_binary_file(source_path):
+def is_binary_file(source_path: str) -> bool:
     with open(source_path, "rb") as source_file:
         initial_bytes = source_file.read(8192)
     return not any(initial_bytes.startswith(bom) for bom in _TEXT_BOMS) and b"\0" in initial_bytes
@@ -576,7 +721,7 @@ def is_plain_text(source_path):
     return _PLAIN_TEXT_NAME_REGEX.match(os.path.basename(source_path))
 
 
-def has_lexer(source_path):
+def has_lexer(source_path: str) -> bool:
     """
     Initial quick check if there is a lexer for ``source_path``. This removes
     the need for calling :py:func:`pygments.lexers.guess_lexer_for_filename()`
@@ -601,6 +746,7 @@ def guess_lexer(source_path: str, text: str) -> pygments.lexer.Lexer:
     return result
 
 
+@deprecated("use {0}.{1}".format(SourceAnalysis.__name__, SourceAnalysis.from_file.__name__))
 def source_analysis(
     source_path,
     group,
@@ -609,87 +755,4 @@ def source_analysis(
     generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT),
     duplicate_pool: Optional[DuplicatePool] = None,
 ):
-    """
-    Analysis for line counts in source code stored in ``source_path``.
-
-    :param source_path:
-    :param group: name of a logical group the sourc code belongs to, e.g. a
-      package.
-    :param encoding: encoding according to :func:`encoding_for`
-    :param fallback_encoding: fallback encoding according to
-      :func:`encoding_for`
-    :param generated_regexes: list of regular expression that if found within the first few lines
-      if a source code identify is as generated source code for which SLOC should not be counted
-    :param duplicate_pool:
-    :return: a :class:`SourceAnalysis`
-    """
-    assert encoding is not None
-    assert generated_regexes is not None
-
-    result = None
-    lexer = None
-    source_code = None
-    source_size = os.path.getsize(source_path)
-    if source_size == 0:
-        _log.info("%s: is empty", source_path)
-        result = pseudo_source_analysis(source_path, group, SourceState.empty)
-    elif is_binary_file(source_path):
-        _log.info("%s: is binary", source_path)
-        result = pseudo_source_analysis(source_path, group, SourceState.binary)
-    elif not has_lexer(source_path):
-        _log.info("%s: unknown language", source_path)
-        result = pseudo_source_analysis(source_path, group, SourceState.unknown)
-    elif duplicate_pool is not None:
-        duplicate_path = duplicate_pool.duplicate_path(source_path)
-        if duplicate_path is not None:
-            _log.info("%s: is a duplicate of %s", source_path, duplicate_path)
-            result = pseudo_source_analysis(source_path, group, SourceState.duplicate, duplicate_path)
-    if result is None:
-        if encoding in ("automatic", "chardet"):
-            encoding = encoding_for(source_path, encoding, fallback_encoding)
-        try:
-            with open(source_path, "r", encoding=encoding) as source_file:
-                source_code = source_file.read()
-        except (LookupError, OSError, UnicodeError) as error:
-            _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
-            result = pseudo_source_analysis(source_path, group, SourceState.error, error)
-        if result is None:
-            lexer = guess_lexer(source_path, source_code)
-            assert lexer is not None
-    if (result is None) and (len(generated_regexes) != 0):
-        number_line_and_regex = matching_number_line_and_regex(pygount.common.lines(source_code), generated_regexes)
-        if number_line_and_regex is not None:
-            number, _, regex = number_line_and_regex
-            message = "line {0} matches {1}".format(number, regex)
-            _log.info("%s: is generated code because %s", source_path, message)
-            result = pseudo_source_analysis(source_path, group, SourceState.generated, message)
-    if result is None:
-        assert lexer is not None
-        assert source_code is not None
-        language = lexer.name
-        if ("xml" in language.lower()) or (language == "Genshi"):
-            dialect = pygount.xmldialect.xml_dialect(source_path, source_code)
-            if dialect is not None:
-                language = dialect
-        _log.info("%s: analyze as %s using encoding %s", source_path, language, encoding)
-        mark_to_count_map = {"c": 0, "d": 0, "e": 0, "s": 0}
-        for line_parts in _line_parts(lexer, source_code):
-            mark_to_increment = "e"
-            for mark_to_check in ("d", "s", "c"):
-                if mark_to_check in line_parts:
-                    mark_to_increment = mark_to_check
-            mark_to_count_map[mark_to_increment] += 1
-        result = SourceAnalysis(
-            path=source_path,
-            language=language,
-            group=group,
-            code=mark_to_count_map["c"],
-            documentation=mark_to_count_map["d"],
-            empty=mark_to_count_map["e"],
-            string=mark_to_count_map["s"],
-            state=SourceState.analyzed,
-            state_info=None,
-        )
-
-    assert result is not None
-    return result
+    return SourceAnalysis.from_file(source_path, group, encoding, fallback_encoding, generated_regexes, duplicate_pool)

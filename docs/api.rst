@@ -13,7 +13,7 @@ Here's an example on how to analyze one of pygount's own source codes:
 
     >>> import pygount
     >>> pygount.source_analysis('pygount/analysis.py', 'pygount')
-    SourceAnalysis(path='pygount/analysis.py', language='Python', group='pygount', code=302, documentation=66, empty=62, string=23, state='analyzed', state_info=None)
+    SourceAnalysis(path='pygount/analysis.py', language='Python', group='pygount', state=analyzed, code=464, documentation=108, empty=104, string=22)
 
 
 Reference

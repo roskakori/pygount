@@ -14,32 +14,31 @@ jobs:
       MAIN_PYTHON_VERSION: 3.7
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r dev-requirements.txt
-    - name: Run the test suite
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-      run: |
-        python setup.py develop
-        pytest --verbose
-        if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then coveralls; fi
-    - name: Check code quality
-      run: |
-        if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then pre-commit run --all-files; fi
-    - name: Build and install pygount package
-      run: |
-        python setup.py bdist_wheel
-        if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then twine check dist/pygount-*.whl; fi
-        pip install dist/pygount-*.whl
-    - name: Build documentation
-      run: |
-        cd docs
-        pip install -r requirements.txt
-        make html
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r dev-requirements.txt
+      - name: Run the test suite
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        run: |
+          python setup.py develop
+          pytest --verbose
+          if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then coveralls; fi
+      - name: Check code quality
+        run: |
+          if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then pre-commit run --all-files; fi
+      - name: Build and install pygount package
+        run: |
+          python setup.py bdist_wheel
+          if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then twine check dist/pygount-*.whl; fi
+          pip install dist/pygount-*.whl
+      - name: Build documentation
+        run: |
+          pip install -r docs/requirements.txt
+          make -C docs html

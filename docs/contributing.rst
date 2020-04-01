@@ -1,5 +1,5 @@
-Contributing to pygount
-=======================
+Contributing
+============
 
 Project setup
 -------------

@@ -6,14 +6,14 @@ Developer cheat sheet
 
 Tag a release (simply replace ``1.x.x`` with the current version number)::
 
-  $ git tag -a -m "Tagged version 1.x.x" v1.x.x
+  $ git tag -a -m "Tagged version 1.x.x." v1.x.x
   $ git push --tags
 
 Upload release to PyPI::
 
   $ python3 setup.py bdist_wheel
   $ twine check dist/*.whl
-  $ twine upload dist/*.whl
+  $ twine upload --config-file ~/.pypyrc dist/*.whl
 """
 # Copyright (c) 2016-2020, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
@@ -35,7 +35,10 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/roskakori/pygount",
-    project_urls={"Issue Tracker": "https://github.com/roskakori/pygount/issues"},
+    project_urls={
+        "Documentation": "https://pygount.readthedocs.io/",
+        "Issue Tracker": "https://github.com/roskakori/pygount/issues",
+    },
     author="Thomas Aglassinger",
     author_email="roskakori@users.sourceforge.net",
     license="BSD",
