@@ -205,6 +205,14 @@ def test_can_guess_lexer_for_plain_text():
     assert lexer.name == "Text"
 
 
+def test_can_use_deprecated_counts():
+    source_analysis = analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed)
+    assert source_analysis.code == source_analysis.code_count
+    assert source_analysis.documentation == source_analysis.documentation_count
+    assert source_analysis.empty == source_analysis.empty_count
+    assert source_analysis.string == source_analysis.string_count
+
+
 class EncodingTest(TempFolderTest):
     _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
     _TEST_CODE = "x = '\u00fd \u20ac'"
