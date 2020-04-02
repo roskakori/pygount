@@ -5,17 +5,20 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 1.2.1, 2020-03-31
+Version 1.2.1, 2020-04-02
 
 * Fixed broken links in README on PyPI my moving the documentation to
-  `ReadTheDocs <https://pygount.readthedocs.io/en/latest/index.html>`_.
-* Cleaned up API:
+  `ReadTheDocs <https://pygount.readthedocs.io/>`_.
+* Improved API:
 
   * Changed factory functions to methods and added deprecation warnings:
 
-    * :py:func:`source_analysis` --> :py:meth:`SourceAnalysis.from_file`
-    * :py:func:`pseudo_source_analysis` --> :py:meth:`SourceAnalysis.from_state`
+    * :py:func:`source_analysis` → :py:meth:`SourceAnalysis.from_file`
+    * :py:func:`pseudo_source_analysis` → :py:meth:`SourceAnalysis.from_state`
 
+  * Changed attributes in :py:class:`SourceAnalysis` to read-only properties.
+  * Renamed properties holding counts from :py:attr:`xxx` to
+    :py:attr:`xxx_count`.
   * Added API reference to documentation.
   * Added a couple of type hints and assertions.
 

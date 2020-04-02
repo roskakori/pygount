@@ -5,7 +5,7 @@ Summaries of analyses of multiple source codes.
 # All rights reserved. Distributed under the BSD License.
 import functools
 import re
-from typing import Dict
+from typing import Dict, Hashable
 
 from .analysis import SourceAnalysis
 
@@ -21,19 +21,51 @@ class LanguageSummary:
 
     def __init__(self, language: str):
         self._language = language
-        self.code = 0
-        self.documentation = 0
-        self.file_count = 0
-        self.empty = 0
-        self.string = 0
-        self.is_pseudo_language = _PSEUDO_LANGUAGE_REGEX.match(self.language) is not None
+        self._code_count = 0
+        self._documentation_count = 0
+        self._empty_count = 0
+        self._file_count = 0
+        self._string_count = 0
+        self._is_pseudo_language = _PSEUDO_LANGUAGE_REGEX.match(self.language) is not None
 
     @property
     def language(self) -> str:
+        """the language to be summarized"""
         return self._language
 
-    def sort_key(self):
-        return self.code, self.documentation, self.string, self.empty, self.language
+    @property
+    def code_count(self) -> int:
+        """sum lines of code for this language"""
+        return self._code_count
+
+    @property
+    def documentation_count(self) -> int:
+        """sum lines of documentation for this language"""
+        return self._documentation_count
+
+    @property
+    def empty_count(self) -> int:
+        """sum empty lines for this language"""
+        return self._empty_count
+
+    @property
+    def file_count(self) -> int:
+        """number of source code files for this language"""
+        return self._file_count
+
+    @property
+    def string_count(self) -> int:
+        """sum number of lines containing only strings for this language"""
+        return self._string_count
+
+    @property
+    def is_pseudo_language(self) -> bool:
+        """``True`` if the language is not a real programming language"""
+        return self._is_pseudo_language
+
+    def sort_key(self) -> Hashable:
+        """sort key to sort multiple languages by importance"""
+        return self.code_count, self.documentation_count, self.string_count, self.empty_count, self.language
 
     def __eq__(self, other):
         return self.sort_key() == other.sort_key()
@@ -48,18 +80,18 @@ class LanguageSummary:
         assert source_analysis is not None
         assert source_analysis.language == self.language
 
-        self.file_count += 1
+        self._file_count += 1
         if source_analysis.is_countable:
-            self.code += source_analysis.code
-            self.documentation += source_analysis.documentation
-            self.empty += source_analysis.empty
-            self.string += source_analysis.string
+            self._code_count += source_analysis.code_count
+            self._documentation_count += source_analysis.documentation_count
+            self._empty_count += source_analysis.empty_count
+            self._string_count += source_analysis.string_count
 
     def __repr__(self):
         result = "{0}(language={1!r}, file_count={2}".format(self.__class__.__name__, self.language, self.file_count)
         if not self.is_pseudo_language:
-            result += ", code={0}, documentation={1}, empty={2}, string={3}".format(
-                self.code, self.documentation, self.empty, self.string
+            result += ", code_count={0}, documentation_count={1}, empty_count={2}, string_count={3}".format(
+                self.code_count, self.documentation_count, self.empty_count, self.string_count
             )
         result += ")"
         return result
@@ -72,12 +104,12 @@ class ProjectSummary:
 
     def __init__(self):
         self._language_to_language_summary_map = {}
-        self.total_code_count = 0
-        self.total_documentation_count = 0
-        self.total_empty_count = 0
-        self.total_string_count = 0
-        self.total_file_count = 0
-        self.total_line_count = 0
+        self._total_code_count = 0
+        self._total_documentation_count = 0
+        self._total_empty_count = 0
+        self._total_string_count = 0
+        self._total_file_count = 0
+        self._total_line_count = 0
 
     @property
     def language_to_language_summary_map(self) -> Dict[str, LanguageSummary]:
@@ -86,11 +118,37 @@ class ProjectSummary:
         """
         return self._language_to_language_summary_map
 
+    @property
+    def total_code_count(self) -> int:
+        return self._total_code_count
+
+    @property
+    def total_documentation_count(self) -> int:
+        return self._total_documentation_count
+
+    @property
+    def total_empty_count(self) -> int:
+
+        return self._total_empty_count
+
+    @property
+    def total_string_count(self) -> int:
+
+        return self._total_string_count
+
+    @property
+    def total_file_count(self) -> int:
+        return self._total_file_count
+
+    @property
+    def total_line_count(self) -> int:
+        return self._total_line_count
+
     def add(self, source_analysis: SourceAnalysis) -> None:
         """
         Add counts from ``source_analysis`` to total counts.
         """
-        self.total_file_count += 1
+        self._total_file_count += 1
         language_summary = self.language_to_language_summary_map.get(source_analysis.language)
         if language_summary is None:
             language_summary = LanguageSummary(source_analysis.language)
@@ -98,13 +156,16 @@ class ProjectSummary:
         language_summary.add(source_analysis)
 
         if source_analysis.is_countable:
-            self.total_code_count += source_analysis.code
-            self.total_documentation_count += source_analysis.documentation
-            self.total_empty_count += source_analysis.empty
-            self.total_line_count += (
-                source_analysis.code + source_analysis.documentation + source_analysis.empty + source_analysis.string
+            self._total_code_count += source_analysis.code_count
+            self._total_documentation_count += source_analysis.documentation_count
+            self._total_empty_count += source_analysis.empty_count
+            self._total_line_count += (
+                source_analysis.code_count
+                + source_analysis.documentation_count
+                + source_analysis.empty_count
+                + source_analysis.string_count
             )
-            self.total_string_count += source_analysis.string
+            self._total_string_count += source_analysis.string_count
 
     def __repr__(self):
         return "{0}(total_file_count={1}, total_line_count={2}, " "languages={3}".format(

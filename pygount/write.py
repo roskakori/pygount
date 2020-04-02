@@ -56,7 +56,7 @@ class LineWriter(BaseWriter):
         self.template = "{0}\t{1}\t{2}\t{3}"
 
     def add(self, source_analysis):
-        source_line_count = source_analysis.code + source_analysis.string
+        source_line_count = source_analysis.code_count + source_analysis.string_count
         line_to_write = self.template.format(
             source_line_count, source_analysis.language, source_analysis.group, source_analysis.path
         )
@@ -86,9 +86,9 @@ class ClocXmlWriter(BaseWriter):
     def add(self, source_analysis):
         super().add(source_analysis)
         file_attributes = {
-            "blank": str(source_analysis.empty),
-            "code": str(source_analysis.code + source_analysis.string),
-            "comment": str(source_analysis.documentation),
+            "blank": str(source_analysis.empty_count),
+            "code": str(source_analysis.code_count + source_analysis.string_count),
+            "comment": str(source_analysis.documentation_count),
             "language": source_analysis.language,
             "name": source_analysis.path,
         }
@@ -156,10 +156,10 @@ class SummaryWriter(BaseWriter):
             file_count_width = digit_width(language_summary.file_count)
             if file_count_width > max_file_count_width:
                 max_file_count_width = file_count_width
-            code_width = digit_width(language_summary.code)
+            code_width = digit_width(language_summary.code_count)
             if code_width > max_code_width:
                 max_code_width = code_width
-            documentation_width = digit_width(language_summary.documentation)
+            documentation_width = digit_width(language_summary.documentation_count)
             if documentation_width > max_documentation_width:
                 max_documentation_width = documentation_width
         digits_after_dot = self._PERCENTAGE_DIGITS_AFTER_DOT
@@ -211,7 +211,7 @@ class SummaryWriter(BaseWriter):
             "{6:>{percentage_width}.0{digits_after_dot}f}"
         )
         for language_summary in sorted(self.project_summary.language_to_language_summary_map.values(), reverse=True):
-            code_count = language_summary.code
+            code_count = language_summary.code_count
             code_percentage = (
                 code_count / self.project_summary.total_code_count * 100
                 if self.project_summary.total_code_count != 0
@@ -223,7 +223,7 @@ class SummaryWriter(BaseWriter):
             ), "if there is at least 1 language summary, there must be a file count too"
             file_percentage = file_count / self.project_summary.total_file_count * 100
             documentation_percentage = (
-                language_summary.documentation / self.project_summary.total_documentation_count * 100
+                language_summary.documentation_count / self.project_summary.total_documentation_count * 100
                 if self.project_summary.total_documentation_count != 0
                 else 0.0
             )
@@ -233,7 +233,7 @@ class SummaryWriter(BaseWriter):
                 file_percentage,
                 code_count,
                 code_percentage,
-                language_summary.documentation,
+                language_summary.documentation_count,
                 documentation_percentage,
                 digits_after_dot=digits_after_dot,
                 max_code_width=max_code_width,

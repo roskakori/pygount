@@ -115,8 +115,8 @@ class FileAnalysisTest(TempFolderTest):
         )
         source_analysis = analysis.SourceAnalysis.from_file(test_bat_path, "test", encoding="utf-8")
         assert source_analysis.language == "Batchfile"
-        assert source_analysis.code == 1
-        assert source_analysis.documentation == 2
+        assert source_analysis.code_count == 1
+        assert source_analysis.documentation_count == 2
 
     def test_fails_on_unknown_magic_encoding_comment(self):
         test_path = self.create_temp_file(
@@ -135,8 +135,8 @@ class FileAnalysisTest(TempFolderTest):
         )
         source_analysis = analysis.SourceAnalysis.from_file(test_oracle_sql_path, "test", encoding="utf-8")
         assert source_analysis.language.lower().endswith("sql")
-        assert source_analysis.code == 2
-        assert source_analysis.documentation == 1
+        assert source_analysis.code_count == 2
+        assert source_analysis.documentation_count == 1
 
     def test_can_analyze_webfocus(self):
         test_fex_path = self.create_temp_file(
@@ -144,8 +144,8 @@ class FileAnalysisTest(TempFolderTest):
         )
         source_analysis = analysis.SourceAnalysis.from_file(test_fex_path, "test", encoding="utf-8")
         assert source_analysis.language == "WebFOCUS"
-        assert source_analysis.code == 2
-        assert source_analysis.documentation == 1
+        assert source_analysis.code_count == 2
+        assert source_analysis.documentation_count == 1
 
     def test_can_analyze_xml_dialect(self):
         build_xml_path = self.create_temp_file("build.xml", EXAMPLE_ANT_CODE)
@@ -162,14 +162,14 @@ class FileAnalysisTest(TempFolderTest):
         binary_path = self.create_temp_binary_file("some_django.mo", b"hello\0world!")
         source_analysis = analysis.SourceAnalysis.from_file(binary_path, "test", encoding="utf-8")
         assert source_analysis.state == analysis.SourceState.binary
-        assert source_analysis.code == 0
+        assert source_analysis.code_count == 0
 
 
 def test_can_repr_source_analysis_from_file():
     source_analysis = analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed)
     expected_source_analysis_repr = (
         "SourceAnalysis(path='some.py', language='Python', group='some', "
-        "state=analyzed, code=1, documentation=2, empty=3, string=4)"
+        "state=analyzed, code_count=1, documentation_count=2, empty_count=3, string_count=4)"
     )
     assert repr(source_analysis) == expected_source_analysis_repr
     assert repr(source_analysis) == str(source_analysis)
@@ -203,6 +203,14 @@ def test_can_guess_lexer_for_plain_text():
     lexer = guess_lexer("README.1st", "hello!")
     assert lexer is not None
     assert lexer.name == "Text"
+
+
+def test_can_use_deprecated_counts():
+    source_analysis = analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed)
+    assert source_analysis.code == source_analysis.code_count
+    assert source_analysis.documentation == source_analysis.documentation_count
+    assert source_analysis.empty == source_analysis.empty_count
+    assert source_analysis.string == source_analysis.string_count
 
 
 class EncodingTest(TempFolderTest):
@@ -331,7 +339,7 @@ class SizeTest(TempFolderTest):
         empty_py_path = self.create_temp_binary_file("empty.py", b"")
         source_analysis = analysis.SourceAnalysis.from_file(empty_py_path, "test", encoding="utf-8")
         assert source_analysis.state == analysis.SourceState.empty
-        assert source_analysis.code == 0
+        assert source_analysis.code_count == 0
 
 
 def test_can_analyze_project_markdown_files():
@@ -339,8 +347,8 @@ def test_can_analyze_project_markdown_files():
     for text_path in glob.glob(os.path.join(project_root_folder, "*.md")):
         source_analysis = analysis.SourceAnalysis.from_file(text_path, "test")
         assert source_analysis.state == analysis.SourceState.analyzed
-        assert source_analysis.documentation > 0
-        assert source_analysis.empty > 0
+        assert source_analysis.documentation_count > 0
+        assert source_analysis.empty_count > 0
 
 
 def test_has_no_duplicate_in_pygount_source():

@@ -52,6 +52,17 @@ To build and browse the coverage report in HTML format:
     $ open htmlcov/index.html  # macOS only
 
 
+Documentation
+-------------
+
+To build the documentation in HTML format:
+
+.. code-block:: bash
+
+    $ make -C docs html
+    $ open docs/_build/html/index.html  # macOS only
+
+
 Coding guidelines
 -----------------
 

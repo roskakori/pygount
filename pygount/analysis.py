@@ -12,7 +12,7 @@ import logging
 import os
 import re
 from enum import Enum
-from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, Tuple
+from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, Tuple, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -344,26 +344,68 @@ class SourceAnalysis:
 
     @property
     def language(self) -> str:
+        """
+        The programming language the analyzed source code is written in; if
+        :py:attr:`state` does not equal :py:attr:`SourceState.analyzed` this
+        will be a pseudo language.
+        """
         return self._language
 
     @property
     def group(self) -> str:
+        """
+        Group the source code belongs to; this can be any text useful to group
+        the files later on. It is perfectly valid to put all files in the same
+        group.
+
+        (Note: this property is mostly there for compatibility with the
+        original SLOCCount.)
+        """
         return self._group
 
     @property
+    def code_count(self) -> int:
+        """number of lines containing code"""
+        return self._code
+
+    @property
+    def documentation_count(self) -> int:
+        """number of lines containing documentation (resp. comments)"""
+        return self._documentation
+
+    @property
+    def empty_count(self) -> int:
+        """
+        number of empty lines, including lines containing only white space,
+        white characters or white code words
+
+        See also: :py:func:`white_characters`, :py:func:`white_code_words`
+        """
+        return self._empty
+
+    @property
+    def string_count(self) -> int:
+        """number of lines containing only strings but no other code"""
+        return self._string
+
+    @property
     def code(self) -> int:
+        # TODO #47: Remove deprecated property.
         return self._code
 
     @property
     def documentation(self) -> int:
+        # TODO #47: Remove deprecated property.
         return self._documentation
 
     @property
     def empty(self) -> int:
+        # TODO #47: Remove deprecated property.
         return self._empty
 
     @property
     def string(self) -> int:
+        # TODO #47: Remove deprecated property.
         return self._string
 
     @property
@@ -374,9 +416,16 @@ class SourceAnalysis:
         return self._state
 
     @property
-    def state_info(self) -> Optional[str]:
+    def state_info(self) -> Optional[Union[str, Exception]]:
         """
-        Possible additional information about :py:attr:`state`.
+        Possible additional information about :py:attr:`state`:
+
+        * :py:attr:`SourceState.duplicate`: path to the original source file
+          the :py:attr:`path` is a duplicate of
+        * :py:attr:`SourceState.error`: the :py:exc:`Exception` causing the
+          error
+        * :py:attr:`SourceState.generated`: a human readable explanation why
+          the file is considered to be generated
         """
         return self._state_info
 
@@ -392,8 +441,8 @@ class SourceAnalysis:
             self.__class__.__name__, self.path, self.language, self.group, self.state.name
         )
         if self.state == SourceState.analyzed:
-            result += ", code={0}, documentation={1}, empty={2}, string={3}".format(
-                self.code, self.documentation, self.empty, self.string
+            result += ", code_count={0}, documentation_count={1}, empty_count={2}, string_count={3}".format(
+                self.code_count, self.documentation_count, self.empty_count, self.string_count
             )
         if self.state_info is not None:
             result += ", state_info={0!r}".format(self.state_info)

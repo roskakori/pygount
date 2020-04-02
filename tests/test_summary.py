@@ -9,7 +9,8 @@ def test_can_repr_language_summary():
     language_summary = LanguageSummary("Python")
     language_summary.add(SourceAnalysis("some.py", "Python", "some", 2, 3, 4, 5, SourceState.analyzed))
     expected_language_summary_repr = (
-        "LanguageSummary(language='Python', file_count=1, code=2, documentation=3, empty=4, string=5)"
+        "LanguageSummary(language='Python', file_count=1, "
+        "code_count=2, documentation_count=3, empty_count=4, string_count=5)"
     )
     assert repr(language_summary) == expected_language_summary_repr
     assert repr(language_summary) == str(language_summary)
