@@ -651,7 +651,12 @@ def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Generator[Set[str], N
     white_text = " \f\n\r\t" + white_characters(language_id)
     white_words = white_code_words(language_id)
     for token_type, token_text in tokens:
-        if token_type in pygments.token.Comment:
+        # NOTE: Pygments treats preprocessor statements as special comments.
+        is_actual_comment = token_type in pygments.token.Comment and token_type not in (
+            pygments.token.Comment.Preproc,
+            pygments.token.Comment.PreprocFile,
+        )
+        if is_actual_comment:
             line_marks.add("d")  # 'documentation'
         elif token_type in pygments.token.String:
             line_marks.add("s")  # 'string'
