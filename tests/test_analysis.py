@@ -5,6 +5,8 @@ Tests for pygount source code analysis.
 # All rights reserved. Distributed under the BSD License.
 import glob
 import os
+from typing import List, Set
+
 import pytest
 import unittest
 
@@ -90,13 +92,37 @@ class AnalysisTest(unittest.TestCase):
         for token_type, token_text in list(analysis._pythonized_comments(analysis._delined_tokens(python_tokens))):
             assert token_type not in token.String
 
+    @staticmethod
+    def _line_parts(lexer_name: str, source_lines: List[str]) -> List[Set[str]]:
+        lexer = lexers.get_lexer_by_name(lexer_name)
+        source_code = "\n".join(source_lines)
+        return list(analysis._line_parts(lexer, source_code))
+
     def test_can_analyze_python(self):
-        source_code = (
-            '"Some tool."\n' "#!/bin/python\n" "#(C) by me\n" "def x():\n" '    "Some function"\n' '    return "abc"\n'
-        )
-        python_lexer = lexers.get_lexer_by_name("python")
-        actual_line_parts = list(analysis._line_parts(python_lexer, source_code))
+        source_lines = [
+            '"Some tool."',
+            "#!/bin/python",
+            "#(C) by me",
+            "def x():",
+            '    "Some function"',
+            '    return "abc"',
+        ]
+        actual_line_parts = AnalysisTest._line_parts("python", source_lines)
         expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"d"}, {"c", "s"}]
+        assert actual_line_parts == expected_line_parts
+
+    def test_can_analyze_c(self):
+        source_lines = [
+            "/*",
+            " * The classic hello world for C99.",
+            " */",
+            "#include <stdio.h>",
+            "int main(void) {",
+            '   puts("Hello, World!");',
+            "}",
+        ]
+        actual_line_parts = AnalysisTest._line_parts("c", source_lines)
+        expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"c"}, {"c", "s"}, set()]
         assert actual_line_parts == expected_line_parts
 
 

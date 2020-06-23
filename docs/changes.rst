@@ -5,9 +5,15 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.2.1, 2020-06-24
+
+* Changed preprocessor statements to count as code, unlike Pygments which
+  treats them as special comments (contributed by nkr0, issue
+  `#51 <https://github.com/roskakori/pygount/issues/51>`_).
+
 Version 1.2.1, 2020-04-02
 
-* Fixed broken links in README on PyPI my moving the documentation to
+* Fixed broken links in README on PyPI by moving the documentation to
   `ReadTheDocs <https://pygount.readthedocs.io/>`_.
 * Improved API:
 
