@@ -100,7 +100,7 @@ _BOM_TO_ENCODING_MAP = collections.OrderedDict(
 _XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>[-_.a-zA-Z0-9]+)".*\?>')
 _CODING_MAGIC_REGEX = re.compile(r".+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b", re.DOTALL)
 
-_STANDARD_PLAIN_TEXT_NAMES = (
+_STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
     # Text files for (moribund) gnits standards.
     "authors",
     "bugs",
@@ -117,9 +117,8 @@ _STANDARD_PLAIN_TEXT_NAMES = (
     "readme\\.1st",
     "read\\.me",
     "todo",
-    ".*\\.txt",
 )
-_PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAMES) + "$)"
+_PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAME_PATTERNS) + "$)"
 #: Regular expression to detect plain text files by name.
 _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
 
@@ -129,6 +128,7 @@ _SUFFIX_TO_FALLBACK_LEXER_MAP = {
     "fex": pygount.lexers.MinimalisticWebFocusLexer(),
     "idl": pygount.lexers.IdlLexer(),
     "m4": pygount.lexers.MinimalisticM4Lexer(),
+    "txt": pygount.lexers.PlainTextLexer(),
     "vbe": pygount.lexers.MinimalisticVBScriptLexer(),
     "vbs": pygount.lexers.MinimalisticVBScriptLexer(),
 }

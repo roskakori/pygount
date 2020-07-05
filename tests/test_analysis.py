@@ -231,6 +231,21 @@ def test_can_guess_lexer_for_plain_text():
     assert lexer.name == "Text"
 
 
+def test_can_guess_lexer_for_cmakelists():
+    source_code = "\n".join(
+        [
+            "cmake_minimum_required(VERSION 2.6)",
+            "project(example)",
+            "set(CMAKE_CXX_STANDARD 14)",
+            "set(SOURCE_FILES example.cpp)",
+            "add_executable(example ${SOURCE_FILES})",
+        ]
+    )
+    lexer = guess_lexer("CMakeLists.txt", source_code)
+    assert lexer is not None
+    assert lexer.name == "CMake"
+
+
 def test_can_use_deprecated_counts():
     source_analysis = analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed)
     assert source_analysis.code == source_analysis.code_count
