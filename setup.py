@@ -13,7 +13,7 @@ Upload release to PyPI::
 
   $ python3 setup.py bdist_wheel
   $ twine check dist/*.whl
-  $ twine upload --config-file ~/.pypyrc dist/*.whl
+  $ twine upload --config-file ~/.pypirc dist/*.whl
 """
 # Copyright (c) 2016-2020, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
