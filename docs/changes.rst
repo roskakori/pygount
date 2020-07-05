@@ -5,7 +5,18 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 1.2.1, 2020-06-24
+Version 1.2.3, 2020-07-05
+
+* Improved detection of text files by trying to guess a lexer for
+  :file:`*.txt` before assuming it is text. This basically fixes the detection
+  of :file:`CMakelists.txt` as CMake file
+  `#53 <https://github.com/roskakori/pygount/issues/53>`_). However, it will
+  only work with some files due to multiple issues with the regular expression
+  Pygments uses in versions up to 2.6.1 to detect CMake headers. This should
+  be fixed once pull request
+  `#1491 <https://github.com/pygments/pygments/pull/1491>`_ is applied.
+
+Version 1.2.2, 2020-06-24
 
 * Changed preprocessor statements to count as code, unlike Pygments which
   treats them as special comments (contributed by nkr0, issue
