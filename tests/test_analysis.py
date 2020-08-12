@@ -55,6 +55,14 @@ class SourceScannerTest(TempFolderTest):
         scanned_names = [os.path.basename(source_path) for source_path, _ in scanner.source_paths()]
         assert scanned_names == [name_to_include]
 
+    def test_can_find_python_files_in_dot(self):
+        scanner = analysis.SourceScanner(["."], "py")
+        actual_paths = list(scanner.source_paths())
+        assert actual_paths != []
+        for python_path, _ in actual_paths:
+            actual_suffix = os.path.splitext(python_path)[1]
+            assert actual_suffix == ".py"
+
 
 class AnalysisTest(unittest.TestCase):
     def test_can_deline_tokens(self):
