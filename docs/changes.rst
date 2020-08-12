@@ -5,6 +5,12 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.2.4, 2020-08-11
+
+* Fixed scanning of "." (for current folder), which was skipped entirely
+  (issue `#56 <https://github.com/roskakori/pygount/issues/56>`_).
+
+
 Version 1.2.3, 2020-07-05
 
 * Improved detection of text files by trying to guess a lexer for

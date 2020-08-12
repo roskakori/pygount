@@ -39,7 +39,7 @@ DEFAULT_FALLBACK_ENCODING = "cp1252"
 
 #: Default glob patterns for folders not to analyze.
 DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
-    [".*", "_svn", "__pycache__"]  # Subversion hack for Windows  # Python byte code
+    [".?*", "_svn", "__pycache__"]  # Subversion hack for Windows  # Python byte code
 )
 
 
