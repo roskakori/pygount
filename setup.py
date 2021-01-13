@@ -15,7 +15,7 @@ Upload release to PyPI::
   $ twine check dist/*.whl
   $ twine upload --config-file ~/.pypirc dist/*.whl
 """
-# Copyright (c) 2016-2020, Thomas Aglassinger.
+# Copyright (c) 2016-2021, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import os
 from setuptools import setup, find_packages
