@@ -32,19 +32,19 @@ To get a list of line counts for a projects stored in a certain folder run for
 example:
 
 ```bash
-$ pygount ~/projects/exammple
+$ pygount ~/projects/example
 ```
 
 To limit the analysis to certain file types identified by their suffix:
 
 ```bash
-$ pygount --suffix=cfg,py,yml  ~/projects/exammple
+$ pygount --suffix=cfg,py,yml  ~/projects/example
 ```
 
 To get a summary of each programming language with sum counts and percentage:
 
 ```bash
-$ pygount --format=summary ~/projects/exammple
+$ pygount --format=summary ~/projects/example
 ```
 
 As an example here is the summary output for pygount's own source code:
@@ -73,7 +73,7 @@ A popular format for such tools is the XML format used by cloc, which pygount
 also supports and can store in an output file:
 
 ```bash
-$ pygount --format=cloc-xml --out=cloc.xml ~/projects/exammple
+$ pygount --format=cloc-xml --out=cloc.xml ~/projects/example
 ```
 
 To get a short description of all available command line options use:
