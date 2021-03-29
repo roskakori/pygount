@@ -3,7 +3,7 @@ chardet==3.0.4
 coverage==5.2.1
 coveralls==2.1.2
 pre-commit==2.6.0; python_version >= '3.6'  # pre-commit 2.1 requires Python 3.6+
-pygments==2.6.1  # Pygments 2.5.0 changed Java's "{}" from Operator to Punctuation, earlier versions would break tests.
+pygments==2.7.4  # Pygments 2.5.0 changed Java's "{}" from Operator to Punctuation, earlier versions would break tests.
 pytest==6.0.1
 pytest-cov==2.10.0
 setuptools==49.3.1
