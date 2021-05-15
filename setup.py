@@ -15,7 +15,7 @@ Upload release to PyPI::
   $ twine check dist/*.whl
   $ twine upload --config-file ~/.pypirc dist/*.whl
 """
-# Copyright (c) 2016-2020, Thomas Aglassinger.
+# Copyright (c) 2016-2021, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import os
 from setuptools import setup, find_packages
@@ -54,6 +54,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Software Development",
     ],
     keywords=["code analysis", "count", "SLOC"],

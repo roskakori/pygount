@@ -1,7 +1,7 @@
 """
 Writers to store the results of a pygount analysis.
 """
-# Copyright (c) 2016-2020, Thomas Aglassinger.
+# Copyright (c) 2016-2021, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import datetime
 import math
