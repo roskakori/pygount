@@ -12,7 +12,6 @@ import pygount.analysis
 import pygount.common
 import pygount.write
 
-
 #: Valid formats for option --format.
 VALID_OUTPUT_FORMATS = ("cloc-xml", "sloccount", "summary")
 

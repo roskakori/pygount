@@ -9,7 +9,6 @@ from typing import Dict, Hashable
 
 from .analysis import SourceAnalysis
 
-
 _PSEUDO_LANGUAGE_REGEX = re.compile("^__[a-z]+__$")
 
 

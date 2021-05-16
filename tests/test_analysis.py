@@ -5,18 +5,17 @@ Tests for pygount source code analysis.
 # All rights reserved. Distributed under the BSD License.
 import glob
 import os
+import unittest
 from typing import List, Set
 
 import pytest
-import unittest
-
 from pygments import lexers, token
+
+from pygount import analysis, common
+from pygount.analysis import guess_lexer
 
 from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
 from .test_xmldialect import EXAMPLE_ANT_CODE
-from pygount.analysis import guess_lexer
-from pygount import analysis
-from pygount import common
 
 
 class SourceScannerTest(TempFolderTest):
