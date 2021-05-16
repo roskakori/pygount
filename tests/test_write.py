@@ -134,7 +134,15 @@ class SummaryWriterTest(TempFolderTest):
 
         source_analyses = (
             analysis.SourceAnalysis(
-                "x", long_language_name, "some", huge_number, huge_number, 0, 0, analysis.SourceState.analyzed, None,
+                "x",
+                long_language_name,
+                "some",
+                huge_number,
+                huge_number,
+                0,
+                0,
+                analysis.SourceState.analyzed,
+                None,
             ),
         )
         for line in self._summary_lines_for(source_analyses):

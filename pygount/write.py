@@ -145,7 +145,10 @@ class SummaryWriter(BaseWriter):
         super().close()
 
         # Compute maximum column widths
-        max_language_width = max(len(SummaryWriter._LANGUAGE_HEADING), len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE),)
+        max_language_width = max(
+            len(SummaryWriter._LANGUAGE_HEADING),
+            len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE),
+        )
         max_file_count_width = len(SummaryWriter._FILE_COUNT_HEADING)
         max_code_width = len(SummaryWriter._CODE_HEADING)
         max_documentation_width = len(SummaryWriter._DOCUMENTATION_HEADING)

@@ -165,7 +165,8 @@ class FileAnalysisTest(TempFolderTest):
 
     def test_can_analyze_oracle_sql(self):
         test_oracle_sql_path = self.create_temp_file(
-            "some_oracle_sql.pls", ["-- Oracle SQL example using an obscure suffix.", "select *", "from some_table;"],
+            "some_oracle_sql.pls",
+            ["-- Oracle SQL example using an obscure suffix.", "select *", "from some_table;"],
         )
         source_analysis = analysis.SourceAnalysis.from_file(test_oracle_sql_path, "test", encoding="utf-8")
         assert source_analysis.language.lower().endswith("sql")

@@ -5,6 +5,12 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.2.5, 2021-05-16
+
+* Removed support for Python 3.5. Probably it still works but there is no easy
+  way to test this anymore because 3.5 has reached end of life a while ago.
+
+
 Version 1.2.4, 2020-08-11
 
 * Fixed scanning of "." (for current folder), which was skipped entirely
