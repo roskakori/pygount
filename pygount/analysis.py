@@ -238,9 +238,12 @@ class SourceAnalysis:
     @staticmethod
     def _check_state_info(state: SourceState, state_info: Optional[str]):
         states_that_require_state_info = [SourceState.duplicate, SourceState.error, SourceState.generated]
-        assert (state in states_that_require_state_info) == (state_info is not None), (
-            "state=%s and state_info=%s but state_info must be specified for the following states: %s"
-            % (state, state_info, states_that_require_state_info)
+        assert (state in states_that_require_state_info) == (
+            state_info is not None
+        ), "state=%s and state_info=%s but state_info must be specified for the following states: %s" % (
+            state,
+            state_info,
+            states_that_require_state_info,
         )
 
     @staticmethod
