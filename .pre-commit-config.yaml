@@ -1,6 +1,11 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.8.0
+    hooks:
+      - id: isort
+
   - repo: https://github.com/psf/black
     rev: 21.5b1
     hooks:
@@ -21,5 +26,7 @@ repos:
       - id: check-xml
       - id: check-added-large-files
       - id: check-ast
+      - id: debug-statements
       - id: fix-byte-order-marker
+      - id: check-merge-conflict
       - id: requirements-txt-fixer

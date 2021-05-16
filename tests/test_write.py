@@ -7,11 +7,12 @@ import io
 import os
 import tempfile
 from collections import namedtuple
-
-import pytest
 from xml.etree import ElementTree
 
+import pytest
+
 from pygount import analysis, write
+
 from ._common import TempFolderTest
 
 

@@ -7,7 +7,6 @@ import logging
 import re
 import xml.sax
 
-
 # TODO #10: Replace regex for DTD by working DTD handler.
 #: Regular expression to obtain DTD.
 _DTD_REGEX = re.compile(r'<!DOCTYPE\s+(?P<name>[a-zA-Z][a-zA-Z-]*)\s+PUBLIC\s+"(?P<public_id>.+)"')

@@ -10,7 +10,6 @@ import re
 import warnings
 from typing import Generator, List, Optional, Pattern, Sequence, Union
 
-
 __version__ = "1.2.4"
 
 

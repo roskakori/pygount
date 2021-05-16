@@ -18,10 +18,10 @@ Upload release to PyPI::
 # Copyright (c) 2016-2021, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 from pygount import __version__
-
 
 # Read the long description from the README file.
 _setup_folder = os.path.dirname(__file__)

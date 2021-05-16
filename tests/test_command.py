@@ -4,13 +4,15 @@ Tests for pygount command line interface.
 # Copyright (c) 2016-2021, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import os
-import pytest
 import tempfile
 from xml.etree import ElementTree
 
+import pytest
+
 from pygount import command
-from pygount.command import Command, VALID_OUTPUT_FORMATS
+from pygount.command import VALID_OUTPUT_FORMATS, Command
 from pygount.common import OptionError
+
 from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
 
 
