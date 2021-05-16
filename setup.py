@@ -50,7 +50,6 @@ setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
@@ -60,6 +59,6 @@ setup(
     keywords=["code analysis", "count", "SLOC"],
     packages=find_packages(exclude=["tests"]),
     install_requires=["pygments>=2.0"],
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     entry_points={"console_scripts": ["pygount=pygount.command:main"]},
 )
