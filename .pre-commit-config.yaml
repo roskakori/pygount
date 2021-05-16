@@ -21,5 +21,7 @@ repos:
       - id: check-xml
       - id: check-added-large-files
       - id: check-ast
+      - id: debug-statements
       - id: fix-byte-order-marker
+      - id: check-merge-conflict
       - id: requirements-txt-fixer
