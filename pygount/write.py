@@ -8,6 +8,9 @@ import math
 import os
 from xml.etree import ElementTree
 
+from rich.console import Console
+from rich.table import Table
+
 from .summary import ProjectSummary
 
 
@@ -267,6 +270,42 @@ class SummaryWriter(BaseWriter):
             percentage_width=percentage_width,
         )
         self._target_stream.write(summary_footer + os.linesep)
+
+
+class RichWriter(BaseWriter):
+    def close(self):
+        super().close()
+
+        table = Table("Language", "files", "blank", "comment", "code")
+        language_summaries = sorted(self.project_summary.language_to_language_summary_map.values(), reverse=True)
+
+        for index, language_summary in enumerate(language_summaries, start=1):
+            table.add_row(
+                language_summary.language,
+                *map(
+                    str,
+                    (
+                        language_summary.file_count,
+                        language_summary.empty_count,
+                        language_summary.documentation_count,
+                        language_summary.code_count,
+                    ),
+                ),
+                end_section=index == len(language_summaries),
+            )
+        table.add_row(
+            "SUM",
+            *map(
+                str,
+                (
+                    self.project_summary.total_file_count,
+                    self.project_summary.total_empty_count,
+                    self.project_summary.total_documentation_count,
+                    self.project_summary.total_code_count,
+                ),
+            ),
+        )
+        Console(file=self._target_stream).print(table)
 
 
 def digit_width(line_count):

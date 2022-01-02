@@ -10,7 +10,7 @@ import re
 import warnings
 from typing import Generator, List, Optional, Pattern, Sequence, Union
 
-__version__ = "1.2.4"
+__version__ = "1.3.4"
 
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.

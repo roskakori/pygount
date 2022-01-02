@@ -58,7 +58,7 @@ setup(
     ],
     keywords=["code analysis", "count", "SLOC"],
     packages=find_packages(exclude=["tests"]),
-    install_requires=["pygments>=2.0"],
+    install_requires=["pygments>=2.0", "rich>=10.16.1"],
     python_requires=">=3.6",
     entry_points={"console_scripts": ["pygount=pygount.command:main"]},
 )
