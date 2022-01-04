@@ -14,25 +14,19 @@ follows:
        $ git clone https://github.com/roskakori/pygount.git
        $ cd pygount
 
-2. Create and activate a virtual environment:
+2. Install `poetry <https://python-poetry.org/>`_.
+
+3. Create the virtual environment and install the required packages:
 
    .. code-block:: bash
 
-       $ python -m venv venv
-       $ . venv/bin/activate
-
-3. Install the required packages:
-
-   .. code-block:: bash
-
-       $ pip install --upgrade pip
-       $ pip install -r dev-requirements.txt
+       $ poetry install
 
 4. Install the pre-commit hook:
 
    .. code-block:: bash
 
-       $ pre-commit install
+       $ poetry run pre-commit install
 
 
 Testing
@@ -42,13 +36,13 @@ To run the test suite:
 
 .. code-block:: bash
 
-    $ pytest
+    $ poetry run pytest
 
 To build and browse the coverage report in HTML format:
 
 .. code-block:: bash
 
-    $ pytest --cov-report=html
+    $ poetry run pytest --cov-report=html
     $ open htmlcov/index.html  # macOS only
 
 
@@ -59,7 +53,7 @@ To build the documentation in HTML format:
 
 .. code-block:: bash
 
-    $ make -C docs html
+    $ poetry run scripts/build_documentation.sh
     $ open docs/_build/html/index.html  # macOS only
 
 
@@ -75,7 +69,7 @@ the code without performing a commit, run:
 
 .. code-block:: bash
 
-    $ pre-commit run --all-files
+    $ poetry run pre-commit run --all-files
 
 In particular, this applies `black <https://black.readthedocs.io/en/stable/>`_,
 `flake8 <https://flake8.pycqa.org/>`_ and

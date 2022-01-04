@@ -5,6 +5,12 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.3.0, 2022-xx-xx
+
+* Changed build process to `poetry <https://python-poetry.org/>`_ to change
+  several messy configuration files into a single even more messy
+  configuration file.
+
 Version 1.2.5, 2021-05-16
 
 * Removed support for Python 3.5. Probably it still works but there is no easy
