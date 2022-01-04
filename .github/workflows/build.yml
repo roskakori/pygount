@@ -44,7 +44,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          poetry run coveralls
+          poetry run coveralls --service=github
       - name: Load cached pre-commit
         id: cached-pre-commit
         uses: actions/cache@v2
