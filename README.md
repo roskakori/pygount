@@ -1,5 +1,5 @@
 ![Python Versions](https://img.shields.io/pypi/pyversions/pygount.svg)
-![Build Status](https://img.shields.io/github/workflow/status/roskakori/pygount/Build)
+![Build Status](https://github.com/github/docs/actions/workflows/build.yml/badge.svg)
 [![Test Coverage](https://img.shields.io/coveralls/github/roskakori/pygount)](https://coveralls.io/r/roskakori/pygount?branch=master)
 [![License](https://img.shields.io/github/license/roskakori/pygount)](https://opensource.org/licenses/BSD-3-Clause)
 
