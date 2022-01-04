@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 
+import pygount
 import pygount.analysis
 import pygount.common
 import pygount.write
@@ -264,7 +265,7 @@ class Command:
             help="source files and directories to scan; can use glob patterns; default: current directory",
         )
         parser.add_argument("--verbose", "-v", action="store_true", help="explain what is being done")
-        parser.add_argument("--version", action="version", version="%(prog)s " + pygount.common.__version__)
+        parser.add_argument("--version", action="version", version="%(prog)s " + pygount.__version__)
         return parser
 
     def parsed_args(self, arguments):

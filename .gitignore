@@ -37,11 +37,11 @@ nosetests.xml
 .pydevproject
 
 # Various
+.pytest_cache
 /build/
 /dist/
 /docs/_build/
 /cloc.xml
 /tests/.temp/
 /.idea
-/venv/
 /htmlcov/

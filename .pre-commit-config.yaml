@@ -1,32 +1,38 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
+exclude: "^.idea"
+
 repos:
   - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.8.0
+    rev: v5.10.1
     hooks:
       - id: isort
 
-  - repo: https://github.com/psf/black
-    rev: 21.5b1
+  - repo: https://github.com/ambv/black
+    rev: 21.12b0
     hooks:
       - id: black
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.5.1
+    hooks:
+      - id: prettier
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      - id: fix-byte-order-marker
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
 
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
     hooks:
       - id: flake8
-
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: mixed-line-ending
-      - id: check-yaml
-      - id: check-xml
-      - id: check-added-large-files
-      - id: check-ast
-      - id: debug-statements
-      - id: fix-byte-order-marker
-      - id: check-merge-conflict
-      - id: requirements-txt-fixer
+        additional_dependencies: ["pep8-naming==0.12.1"]

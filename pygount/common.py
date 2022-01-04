@@ -10,10 +10,8 @@ import re
 import warnings
 from typing import Generator, List, Optional, Pattern, Sequence, Union
 
-__version__ = "1.2.4"
-
-
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
+
 ADDITIONAL_PATTERN = "[...]"
 
 #: Prefix to use for pattern strings to describe a regular expression instead of a shell pattern.
