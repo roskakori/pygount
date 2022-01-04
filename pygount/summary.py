@@ -1,7 +1,7 @@
 """
 Summaries of analyses of multiple source codes.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import functools
 import re

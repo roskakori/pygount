@@ -1,7 +1,7 @@
 """
 Pygount counts lines of source code using pygments lexers.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import pkg_resources
 
