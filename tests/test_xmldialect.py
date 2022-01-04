@@ -1,7 +1,7 @@
 """
 Tests for function to obtain the language dialect used by XML source code.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import pygount.xmldialect
 

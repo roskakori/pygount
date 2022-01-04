@@ -1,7 +1,7 @@
 """
 Tests for pygount command line interface.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import os
 import tempfile
