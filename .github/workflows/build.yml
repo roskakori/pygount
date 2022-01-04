@@ -41,8 +41,8 @@ jobs:
           poetry run pytest --cov=pygount --cov-branch
       - name: Update coveralls
         if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         run: |
           poetry run coveralls
       - name: Load cached pre-commit
