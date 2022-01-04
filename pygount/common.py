@@ -10,11 +10,6 @@ import re
 import warnings
 from typing import Generator, List, Optional, Pattern, Sequence, Union
 
-import pkg_resources
-
-__version__ = pkg_resources.get_distribution(__name__).version
-
-
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
 
 ADDITIONAL_PATTERN = "[...]"
