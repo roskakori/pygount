@@ -4,7 +4,7 @@ name: Build
 on: [push, pull_request]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -39,22 +39,12 @@ jobs:
       - name: Run the test suite
         run: |
           poetry run pytest --cov=pygount --cov-branch
-
-  coveralls:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
       - name: Update coveralls
         if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           poetry run coveralls --service=github
-
-  check-coding-style:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
       - name: Load cached pre-commit
         id: cached-pre-commit
         uses: actions/cache@v2
