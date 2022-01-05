@@ -7,6 +7,9 @@ This chapter describes the changes coming with each new version of pygount.
 
 Version 1.3.0, 2022-xx-xx
 
+* Added JSON as additional output :option:`--format`, see :doc:`json` for
+  details (issue `#62 <https://github.com/roskakori/pygount/issues/62>`_).
+
 * Changed build process to `poetry <https://python-poetry.org/>`_ to change
   several messy configuration files into a single even more messy
   configuration file.

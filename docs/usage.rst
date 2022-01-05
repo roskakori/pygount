@@ -36,6 +36,12 @@ To limit the analysis on certain file types, you can specify a comma separated
 list of suffixes to take into account, for example ``--suffix=py,sql,xml``.
 
 .. option:: --out FILE
+
+By default the result of the analysis are written to the standard output. To
+redirect the output to a file, use for example ``--out=counts.txt``.
+
+To explicitly redirect to the standard output specify ``--out=STDOUT``.
+
 .. option:: --format FORMAT
 
 By default the result of the analysis are written to the standard output in a
@@ -64,6 +70,9 @@ overview and a sum total. For example pygount's summary looks like this::
 The summary output is designed for human readers and the column widths adjust
 to the data.
 
+For further processing the results of pygount, ``--format=json`` should be the
+easiest to deal with. For more information see :doc:`json`.
+
 
 Patterns
 --------
@@ -89,6 +98,8 @@ So for example to specify that generated code can also contain the German word
 "generiert" in a case insensivie way use
 ``--generated="[regex][...](?i).*generiert"``.
 
+
+.. _duplicates:
 
 Counting duplicates
 -------------------
@@ -154,16 +165,13 @@ Pseudo languages
 If a source code is not counted, the number of lines is 0 and the language
 shown is a pseudo language indicating the reason:
 
-* ``__binary__`` - the source code is a binary file; the detection of binary files
-  first ensures that file does not start with a BOM for UTF-8, UTF-16 or
-  UTF-32 (which indicates text files). After that it checks for zero bytes
-  within the initial 8192 bytes of the file.
+* ``__binary__`` - used for :ref:`binary`.
 * ``__duplicate__`` - the source code duplicate as described at the command line
   option :option:`--duplicates`.
 * ``__empty__`` - the source code is an empty file with a size of 0 bytes.
 * ``__error__`` - the source code could not be parsed e.g. due to an I/O error.
 * ``__generated__`` - the source code is generated according to the command line
-  option ``--generated``.
+  option :option:`--generated`.
 * ``__unknown__`` - pygments does not provide a lexer to parse the source code.
 
 

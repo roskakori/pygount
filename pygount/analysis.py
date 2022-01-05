@@ -392,6 +392,11 @@ class SourceAnalysis:
         return self._string
 
     @property
+    def source_count(self) -> int:
+        """number of source lines of code (the sum of code_count and string_count)"""
+        return self.code_count + self.string_count
+
+    @property
     def code(self) -> int:
         # TODO #47: Remove deprecated property.
         return self._code
