@@ -58,6 +58,11 @@ class LanguageSummary:
         return self._string_count
 
     @property
+    def source_count(self) -> int:
+        """sum number of source lines of code"""
+        return self.code_count + self.string_count
+
+    @property
     def is_pseudo_language(self) -> bool:
         """``True`` if the language is not a real programming language"""
         return self._is_pseudo_language
@@ -127,13 +132,15 @@ class ProjectSummary:
 
     @property
     def total_empty_count(self) -> int:
-
         return self._total_empty_count
 
     @property
     def total_string_count(self) -> int:
-
         return self._total_string_count
+
+    @property
+    def total_source_count(self) -> int:
+        return self.total_code_count + self.total_string_count
 
     @property
     def total_file_count(self) -> int:

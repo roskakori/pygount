@@ -14,7 +14,7 @@ import pygount.common
 import pygount.write
 
 #: Valid formats for option --format.
-VALID_OUTPUT_FORMATS = ("cloc-xml", "sloccount", "summary")
+VALID_OUTPUT_FORMATS = ("cloc-xml", "json", "sloccount", "summary")
 
 _DEFAULT_ENCODING = "automatic"
 _DEFAULT_OUTPUT_FORMAT = "sloccount"
@@ -55,6 +55,7 @@ _HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
 
 _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP = {
     "cloc-xml": pygount.write.ClocXmlWriter,
+    "json": pygount.write.JsonWriter,
     "sloccount": pygount.write.LineWriter,
     "summary": pygount.write.SummaryWriter,
 }

@@ -45,6 +45,21 @@ As example consider this Python code:
 This counts as 1 line of code and 3 lines of comments. The line with ``pass``
 is considered a "no operation" and thus not taken into account.
 
+.. _binary:
+
+Binary files
+------------
+
+When a file is considered to be binary when all of the following conditions
+match:
+
+1. The file does not start with a BOM for UTF-8, UTF-16 or UTF-32 (which
+   indicates text files).
+2. The initial 8192 bytes contain at least one 0 byte.
+
+In this case, pygount assigns it the pseudo language ``__binary__`` and
+performs no further analysis.
+
 
 Comparison with other tools
 -----------------------------------
