@@ -51,7 +51,7 @@ class BaseWriter:
             (1e-6 * self.duration.microseconds) + self.duration.seconds + self.duration.days * 3600 * 24
         )
         if self.duration_in_seconds > 0:
-            self.lines_per_second = self.project_summary.total_file_count / self.duration_in_seconds
+            self.lines_per_second = self.project_summary.total_line_count / self.duration_in_seconds
             self.files_per_second = self.project_summary.total_file_count / self.duration_in_seconds
 
 
