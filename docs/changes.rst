@@ -7,6 +7,9 @@ This chapter describes the changes coming with each new version of pygount.
 
 Version 1.3.0, 2022-xx-xx
 
+* Fixed computation of "lines per second", which was a copy and paste of
+  "files per second".
+
 * Added JSON as additional output :option:`--format`, see :doc:`json` for
   details (issue `#62 <https://github.com/roskakori/pygount/issues/62>`_).
 
