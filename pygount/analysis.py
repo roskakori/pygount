@@ -111,6 +111,13 @@ _STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
     "news",
     "readme",
     "thanks",
+    # Github community recommendations, see
+    # <https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions>.
+    # By now, in practice most projects use a suffix like "*.md" but some older ones
+    # still might have such files without suffix.
+    "code_of_conduct",
+    "contributing",
+    "support",
     # Other common text files.
     "changes",
     "faq",
