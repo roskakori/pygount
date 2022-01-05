@@ -13,6 +13,11 @@ Version 1.3.0, 2022-xx-xx
 * Added JSON as additional output :option:`--format`, see :doc:`json` for
   details (issue `#62 <https://github.com/roskakori/pygount/issues/62>`_).
 
+* Added detection of
+  `GitHub community files <https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions>`_
+  without suffix as text (issue
+  `#54 <https://github.com/roskakori/pygount/issues/54>`_).
+
 * Changed build process to `poetry <https://python-poetry.org/>`_ to change
   several messy configuration files into a single even more messy
   configuration file.
