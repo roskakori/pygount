@@ -5,7 +5,7 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 1.3.0, 2022-xx-xx
+Version 1.3.0, 2022-01-06
 
 * Fixed computation of "lines per second", which was a copy and paste of
   "files per second".

@@ -74,3 +74,35 @@ the code without performing a commit, run:
 In particular, this applies `black <https://black.readthedocs.io/en/stable/>`_,
 `flake8 <https://flake8.pycqa.org/>`_ and
 `isort <https://pypi.org/project/isort/>`_.
+
+Release cheatsheet
+------------------
+
+This section only relevant for developers with access to the PyPI project.
+
+To add a new release, first update the :file:`pyproject.toml`:
+
+.. code-block:: toml
+
+    [tool.poetry]
+    version = "1.x.x"
+
+Next build the project and run the tests to ensure everything works:
+
+.. code-block:: sh
+
+    $ poetry build
+    $ poetry run pytest
+
+Then create a tag in the repository:
+
+.. code-block:: sh
+
+    $ git tag -a -m "Tagged version 1.x.x." v1.x.x
+    $ git push --tags
+
+And finally publish the new version on PyPI:
+
+.. code-block:: sh
+
+    $ poetry publish
