@@ -77,6 +77,7 @@ pre-commit = "^2.16.0"
 pur = "^5.4.2"
 Sphinx = "^4.3.2"
 sphinx-rtd-theme = "^1"
+twine = "^3"
 
 [tool.poetry.scripts]
 pygount = "pygount.command:main"
