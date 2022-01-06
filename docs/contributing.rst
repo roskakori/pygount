@@ -101,8 +101,17 @@ Then create a tag in the repository:
     $ git tag -a -m "Tagged version 1.x.x." v1.x.x
     $ git push --tags
 
-And finally publish the new version on PyPI:
+Ideally one could publish the new version on PyPI using:
 
 .. code-block:: sh
 
-    $ poetry publish
+    $ poetry publish  # Probably fails
+
+However, at the time of this writing poetry cannot publish projects that were
+initially published using twine.
+
+So instead you have to run:
+
+.. code-block:: sh
+
+    $ poetry run twine upload dist/*.whl
