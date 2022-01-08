@@ -15,7 +15,7 @@ import pygount.common
 import pygount.write
 
 #: Valid formats for option --format.
-VALID_OUTPUT_FORMATS = ("cloc-xml", "sloccount", "summary", "rich")
+VALID_OUTPUT_FORMATS = ("cloc-xml", "sloccount", "summary")
 
 _DEFAULT_ENCODING = "automatic"
 _DEFAULT_OUTPUT_FORMAT = "sloccount"
@@ -58,7 +58,6 @@ _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP = {
     "cloc-xml": pygount.write.ClocXmlWriter,
     "sloccount": pygount.write.LineWriter,
     "summary": pygount.write.SummaryWriter,
-    "rich": pygount.write.RichWriter,
 }
 assert set(VALID_OUTPUT_FORMATS) == set(_OUTPUT_FORMAT_TO_WRITER_CLASS_MAP.keys())
 
@@ -336,7 +335,7 @@ class Command:
         try:
             writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
 
-            if issubclass(writer_class, pygount.write.RichWriter):
+            if issubclass(writer_class, pygount.write.SummaryWriter):
                 source_paths_and_groups_to_analyze = track(source_paths_and_groups_to_analyze)
             with writer_class(target_file) as writer:
                 for source_path, group in source_paths_and_groups_to_analyze:
