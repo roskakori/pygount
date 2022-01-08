@@ -1,7 +1,7 @@
 """
 Summaries of analyses of multiple source codes.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import functools
 import re
@@ -56,6 +56,11 @@ class LanguageSummary:
     def string_count(self) -> int:
         """sum number of lines containing only strings for this language"""
         return self._string_count
+
+    @property
+    def source_count(self) -> int:
+        """sum number of source lines of code"""
+        return self.code_count + self.string_count
 
     @property
     def is_pseudo_language(self) -> bool:
@@ -127,13 +132,15 @@ class ProjectSummary:
 
     @property
     def total_empty_count(self) -> int:
-
         return self._total_empty_count
 
     @property
     def total_string_count(self) -> int:
-
         return self._total_string_count
+
+    @property
+    def total_source_count(self) -> int:
+        return self.total_code_count + self.total_string_count
 
     @property
     def total_file_count(self) -> int:

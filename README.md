@@ -1,6 +1,8 @@
-![Python Versions](https://img.shields.io/pypi/pyversions/pygount.svg)
-![Build Status](https://img.shields.io/github/workflow/status/roskakori/pygount/Build)
+[![PyPI](https://img.shields.io/pypi/v/pygount)](https://pypi.org/project/pygount/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pygount.svg)](https://www.python.org/downloads/)
+[![Build Status](https://github.com/roskakori/pygount/actions/workflows/build.yml/badge.svg)](https://github.com/roskakori/pygount/actions/workflows/build.yml)
 [![Test Coverage](https://img.shields.io/coveralls/github/roskakori/pygount)](https://coveralls.io/r/roskakori/pygount?branch=master)
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/github/license/roskakori/pygount)](https://opensource.org/licenses/BSD-3-Clause)
 
 # pygount
@@ -18,7 +20,6 @@ The name is a combination of pygments and count.
 Pygount is open source and distributed under the
 [BSD license](https://opensource.org/licenses/BSD-3-Clause). The source
 code is available from https://github.com/roskakori/pygount.
-
 
 ## Quickstart
 

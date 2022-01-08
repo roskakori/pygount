@@ -5,13 +5,12 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
     env:
-      MAIN_PYTHON_VERSION: 3.7
+      MAIN_PYTHON_VERSION: 3.8 # same as Ubuntu 20 LTS
 
     steps:
       - uses: actions/checkout@v2
@@ -19,26 +18,44 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          python -m pip install --upgrade pip
-          pip install -r dev-requirements.txt
+          poetry install --no-interaction
+      - name: Build pygount package
+        run: |
+          poetry build
       - name: Run the test suite
+        run: |
+          poetry run pytest --cov=pygount --cov-branch
+      - name: Update coveralls
+        if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
         env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python setup.py develop
-          pytest --verbose
-          if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then coveralls; fi
-      - name: Check code quality
+          poetry run coveralls --service=github
+      - name: Load cached pre-commit
+        id: cached-pre-commit
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Install pre-commit
+        if: steps.cached-pre-commit.outputs.cache-hit != 'true'
         run: |
-          if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then pre-commit run --all-files; fi
-      - name: Build and install pygount package
+          poetry run pre-commit install --install-hooks
+      - name: Check coding style
+        if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
         run: |
-          python setup.py bdist_wheel
-          if [[ ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION ]]; then twine check dist/pygount-*.whl; fi
-          pip install dist/pygount-*.whl
-      - name: Build documentation
-        run: |
-          pip install -r docs/requirements.txt
-          make -C docs html
+          poetry run pre-commit run --all-files

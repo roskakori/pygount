@@ -1,17 +1,20 @@
 """
 Tests for pygount command line interface.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
+import json
 import os
 import tempfile
 from xml.etree import ElementTree
 
 import pytest
 
+import pygount
 from pygount import command
 from pygount.command import VALID_OUTPUT_FORMATS, Command
 from pygount.common import OptionError
+from pygount.write import JSON_FORMAT_VERSION
 
 from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
 
@@ -148,6 +151,22 @@ class PygountCommandTest(TempFolderTest):
         file_elements = cloc_xml_root.findall("files/file")
         assert file_elements is not None
         assert len(file_elements) >= 1
+
+    def test_can_analyze_pygount_source_code_as_json(self):
+        pygount_json_path = os.path.join(self.tests_temp_folder, "pygount.json")
+        exit_code = command.pygount_command(
+            ["--verbose", "--format", "json", "--out", pygount_json_path, PYGOUNT_SOURCE_FOLDER]
+        )
+        assert exit_code == 0
+        assert os.path.exists(pygount_json_path)
+        with open(pygount_json_path, encoding="utf-8") as pygount_json_file:
+            json_map = json.load(pygount_json_file)
+        assert json_map.get("pygountVersion") == pygount.__version__
+        assert json_map.get("formatVersion") == JSON_FORMAT_VERSION
+        assert "files" in json_map
+        assert "languages" in json_map
+        assert "runtime" in json_map
+        assert "summary" in json_map
 
     def test_can_detect_duplicates(self):
         source_code = "# Duplicate source\nprint('duplicate code')\n"

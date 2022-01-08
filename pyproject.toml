@@ -1,5 +1,95 @@
 [tool.black]
 line-length = 120
+include = '\.pyi?$'
+target-version = [
+    "py36",
+    "py37",
+    "py38",
+    "py39",
+    "py310",
+]
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
+default_section = "THIRDPARTY"
+known_first_party = "pygount,scripts"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = [
+    "-rA"
+]
+testpaths = [
+    "tests",
+]
+
+[tool.poetry]
+name = "pygount"
+version = "1.3.0"
+description = "count source lines of code (SLOC) using pygments"
+readme = "README.md"
+authors = ["Thomas Aglassinger <roskakori@users.sourceforge.net>"]
+license = "BSD"
+homepage = "https://github.com/roskakori/pygount"
+repository = "https://github.com/roskakori/pygount.git"
+documentation = "https://pygount.readthedocs.io"
+keywords = ["code analysis", "count", "SLOC"]
+classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Topic :: Software Development",
+]
+packages = [
+    { include = "pygount" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.6.2"
+pygments = "^2"
+chardet = "^4.0.0"
+rich = "^10.16.2"
+
+[tool.poetry.dev-dependencies]
+wheel = "^0.37.1"
+coveralls = "^3.3.1"
+coverage = "^6.2"
+pytest = "^6.2.5"
+pytest-cov = "^3.0.0"
+pre-commit = "^2.16.0"
+pur = "^5.4.2"
+Sphinx = "^4.3.2"
+sphinx-rtd-theme = "^1"
+twine = "^3"
+
+[tool.poetry.scripts]
+pygount = "pygount.command:main"
+
+[tool.poetry.urls]
+"Issue Tracker" = "https://github.com/roskakori/pygount/issues"
+"Changes" = "https://pygount.readthedocs.io/en/latest/changes.html"
 
 [pycodestyle]
 max-line-length = 120
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

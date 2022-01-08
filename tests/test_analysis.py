@@ -1,7 +1,7 @@
 """
 Tests for pygount source code analysis.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import glob
 import os
@@ -351,10 +351,10 @@ class GeneratedCodeTest(TempFolderTest):
     )
 
     def test_can_detect_non_generated_code(self):
-        _DEFAULT_GENERATED_REGEXES = common.regexes_from(analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
+        default_generated_regexes = common.regexes_from(analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
         with open(__file__, "r", encoding="utf-8") as source_file:
             matching_line_number_and_regex = analysis.matching_number_line_and_regex(
-                source_file, _DEFAULT_GENERATED_REGEXES
+                source_file, default_generated_regexes
             )
         assert matching_line_number_and_regex is None
 

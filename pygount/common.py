@@ -1,7 +1,7 @@
 """
 Common classes and functions for pygount.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import fnmatch
 import functools
@@ -10,10 +10,8 @@ import re
 import warnings
 from typing import Generator, List, Optional, Pattern, Sequence, Union
 
-__version__ = "1.3.4"
-
-
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
+
 ADDITIONAL_PATTERN = "[...]"
 
 #: Prefix to use for pattern strings to describe a regular expression instead of a shell pattern.

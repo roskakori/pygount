@@ -22,6 +22,7 @@ code is available from https://github.com/roskakori/pygount.
    installation
    usage
    continuous-integration
+   json
    background
    api
    contributing

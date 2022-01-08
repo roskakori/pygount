@@ -1,7 +1,7 @@
 """
 Functions to analyze source code and count lines in it.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import codecs
 import collections
@@ -111,6 +111,13 @@ _STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
     "news",
     "readme",
     "thanks",
+    # Github community recommendations, see
+    # <https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions>.
+    # By now, in practice most projects use a suffix like "*.md" but some older ones
+    # still might have such files without suffix.
+    "code_of_conduct",
+    "contributing",
+    "support",
     # Other common text files.
     "changes",
     "faq",
@@ -390,6 +397,11 @@ class SourceAnalysis:
     def string_count(self) -> int:
         """number of lines containing only strings but no other code"""
         return self._string
+
+    @property
+    def source_count(self) -> int:
+        """number of source lines of code (the sum of code_count and string_count)"""
+        return self.code_count + self.string_count
 
     @property
     def code(self) -> int:

@@ -1,7 +1,7 @@
 """
 Test to write results of pygount analyses.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import io
 import os
@@ -27,6 +27,8 @@ def test_can_collect_totals():
                 writer.add(source_analysis)
     assert writer.project_summary.total_file_count == 2
     assert writer.project_summary.total_line_count == 110
+    assert writer.duration_in_seconds > 0
+    assert writer.lines_per_second > writer.files_per_second
 
 
 def test_can_write_cloc_xml():

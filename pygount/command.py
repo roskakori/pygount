@@ -1,7 +1,7 @@
 """
 Command line interface for pygount.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import argparse
 import logging
@@ -10,12 +10,13 @@ import sys
 
 from rich.progress import track
 
+import pygount
 import pygount.analysis
 import pygount.common
 import pygount.write
 
 #: Valid formats for option --format.
-VALID_OUTPUT_FORMATS = ("cloc-xml", "sloccount", "summary")
+VALID_OUTPUT_FORMATS = ("cloc-xml", "json", "sloccount", "summary")
 
 _DEFAULT_ENCODING = "automatic"
 _DEFAULT_OUTPUT_FORMAT = "sloccount"
@@ -56,6 +57,7 @@ _HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
 
 _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP = {
     "cloc-xml": pygount.write.ClocXmlWriter,
+    "json": pygount.write.JsonWriter,
     "sloccount": pygount.write.LineWriter,
     "summary": pygount.write.SummaryWriter,
 }
@@ -266,7 +268,7 @@ class Command:
             help="source files and directories to scan; can use glob patterns; default: current directory",
         )
         parser.add_argument("--verbose", "-v", action="store_true", help="explain what is being done")
-        parser.add_argument("--version", action="version", version="%(prog)s " + pygount.common.__version__)
+        parser.add_argument("--version", action="version", version="%(prog)s " + pygount.__version__)
         return parser
 
     def parsed_args(self, arguments):

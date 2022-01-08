@@ -1,7 +1,7 @@
 """
 Function to obtain the language dialect used by XML source code.
 """
-# Copyright (c) 2016-2021, Thomas Aglassinger.
+# Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import logging
 import re
@@ -22,7 +22,7 @@ _SAX_MESSAGE_WITHOUT_PATH_PATTERN = re.compile(r"^<.+>(?P<message_without_path>:
 _log = logging.getLogger("pygount")
 
 
-class SaxParserDone(Exception):
+class SaxParserDone(Exception):  # noqa: N818
     """
     Pseudo error to indicate that the Sax parser ist done.
     """
@@ -42,7 +42,7 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
         self.dialect = dialect
         raise SaxParserDone("language detected: {0}".format(dialect))
 
-    def startElement(self, name, attrs):
+    def startElement(self, name, attrs):  # noqa: N802
         self._element_count += 1
         if self._element_count == self._max_element_count:
             raise SaxParserDone("no language found after parsing {0} elements".format(self._element_count))
@@ -59,7 +59,7 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
         elif xmlns.startswith("http://www.netbeans.org/ns/project/"):
             self._set_dialect_and_stop_parsing("NetBeans Project")
 
-    def endElement(self, name):
+    def endElement(self, name):  # noqa: N802
         self._path = self._path[: -len(name) - 1]
 
 
