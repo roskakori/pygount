@@ -4,11 +4,12 @@ Command line interface for pygount.
 # Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import argparse
+import contextlib
 import logging
 import os
 import sys
 
-from rich.progress import track
+from rich.progress import Progress
 
 import pygount
 import pygount.analysis
@@ -327,35 +328,29 @@ class Command:
         )
         source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
         duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
-        if self.output == "STDOUT":
-            target_file = sys.stdout
-            has_target_file_to_close = False
-        else:
-            target_file = open(self.output, "w", encoding="utf-8", newline="")
-            has_target_file_to_close = True
+        writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
 
-        try:
-            writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
+        with Progress(transient=True) as progress:
+            if self.output == "STDOUT":
+                file_contextmanager = contextlib.nullcontext(sys.stdout)
+            else:
+                file_contextmanager = open(self.output, "w", encoding="utf-8", newline="")
 
-            if issubclass(writer_class, pygount.write.SummaryWriter):
-                source_paths_and_groups_to_analyze = track(source_paths_and_groups_to_analyze)
-            with writer_class(target_file) as writer:
-                for source_path, group in source_paths_and_groups_to_analyze:
-                    statistics = pygount.analysis.SourceAnalysis.from_file(
-                        source_path,
-                        group,
-                        self.default_encoding,
-                        self.fallback_encoding,
-                        generated_regexes=self._generated_regexs,
-                        duplicate_pool=duplicate_pool,
-                    )
-                    writer.add(statistics)
-        finally:
-            if has_target_file_to_close:
+            with file_contextmanager as target_file, writer_class(target_file) as writer:
                 try:
-                    target_file.close()
-                except Exception as error:
-                    raise OSError('cannot write output to "{0}": {1}'.format(self.output, error))
+                    for source_path, group in progress.track(source_paths_and_groups_to_analyze):
+                        writer.add(
+                            pygount.analysis.SourceAnalysis.from_file(
+                                source_path,
+                                group,
+                                self.default_encoding,
+                                self.fallback_encoding,
+                                generated_regexes=self._generated_regexs,
+                                duplicate_pool=duplicate_pool,
+                            )
+                        )
+                finally:
+                    progress.stop()
 
 
 def pygount_command(arguments=None):

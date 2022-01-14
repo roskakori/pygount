@@ -131,51 +131,56 @@ class ClocXmlWriter(BaseWriter):
         xml_root = ElementTree.ElementTree(self._results_element)
         xml_root.write(self._target_stream, encoding="unicode", xml_declaration=False)
 
+
 class SummaryWriter(BaseWriter):
     """
     Writer to summarize the analysis per language in a format that can easily
     be read by humans.
     """
-    _TEXT_COLUMNS = "Language",
-    _DIGIT_COLUMNS = "files", "blank", "comment", "code"
+
+    _COLUMNS_WITH_JUSTIFY = (
+        ("Language", "left"),
+        ("Files", "right"),
+        ("Blank", "right"),
+        ("Comment", "right"),
+        ("Code", "right"),
+    )
+
     def close(self):
         super().close()
 
         table = Table()
+        for column, justify in self._COLUMNS_WITH_JUSTIFY:
+            table.add_column(column, justify=justify, overflow="fold")
 
-        for col in self._TEXT_COLUMNS:
-            table.add_column(col)
-        for col in self._DIGIT_COLUMNS:
-            table.add_column(col, justify="right")
         language_summaries = sorted(self.project_summary.language_to_language_summary_map.values(), reverse=True)
-
         for index, language_summary in enumerate(language_summaries, start=1):
             table.add_row(
                 language_summary.language,
-                *map(
-                    str,
-                    (
+                *[
+                    str(v)
+                    for v in (
                         language_summary.file_count,
                         language_summary.empty_count,
                         language_summary.documentation_count,
                         language_summary.code_count,
-                    ),
-                ),
-                end_section=index == len(language_summaries),
+                    )
+                ],
+                end_section=(index == len(language_summaries)),
             )
         table.add_row(
             "SUM",
-            *map(
-                str,
-                (
+            *[
+                str(v)
+                for v in (
                     self.project_summary.total_file_count,
                     self.project_summary.total_empty_count,
                     self.project_summary.total_documentation_count,
                     self.project_summary.total_code_count,
-                ),
-            ),
+                )
+            ],
         )
-        Console(file=self._target_stream).print(table)
+        Console(file=self._target_stream, soft_wrap=True).print(table)
 
 
 class JsonWriter(BaseWriter):

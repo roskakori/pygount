@@ -4,12 +4,10 @@ Test to write results of pygount analyses.
 # Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import io
-import os
+from pathlib import Path
 import tempfile
 from collections import namedtuple
 from xml.etree import ElementTree
-
-import pytest
 
 from pygount import analysis, write
 
@@ -62,26 +60,22 @@ _LineData = namedtuple(
     [
         "language",
         "file_count",
-        "file_percent",
+        "blank_count",
+        "comment_count",
         "code_count",
-        "code_percent",
-        "documentation_count",
-        "documentation_percent",
     ],
 )
 
 
 def _line_data_from(line):
-    line_parts = line.split()
-    assert len(line_parts) == 7, "line_parts={0}".format(line_parts)
+    line_parts = [word for word in line.split() if word.isalnum()]
+    assert len(line_parts) == 5, f"line_parts={line_parts}"
     return _LineData(
         line_parts[0],
         int(line_parts[1]),
-        float(line_parts[2]),
+        int(line_parts[2]),
         int(line_parts[3]),
-        float(line_parts[4]),
-        int(line_parts[5]),
-        float(line_parts[6]),
+        int(line_parts[4]),
     )
 
 
@@ -93,60 +87,31 @@ class SummaryWriterTest(TempFolderTest):
             analysis.SourceAnalysis("other.py", "Python", "some", 500, 30, 5, 6, analysis.SourceState.analyzed, None),
         )
         lines = self._summary_lines_for(source_analyses)
-        assert len(lines) == 6, "lines={}".format(lines)
+        assert len(lines) == 8, f"lines={lines}"
 
-        python_data = _line_data_from(lines[2])
+        python_data = _line_data_from(lines[3])
         assert python_data.language == "Python"
         assert python_data.file_count == 2
         assert python_data.code_count == 800
-        assert python_data.documentation_count == 75
-        assert python_data.file_percent == pytest.approx(66.67)
-        assert python_data.code_percent == pytest.approx(80.0)
-        assert python_data.documentation_percent == pytest.approx(75.0)
+        assert python_data.comment_count == 75
 
-        bash_data = _line_data_from(lines[3])
+        bash_data = _line_data_from(lines[4])
         assert bash_data.language == "Bash"
         assert bash_data.file_count == 1
         assert bash_data.code_count == 200
-        assert bash_data.documentation_count == 25
-        assert bash_data.file_percent == pytest.approx(33.33)
-        assert bash_data.code_percent == pytest.approx(20.0)
-        assert bash_data.documentation_percent == pytest.approx(25.0)
+        assert bash_data.comment_count == 25
 
-        sum_total_data = lines[-1].split()
+        sum_total_data = [word.strip() for word in lines[-2].split("│") if word]
         assert len(sum_total_data) >= 3
-        assert sum_total_data[-2:] == ["1000", "100"]
+        assert sum_total_data[-2:] == ["100", "1000"]
 
     def _summary_lines_for(self, source_analyses):
         # NOTE: We need to write to a file because the lines containing the
         # actual data are only during close() at which point they would not be
         # accessible to StringIO.getvalue().
-        summary_path = os.path.join(self.tests_temp_folder, "summary.tmp")
-        with open(summary_path, "w", encoding="utf-8") as target_summary_file:
-            with write.SummaryWriter(target_summary_file) as writer:
+        summary_path = Path(self.tests_temp_folder, "summary.tmp")
+        with summary_path.open("w", encoding="utf-8") as summary_file:
+            with write.SummaryWriter(summary_file) as writer:
                 for source_analysis in source_analyses:
                     writer.add(source_analysis)
-        with open(summary_path, "r", encoding="utf-8") as source_summary_file:
-            result = [line.rstrip("\n") for line in source_summary_file]
-        return result
-
-    def test_can_format_data_longer_than_headings(self):
-        huge_number = int("1234567890" * 10)
-        long_language_name = "x" * 100
-        min_line_length = len(long_language_name) + 2 * write.digit_width(huge_number)
-
-        source_analyses = (
-            analysis.SourceAnalysis(
-                "x",
-                long_language_name,
-                "some",
-                huge_number,
-                huge_number,
-                0,
-                0,
-                analysis.SourceState.analyzed,
-                None,
-            ),
-        )
-        for line in self._summary_lines_for(source_analyses):
-            assert len(line) > min_line_length, "line={0}".format(line)
+        return summary_path.read_text("utf-8").splitlines()
