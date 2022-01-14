@@ -157,28 +157,18 @@ class SummaryWriter(BaseWriter):
         for index, language_summary in enumerate(language_summaries, start=1):
             table.add_row(
                 language_summary.language,
-                *[
-                    str(v)
-                    for v in (
-                        language_summary.file_count,
-                        language_summary.empty_count,
-                        language_summary.documentation_count,
-                        language_summary.code_count,
-                    )
-                ],
+                str(language_summary.file_count),
+                str(language_summary.empty_count),
+                str(language_summary.documentation_count),
+                str(language_summary.code_count),
                 end_section=(index == len(language_summaries)),
             )
         table.add_row(
             "SUM",
-            *[
-                str(v)
-                for v in (
-                    self.project_summary.total_file_count,
-                    self.project_summary.total_empty_count,
-                    self.project_summary.total_documentation_count,
-                    self.project_summary.total_code_count,
-                )
-            ],
+            str(self.project_summary.total_file_count),
+            str(self.project_summary.total_empty_count),
+            str(self.project_summary.total_documentation_count),
+            str(self.project_summary.total_code_count),
         )
         Console(file=self._target_stream, soft_wrap=True).print(table)
 
