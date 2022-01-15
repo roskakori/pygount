@@ -4,7 +4,6 @@ Command line interface for pygount.
 # Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import argparse
-import contextlib
 import logging
 import os
 import sys
@@ -332,7 +331,7 @@ class Command:
 
         with Progress(transient=True) as progress:
             if self.output == "STDOUT":
-                file_contextmanager = contextlib.nullcontext(sys.stdout)
+                file_contextmanager = pygount.common.nullcontext(sys.stdout)
             else:
                 file_contextmanager = open(self.output, "w", encoding="utf-8", newline="")
 
