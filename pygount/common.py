@@ -189,8 +189,8 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
         raise TypeError(repr(type(reason)))
 
 
-if sys.version_info.minor < 7:
-    class nullcontext(contextlib.AbstractContextManager):
+if sys.version_info < (3, 7):
+    class nullcontext(contextlib.AbstractContextManager): # noqa: N801
         """Context manager that does no additional processing.
 
         Used as a stand-in for a normal context manager, when a particular
