@@ -4,9 +4,9 @@ Test to write results of pygount analyses.
 # Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import io
-from pathlib import Path
 import tempfile
 from collections import namedtuple
+from pathlib import Path
 from xml.etree import ElementTree
 
 from pygount import analysis, write

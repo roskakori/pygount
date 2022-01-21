@@ -1,6 +1,8 @@
 """
 Common classes and functions for pygount.
 """
+import contextlib
+
 # Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import fnmatch
@@ -9,7 +11,6 @@ import inspect
 import re
 import sys
 import warnings
-import contextlib
 from typing import Generator, List, Optional, Pattern, Sequence, Union
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
@@ -190,7 +191,8 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
 
 
 if sys.version_info < (3, 7):
-    class nullcontext(contextlib.AbstractContextManager): # noqa: N801
+
+    class nullcontext(contextlib.AbstractContextManager):  # noqa: N801
         """Context manager that does no additional processing.
 
         Used as a stand-in for a normal context manager, when a particular
@@ -209,5 +211,6 @@ if sys.version_info < (3, 7):
 
         def __exit__(self, *excinfo):
             pass
+
 else:
     nullcontext = contextlib.nullcontext
