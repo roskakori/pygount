@@ -79,7 +79,6 @@ pur = "^5.4.2"
 Sphinx = "^4.3.2"
 sphinx-rtd-theme = "^1"
 twine = "^3"
-isort = "^5.10.1"
 
 [tool.poetry.scripts]
 pygount = "pygount.command:main"
