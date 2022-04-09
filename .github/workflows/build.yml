@@ -45,17 +45,25 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           poetry run coveralls --service=github
+
+  check-style:
+    runs-on: ubuntu-latest
+    # Disable pre-commit check on main and production to prevent
+    # pull request merges to fail with don't commit to branch".
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install pre-commit
+        run: |
+          sudo apt-get install pre-commit
       - name: Load cached pre-commit
         id: cached-pre-commit
         uses: actions/cache@v2
         with:
           path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
-      - name: Install pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Install pre-commit hooks
         if: steps.cached-pre-commit.outputs.cache-hit != 'true'
-        run: |
-          poetry run pre-commit install --install-hooks
+        run: pre-commit install --install-hooks
       - name: Check coding style
-        if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
-        run: |
-          poetry run pre-commit run --all-files
+        run: pre-commit run --all-files
