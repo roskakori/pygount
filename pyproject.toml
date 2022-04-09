@@ -34,7 +34,7 @@ testpaths = [
 
 [tool.poetry]
 name = "pygount"
-version = "1.3.0"
+version = "1.4.0"
 description = "count source lines of code (SLOC) using pygments"
 readme = "README.md"
 authors = ["Thomas Aglassinger <roskakori@users.sourceforge.net>"]

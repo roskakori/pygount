@@ -24,8 +24,10 @@ class LanguageSummary:
         self._documentation_count = 0
         self._empty_count = 0
         self._file_count = 0
+        self._file_percentage = 0.0
         self._string_count = 0
         self._is_pseudo_language = _PSEUDO_LANGUAGE_REGEX.match(self.language) is not None
+        self._has_up_to_date_percentages = False
 
     @property
     def language(self) -> str:
@@ -38,9 +40,22 @@ class LanguageSummary:
         return self._code_count
 
     @property
+    def code_percentage(self) -> float:
+        """percentage of lines containing code for this language across entire project"""
+        return _percentage_or_0(self.code_count, self.line_count)
+
+    def _assert_has_up_to_date_percentages(self):
+        assert self._has_up_to_date_percentages, "update_percentages() must be called first"
+
+    @property
     def documentation_count(self) -> int:
         """sum lines of documentation for this language"""
         return self._documentation_count
+
+    @property
+    def documentation_percentage(self) -> float:
+        """percentage of lines containing documentation for this language across entire project"""
+        return _percentage_or_0(self.documentation_count, self.line_count)
 
     @property
     def empty_count(self) -> int:
@@ -48,19 +63,45 @@ class LanguageSummary:
         return self._empty_count
 
     @property
+    def empty_percentage(self) -> float:
+        """percentage of empty lines for this language across entire project"""
+        return _percentage_or_0(self.empty_count, self.line_count)
+
+    @property
     def file_count(self) -> int:
         """number of source code files for this language"""
         return self._file_count
 
     @property
+    def file_percentage(self) -> float:
+        """percentage of files in project"""
+        self._assert_has_up_to_date_percentages()
+        return self._file_percentage
+
+    @property
+    def line_count(self) -> int:
+        """sum count of all lines of any kind for this language"""
+        return self.code_count + self.documentation_count + self.empty_count + self.string_count
+
+    @property
     def string_count(self) -> int:
-        """sum number of lines containing only strings for this language"""
+        """sum number of lines containing strings for this language"""
         return self._string_count
+
+    @property
+    def string_percentage(self) -> float:
+        """percentage of lines containing strings for this language across entire project"""
+        return _percentage_or_0(self.string_count, self.line_count)
 
     @property
     def source_count(self) -> int:
         """sum number of source lines of code"""
         return self.code_count + self.string_count
+
+    @property
+    def source_percentage(self) -> float:
+        """percentage of source lines for code for this language across entire project"""
+        return _percentage_or_0(self.source_count, self.line_count)
 
     @property
     def is_pseudo_language(self) -> bool:
@@ -84,12 +125,17 @@ class LanguageSummary:
         assert source_analysis is not None
         assert source_analysis.language == self.language
 
+        self._has_up_to_date_percentages = False
         self._file_count += 1
         if source_analysis.is_countable:
             self._code_count += source_analysis.code_count
             self._documentation_count += source_analysis.documentation_count
             self._empty_count += source_analysis.empty_count
             self._string_count += source_analysis.string_count
+
+    def update_file_percentage(self, project_summary: "ProjectSummary"):
+        self._file_percentage = _percentage_or_0(self.file_count, project_summary.total_file_count)
+        self._has_up_to_date_percentages = True
 
     def __repr__(self):
         result = "{0}(language={1!r}, file_count={2}".format(self.__class__.__name__, self.language, self.file_count)
@@ -99,6 +145,12 @@ class LanguageSummary:
             )
         result += ")"
         return result
+
+
+def _percentage_or_0(partial_count: int, total_count: int) -> float:
+    assert partial_count >= 0
+    assert total_count >= 0
+    return 100 * partial_count / total_count if total_count != 0 else 0.0
 
 
 class ProjectSummary:
@@ -127,20 +179,40 @@ class ProjectSummary:
         return self._total_code_count
 
     @property
+    def total_code_percentage(self) -> float:
+        return _percentage_or_0(self.total_code_count, self.total_line_count)
+
+    @property
     def total_documentation_count(self) -> int:
         return self._total_documentation_count
+
+    @property
+    def total_documentation_percentage(self) -> float:
+        return _percentage_or_0(self.total_documentation_count, self.total_line_count)
 
     @property
     def total_empty_count(self) -> int:
         return self._total_empty_count
 
     @property
+    def total_empty_percentage(self) -> float:
+        return _percentage_or_0(self.total_empty_count, self.total_line_count)
+
+    @property
     def total_string_count(self) -> int:
         return self._total_string_count
 
     @property
+    def total_string_percentage(self) -> float:
+        return _percentage_or_0(self.total_string_count, self.total_line_count)
+
+    @property
     def total_source_count(self) -> int:
         return self.total_code_count + self.total_string_count
+
+    @property
+    def total_source_percentage(self) -> float:
+        return _percentage_or_0(self.total_source_count, self.total_line_count)
 
     @property
     def total_file_count(self) -> int:
@@ -173,10 +245,15 @@ class ProjectSummary:
             )
             self._total_string_count += source_analysis.string_count
 
+    def update_file_percentages(self) -> None:
+        """Update percentages for all languages part of the project."""
+        for language_summary in self._language_to_language_summary_map.values():
+            language_summary.update_file_percentage(self)
+
     def __repr__(self):
-        return "{0}(total_file_count={1}, total_line_count={2}, " "languages={3}".format(
-            self.__class__.__name__,
-            self.total_file_count,
-            self.total_line_count,
-            sorted(self.language_to_language_summary_map.keys()),
+        return (
+            f"{self.__class__.__name__}("
+            f"total_file_count={self.total_file_count}, "
+            f"total_line_count={self.total_line_count}, "
+            f"languages={sorted(self.language_to_language_summary_map.keys())})"
         )
