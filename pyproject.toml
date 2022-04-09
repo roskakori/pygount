@@ -63,9 +63,10 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = "^3.6.2"
 pygments = "^2"
 chardet = "^4.0.0"
+rich = "^10.16.2"
 
 [tool.poetry.dev-dependencies]
 wheel = "^0.37.1"

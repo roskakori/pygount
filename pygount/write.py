@@ -9,6 +9,9 @@ import math
 import os
 from xml.etree import ElementTree
 
+from rich.console import Console
+from rich.table import Table
+
 import pygount
 
 from . import SourceAnalysis
@@ -135,147 +138,39 @@ class SummaryWriter(BaseWriter):
     be read by humans.
     """
 
-    _LANGUAGE_HEADING = "Language"
-    _FILE_COUNT_HEADING = "Files"
-    _CODE_HEADING = "Code"
-    _DOCUMENTATION_HEADING = "Comment"
-    _SUM_TOTAL_PSEUDO_LANGUAGE = "Sum total"
-    _PERCENTAGE_DIGITS_AFTER_DOT = 2
-
-    def __init__(self, target_stream):
-        super().__init__(target_stream)
-        self._max_language_width = max(
-            len(SummaryWriter._LANGUAGE_HEADING), len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE)
-        )
-        self._max_code_width = 0
-        self._max_documentation_width = 0
+    _COLUMNS_WITH_JUSTIFY = (
+        ("Language", "left"),
+        ("Files", "right"),
+        ("Blank", "right"),
+        ("Comment", "right"),
+        ("Code", "right"),
+    )
 
     def close(self):
         super().close()
 
-        # Compute maximum column widths
-        max_language_width = max(
-            len(SummaryWriter._LANGUAGE_HEADING),
-            len(SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE),
-        )
-        max_file_count_width = len(SummaryWriter._FILE_COUNT_HEADING)
-        max_code_width = len(SummaryWriter._CODE_HEADING)
-        max_documentation_width = len(SummaryWriter._DOCUMENTATION_HEADING)
-        for language, language_summary in self.project_summary.language_to_language_summary_map.items():
-            language_width = len(language)
-            if language_width > max_language_width:
-                max_language_width = language_width
-            file_count_width = digit_width(language_summary.file_count)
-            if file_count_width > max_file_count_width:
-                max_file_count_width = file_count_width
-            code_width = digit_width(language_summary.code_count)
-            if code_width > max_code_width:
-                max_code_width = code_width
-            documentation_width = digit_width(language_summary.documentation_count)
-            if documentation_width > max_documentation_width:
-                max_documentation_width = documentation_width
-        digits_after_dot = self._PERCENTAGE_DIGITS_AFTER_DOT
-        percentage_width = 4 + digits_after_dot  # To represent "100." we need 4 characters.
+        table = Table()
+        for column, justify in self._COLUMNS_WITH_JUSTIFY:
+            table.add_column(column, justify=justify, overflow="fold")
 
-        summary_heading = (
-            "{0:^{max_language_width}s}  "
-            "{1:^{max_file_count_width}s}  "
-            "{2:^{percentage_width}s}  "
-            "{3:^{max_code_width}s}  "
-            "{2:^{percentage_width}s}  "
-            "{4:^{max_documentation_width}s}  "
-            "{2:^{percentage_width}s}"
-        ).format(
-            SummaryWriter._LANGUAGE_HEADING,
-            SummaryWriter._FILE_COUNT_HEADING,
-            "%",
-            SummaryWriter._CODE_HEADING,
-            SummaryWriter._DOCUMENTATION_HEADING,
-            max_code_width=max_code_width,
-            max_file_count_width=max_file_count_width,
-            max_documentation_width=max_documentation_width,
-            max_language_width=max_language_width,
-            percentage_width=percentage_width,
-        )
-        self._target_stream.write(summary_heading + os.linesep)
-        separator_line = "  ".join(
-            [
-                "-" * width
-                for width in (
-                    max_language_width,
-                    max_file_count_width,
-                    percentage_width,
-                    max_code_width,
-                    percentage_width,
-                    max_documentation_width,
-                    percentage_width,
-                )
-            ]
-        )
-        self._target_stream.write(separator_line + os.linesep)
-        language_line_template = (
-            "{0:{max_language_width}s}  "
-            "{1:>{max_file_count_width}d}  "
-            "{2:>{percentage_width}.0{digits_after_dot}f}  "
-            "{3:>{max_code_width}d}  "
-            "{4:>{percentage_width}.0{digits_after_dot}f}  "
-            "{5:>{max_documentation_width}d}  "
-            "{6:>{percentage_width}.0{digits_after_dot}f}"
-        )
-        for language_summary in sorted(self.project_summary.language_to_language_summary_map.values(), reverse=True):
-            code_count = language_summary.code_count
-            code_percentage = (
-                code_count / self.project_summary.total_code_count * 100
-                if self.project_summary.total_code_count != 0
-                else 0.0
-            )
-            file_count = language_summary.file_count
-            assert (
-                self.project_summary.total_file_count != 0
-            ), "if there is at least 1 language summary, there must be a file count too"
-            file_percentage = file_count / self.project_summary.total_file_count * 100
-            documentation_percentage = (
-                language_summary.documentation_count / self.project_summary.total_documentation_count * 100
-                if self.project_summary.total_documentation_count != 0
-                else 0.0
-            )
-            line_to_write = language_line_template.format(
+        language_summaries = sorted(self.project_summary.language_to_language_summary_map.values(), reverse=True)
+        for index, language_summary in enumerate(language_summaries, start=1):
+            table.add_row(
                 language_summary.language,
-                file_count,
-                file_percentage,
-                code_count,
-                code_percentage,
-                language_summary.documentation_count,
-                documentation_percentage,
-                digits_after_dot=digits_after_dot,
-                max_code_width=max_code_width,
-                max_documentation_width=max_documentation_width,
-                max_file_count_width=max_file_count_width,
-                max_language_width=max_language_width,
-                percentage_width=percentage_width,
+                str(language_summary.file_count),
+                str(language_summary.empty_count),
+                str(language_summary.documentation_count),
+                str(language_summary.code_count),
+                end_section=(index == len(language_summaries)),
             )
-            self._target_stream.write(line_to_write + os.linesep)
-        self._target_stream.write(separator_line + os.linesep)
-        summary_footer = (
-            "{0:{max_language_width}s}  "
-            "{1:>{max_file_count_width}d}  "
-            "{2:{percentage_width}s}  "
-            "{3:>{max_code_width}d}  "
-            "{2:{percentage_width}s}  "
-            "{4:>{max_documentation_width}d}"
-        ).format(
-            SummaryWriter._SUM_TOTAL_PSEUDO_LANGUAGE,
-            self.project_summary.total_file_count,
-            "",
-            self.project_summary.total_code_count,
-            self.project_summary.total_documentation_count,
-            max_documentation_width=max_documentation_width,
-            max_file_count_width=max_file_count_width,
-            max_language_width=max_language_width,
-            max_code_width=max_code_width,
-            percentage_width=percentage_width,
+        table.add_row(
+            "SUM",
+            str(self.project_summary.total_file_count),
+            str(self.project_summary.total_empty_count),
+            str(self.project_summary.total_documentation_count),
+            str(self.project_summary.total_code_count),
         )
-        self._target_stream.write(summary_footer + os.linesep)
+        Console(file=self._target_stream, soft_wrap=True).print(table)
 
 
 class JsonWriter(BaseWriter):

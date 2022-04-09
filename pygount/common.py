@@ -1,12 +1,15 @@
 """
 Common classes and functions for pygount.
 """
+import contextlib
+
 # Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import fnmatch
 import functools
 import inspect
 import re
+import sys
 import warnings
 from typing import Generator, List, Optional, Pattern, Sequence, Union
 
@@ -185,3 +188,29 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
         return new_func2
     else:
         raise TypeError(repr(type(reason)))
+
+
+if sys.version_info < (3, 7):
+
+    class nullcontext(contextlib.AbstractContextManager):  # noqa: N801
+        """Context manager that does no additional processing.
+
+        Used as a stand-in for a normal context manager, when a particular
+        block of code is only sometimes used with a normal context manager:
+
+        cm = optional_cm if condition else nullcontext()
+        with cm:
+            # Perform operation, using optional_cm if condition is True
+        """
+
+        def __init__(self, enter_result=None):
+            self.enter_result = enter_result
+
+        def __enter__(self):
+            return self.enter_result
+
+        def __exit__(self, *excinfo):
+            pass
+
+else:
+    nullcontext = contextlib.nullcontext
