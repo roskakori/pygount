@@ -48,6 +48,7 @@ class BaseWriter:
         self.project_summary.add(source_analysis)
 
     def close(self):
+        self.project_summary.update_file_percentages()
         self.finished_at = datetime.datetime.utcnow()
         self.duration = self.finished_at - self.started_at
         self.duration_in_seconds = (
@@ -141,9 +142,11 @@ class SummaryWriter(BaseWriter):
     _COLUMNS_WITH_JUSTIFY = (
         ("Language", "left"),
         ("Files", "right"),
-        ("Blank", "right"),
-        ("Comment", "right"),
+        ("%", "right"),
         ("Code", "right"),
+        ("%", "right"),
+        ("Comment", "right"),
+        ("%", "right"),
     )
 
     def close(self):
@@ -158,17 +161,21 @@ class SummaryWriter(BaseWriter):
             table.add_row(
                 language_summary.language,
                 str(language_summary.file_count),
-                str(language_summary.empty_count),
-                str(language_summary.documentation_count),
+                formatted_percentage(language_summary.file_percentage),
                 str(language_summary.code_count),
+                formatted_percentage(language_summary.code_percentage),
+                str(language_summary.documentation_count),
+                formatted_percentage(language_summary.documentation_percentage),
                 end_section=(index == len(language_summaries)),
             )
         table.add_row(
-            "SUM",
+            "Sum",
             str(self.project_summary.total_file_count),
-            str(self.project_summary.total_empty_count),
-            str(self.project_summary.total_documentation_count),
+            formatted_percentage(100.0),
             str(self.project_summary.total_code_count),
+            formatted_percentage(self.project_summary.total_code_percentage),
+            str(self.project_summary.total_documentation_count),
+            formatted_percentage(self.project_summary.total_documentation_percentage),
         )
         Console(file=self._target_stream, soft_wrap=True).print(table)
 
@@ -186,20 +193,20 @@ class JsonWriter(BaseWriter):
         super().add(source_analysis)
         self.source_analyses.append(
             {
-                "path": source_analysis.path,
-                "sourceCount": source_analysis.source_count,
                 "emptyCount": source_analysis.empty_count,
                 "documentationCount": source_analysis.documentation_count,
                 "group": source_analysis.group,
                 "isCountable": source_analysis.is_countable,
                 "language": source_analysis.language,
+                "path": source_analysis.path,
                 "state": source_analysis.state.name,
                 "stateInfo": source_analysis.state_info,
+                "sourceCount": source_analysis.source_count,
             }
         )
 
     def close(self):
-        # NOTE: We are using camel case for naming here to follow JSLint's guidelines, see <https://www.jslint.com/>.
+        # NOTE: JSON names use camel case to follow JSLint's guidelines, see <https://www.jslint.com/>.
         super().close()
         json_map = {
             "formatVersion": JSON_FORMAT_VERSION,
@@ -208,11 +215,15 @@ class JsonWriter(BaseWriter):
             "languages": [
                 {
                     "documentationCount": language_summary.documentation_count,
+                    "documentationPercentage": language_summary.documentation_percentage,
                     "emptyCount": language_summary.empty_count,
+                    "emptyPercentage": language_summary.empty_percentage,
                     "fileCount": language_summary.file_count,
+                    "filePercentage": language_summary.file_percentage,
                     "isPseudoLanguage": language_summary.is_pseudo_language,
                     "language": language_summary.language,
                     "sourceCount": language_summary.source_count,
+                    "sourcePercentage": language_summary.source_percentage,
                 }
                 for language_summary in self.project_summary.language_to_language_summary_map.values()
             ],
@@ -225,14 +236,23 @@ class JsonWriter(BaseWriter):
             },
             "summary": {
                 "totalDocumentationCount": self.project_summary.total_documentation_count,
+                "totalDocumentationPercentage": self.project_summary.total_documentation_percentage,
                 "totalEmptyCount": self.project_summary.total_empty_count,
+                "totalEmptyPercentage": self.project_summary.total_empty_percentage,
                 "totalFileCount": self.project_summary.total_file_count,
                 "totalSourceCount": self.project_summary.total_source_count,
+                "totalSourcePercentage": self.project_summary.total_source_percentage,
             },
         }
         json.dump(json_map, self._target_stream)
 
 
-def digit_width(line_count):
+def digit_width(line_count: int) -> int:
     assert line_count >= 0
     return math.ceil(math.log10(line_count + 1)) if line_count != 0 else 1
+
+
+def formatted_percentage(percentage: float) -> str:
+    assert percentage >= 0.0
+    assert percentage <= 100.0
+    return f"{percentage:.01f}"

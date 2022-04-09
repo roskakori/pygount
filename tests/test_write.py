@@ -4,10 +4,12 @@ Test to write results of pygount analyses.
 # Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import io
+import re
 import tempfile
-from collections import namedtuple
 from pathlib import Path
 from xml.etree import ElementTree
+
+import pytest
 
 from pygount import analysis, write
 
@@ -55,28 +57,19 @@ def test_can_compute_digit_width():
     assert write.digit_width(1000) == 4
 
 
-_LineData = namedtuple(
-    "_LineData",
-    [
-        "language",
-        "file_count",
-        "blank_count",
-        "comment_count",
-        "code_count",
-    ],
-)
+_LINE_WORD_REGEX = re.compile(r"[\w\\.]+")  # HACK: For test assume all language names are "\w+".
 
 
-def _line_data_from(line):
-    line_parts = [word for word in line.split() if word.isalnum()]
-    assert len(line_parts) == 5, f"line_parts={line_parts}"
-    return _LineData(
-        line_parts[0],
-        int(line_parts[1]),
-        int(line_parts[2]),
-        int(line_parts[3]),
-        int(line_parts[4]),
-    )
+class _LineData:
+    def __init__(self, line: str):
+        line_parts = _LINE_WORD_REGEX.findall(line)
+        self.language = line_parts[0]
+        self.file_count = int(line_parts[1])
+        self.file_percentage = float(line_parts[2])
+        self.code_count = int(line_parts[3])
+        self.code_percentage = float(line_parts[4])
+        self.comment_count = int(line_parts[5])
+        self.comment_percentage = float(line_parts[6])
 
 
 class SummaryWriterTest(TempFolderTest):
@@ -89,26 +82,35 @@ class SummaryWriterTest(TempFolderTest):
         lines = self._summary_lines_for(source_analyses)
         assert len(lines) == 8, f"lines={lines}"
 
-        python_data = _line_data_from(lines[3])
+        python_data = _LineData(lines[3])
         assert python_data.language == "Python"
         assert python_data.file_count == 2
+        assert python_data.file_percentage == pytest.approx(66.7)
         assert python_data.code_count == 800
+        assert python_data.code_percentage == pytest.approx(89.6)
         assert python_data.comment_count == 75
+        assert python_data.comment_percentage == pytest.approx(8.4)
 
-        bash_data = _line_data_from(lines[4])
+        bash_data = _LineData(lines[4])
         assert bash_data.language == "Bash"
         assert bash_data.file_count == 1
         assert bash_data.code_count == 200
+        assert bash_data.code_percentage == pytest.approx(87.7)
         assert bash_data.comment_count == 25
+        assert bash_data.comment_percentage == pytest.approx(11.0)
 
-        sum_total_data = [word.strip() for word in lines[-2].split("│") if word]
-        assert len(sum_total_data) >= 3
-        assert sum_total_data[-2:] == ["100", "1000"]
+        sum_total_data = _LineData(lines[-2])
+        assert sum_total_data.file_count == 3
+        assert sum_total_data.file_percentage == pytest.approx(100.0)
+        assert sum_total_data.code_count == 1000
+        assert sum_total_data.code_percentage == pytest.approx(89.2)
+        assert sum_total_data.comment_count == 100
+        assert sum_total_data.comment_percentage == pytest.approx(8.9)
 
     def _summary_lines_for(self, source_analyses):
         # NOTE: We need to write to a file because the lines containing the
-        # actual data are only during close() at which point they would not be
-        # accessible to StringIO.getvalue().
+        # actual data are only available during close() at which point they
+        # would not be accessible to StringIO.getvalue().
         summary_path = Path(self.tests_temp_folder, "summary.tmp")
         with summary_path.open("w", encoding="utf-8") as summary_file:
             with write.SummaryWriter(summary_file) as writer:

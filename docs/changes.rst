@@ -5,6 +5,14 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.4.0, 2022-04-09
+
+* Added progress bar during scan phase and improved visual design of
+  ``--format=summary`` (contributed by Stanislav Zmiev, issue.
+  `#73 <https://github.com/roskakori/pygount/issues/73>`_).
+* Added percentages to API. For example in addition to
+  ``code_count`` now there also is ``code_percentage``.
+
 Version 1.3.0, 2022-01-06
 
 * Fixed computation of "lines per second", which was a copy and paste of
