@@ -138,9 +138,9 @@ class LanguageSummary:
         self._has_up_to_date_percentages = True
 
     def __repr__(self):
-        result = "{0}(language={1!r}, file_count={2}".format(self.__class__.__name__, self.language, self.file_count)
+        result = f"{self.__class__.__name__}(language={self.language!r}, file_count={self.file_count}"
         if not self.is_pseudo_language:
-            result += ", code_count={0}, documentation_count={1}, empty_count={2}, string_count={3}".format(
+            result += ", code_count={}, documentation_count={}, empty_count={}, string_count={}".format(
                 self.code_count, self.documentation_count, self.empty_count, self.string_count
             )
         result += ")"

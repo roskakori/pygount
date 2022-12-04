@@ -5,6 +5,11 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.5.0, 2022-12-xx
+
+* Removed support for Python 3.6
+  `#93 <https://github.com/roskakori/pygount/issues/93>`_).
+
 Version 1.4.0, 2022-04-09
 
 * Added progress bar during scan phase and improved visual design of

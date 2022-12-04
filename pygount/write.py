@@ -128,7 +128,7 @@ class ClocXmlWriter(BaseWriter):
         # Write the whole XML file.
         if self._target_stream.encoding is not None:
             # Write XML declaration only for files but skip it for io.StringIO.
-            self._target_stream.write('<?xml version="1.0" encoding="{0}"?>'.format(self._target_stream.encoding))
+            self._target_stream.write(f'<?xml version="1.0" encoding="{self._target_stream.encoding}"?>')
         xml_root = ElementTree.ElementTree(self._results_element)
         xml_root.write(self._target_stream, encoding="unicode", xml_declaration=False)
 

@@ -36,7 +36,7 @@ _HELP_EPILOG = """SHELL-PATTERN is a pattern using *, ? and ranges like [a-z]
  default values are available, [...] indicates that the PATTERNS extend the
  existing default values."""
 
-_HELP_FORMAT = 'output format, one of: {0}; default: "%(default)s"'.format(
+_HELP_FORMAT = 'output format, one of: {}; default: "%(default)s"'.format(
     ", ".join(['"' + format + '"' for format in VALID_OUTPUT_FORMATS])
 )
 
@@ -81,7 +81,7 @@ def _check_encoding(name, encoding_to_check, alternative_encoding, source=None):
             "".encode(encoding_to_check)
         except LookupError:
             raise pygount.common.OptionError(
-                '{0} is "{1}" but must be "{2}" or a known Python encoding'.format(
+                '{} is "{}" but must be "{}" or a known Python encoding'.format(
                     name, encoding_to_check, alternative_encoding
                 ),
                 source,
@@ -198,7 +198,7 @@ class Command:
         assert output_format is not None
         if output_format not in VALID_OUTPUT_FORMATS:
             raise pygount.common.OptionError(
-                "format is {0} but must be one of: {1}".format(output_format, VALID_OUTPUT_FORMATS), source
+                f"format is {output_format} but must be one of: {VALID_OUTPUT_FORMATS}", source
             )
         self._output_format = output_format
 
@@ -299,9 +299,7 @@ class Command:
                 try:
                     "".encode(encoding)
                 except LookupError:
-                    parser.error(
-                        "{0} specified with --encoding must be a known Python encoding: {1}".format(name, encoding)
-                    )
+                    parser.error(f"{name} specified with --encoding must be a known Python encoding: {encoding}")
         return args, default_encoding, fallback_encoding
 
     def apply_arguments(self, arguments=None):

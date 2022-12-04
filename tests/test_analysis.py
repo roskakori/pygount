@@ -263,7 +263,7 @@ def test_can_use_deprecated_counts():
 
 
 class EncodingTest(TempFolderTest):
-    _ENCODING_TO_BOM_MAP = dict((encoding, bom) for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items())
+    _ENCODING_TO_BOM_MAP = {encoding: bom for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items()}
     _TEST_CODE = "x = '\u00fd \u20ac'"
 
     def _test_can_detect_bom_encoding(self, encoding):
@@ -288,14 +288,14 @@ class EncodingTest(TempFolderTest):
 
     def test_can_detect_xml_prolog(self):
         encoding = "iso-8859-15"
-        xml_code = '<?xml encoding="{0}" standalone="yes"?><some>{1}</some>'.format(encoding, EncodingTest._TEST_CODE)
+        xml_code = f'<?xml encoding="{encoding}" standalone="yes"?><some>{EncodingTest._TEST_CODE}</some>'
         test_path = self.create_temp_file(encoding + ".xml", xml_code, encoding)
         actual_encoding = analysis.encoding_for(test_path)
         assert actual_encoding == encoding
 
     def test_can_detect_magic_comment(self):
         encoding = "iso-8859-15"
-        lines = ["#!/usr/bin/python", "# -*- coding: {0} -*-".format(encoding), EncodingTest._TEST_CODE]
+        lines = ["#!/usr/bin/python", f"# -*- coding: {encoding} -*-", EncodingTest._TEST_CODE]
         test_path = self.create_temp_file("magic-" + encoding, lines, encoding)
         actual_encoding = analysis.encoding_for(test_path)
         assert actual_encoding == encoding
@@ -325,7 +325,7 @@ class EncodingTest(TempFolderTest):
         actual_encoding = analysis.encoding_for(test_path, "utf-8")
         assert actual_encoding == "utf-8"
         # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
-        with open(test_path, "r", encoding=actual_encoding) as broken_test_file:
+        with open(test_path, encoding=actual_encoding) as broken_test_file:
             with pytest.raises(UnicodeDecodeError):
                 broken_test_file.read()
 
@@ -352,7 +352,7 @@ class GeneratedCodeTest(TempFolderTest):
 
     def test_can_detect_non_generated_code(self):
         default_generated_regexes = common.regexes_from(analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
-        with open(__file__, "r", encoding="utf-8") as source_file:
+        with open(__file__, encoding="utf-8") as source_file:
             matching_line_number_and_regex = analysis.matching_number_line_and_regex(
                 source_file, default_generated_regexes
             )
@@ -413,7 +413,7 @@ def test_has_no_duplicate_in_pygount_source():
     for source_path in source_paths:
         if source_path.endswith(".py"):
             duplicate_path = duplicate_pool.duplicate_path(source_path)
-            assert duplicate_path is None, "{0} must not be duplicate of {1}".format(source_path, duplicate_path)
+            assert duplicate_path is None, f"{source_path} must not be duplicate of {duplicate_path}"
 
 
 def test_can_match_deprecated_functions():

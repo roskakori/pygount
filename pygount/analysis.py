@@ -232,7 +232,7 @@ class SourceAnalysis:
         SourceAnalysis._check_state_info(state, state_info)
         return SourceAnalysis(
             path=source_path,
-            language="__{0}__".format(state.name),
+            language=f"__{state.name}__",
             group=group,
             code=0,
             documentation=0,
@@ -247,7 +247,7 @@ class SourceAnalysis:
         states_that_require_state_info = [SourceState.duplicate, SourceState.error, SourceState.generated]
         assert (state in states_that_require_state_info) == (
             state_info is not None
-        ), "state=%s and state_info=%s but state_info must be specified for the following states: %s" % (
+        ), "state={} and state_info={} but state_info must be specified for the following states: {}".format(
             state,
             state_info,
             states_that_require_state_info,
@@ -302,7 +302,7 @@ class SourceAnalysis:
             if encoding in ("automatic", "chardet"):
                 encoding = encoding_for(source_path, encoding, fallback_encoding)
             try:
-                with open(source_path, "r", encoding=encoding) as source_file:
+                with open(source_path, encoding=encoding) as source_file:
                     source_code = source_file.read()
             except (LookupError, OSError, UnicodeError) as error:
                 _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
@@ -314,7 +314,7 @@ class SourceAnalysis:
             number_line_and_regex = matching_number_line_and_regex(pygount.common.lines(source_code), generated_regexes)
             if number_line_and_regex is not None:
                 number, _, regex = number_line_and_regex
-                message = "line {0} matches {1}".format(number, regex)
+                message = f"line {number} matches {regex}"
                 _log.info("%s: is generated code because %s", source_path, message)
                 result = SourceAnalysis.from_state(source_path, group, SourceState.generated, message)
         if result is None:
@@ -452,15 +452,15 @@ class SourceAnalysis:
         return self.state in (SourceState.analyzed, SourceState.duplicate)
 
     def __repr__(self):
-        result = "{0}(path={1!r}, language={2!r}, group={3!r}, state={4}".format(
+        result = "{}(path={!r}, language={!r}, group={!r}, state={}".format(
             self.__class__.__name__, self.path, self.language, self.group, self.state.name
         )
         if self.state == SourceState.analyzed:
-            result += ", code_count={0}, documentation_count={1}, empty_count={2}, string_count={3}".format(
+            result += ", code_count={}, documentation_count={}, empty_count={}, string_count={}".format(
                 self.code_count, self.documentation_count, self.empty_count, self.string_count
             )
         if self.state_info is not None:
-            result += ", state_info={0!r}".format(self.state_info)
+            result += f", state_info={self.state_info!r}"
         result += ")"
         return result
 
@@ -559,7 +559,7 @@ class SourceScanner:
             try:
                 result.extend(self._paths_and_group_to_analyze(pattern))
             except OSError as error:
-                raise OSError('cannot scan "{0}" for source files: {1}'.format(pattern, error))
+                raise OSError(f'cannot scan "{pattern}" for source files: {error}')
         result = sorted(set(result))
         return result
 
@@ -759,7 +759,7 @@ def encoding_for(source_path: str, encoding: str = "automatic", fallback_encodin
         else:
             try:
                 # Attempt to read the file as UTF-8.
-                with open(source_path, "r", encoding="utf-8") as source_file:
+                with open(source_path, encoding="utf-8") as source_file:
                     source_file.read()
                 result = "utf-8"
             except UnicodeDecodeError:
@@ -771,7 +771,7 @@ def encoding_for(source_path: str, encoding: str = "automatic", fallback_encodin
     return result
 
 
-@deprecated("use {0}.{1}".format(SourceAnalysis.__name__, SourceAnalysis.from_state.__name__))
+@deprecated(f"use {SourceAnalysis.__name__}.{SourceAnalysis.from_state.__name__}")
 def pseudo_source_analysis(source_path, group, state, state_info=None):
     return SourceAnalysis.from_state(source_path, group, state, state_info)
 
@@ -815,7 +815,7 @@ def guess_lexer(source_path: str, text: str) -> pygments.lexer.Lexer:
     return result
 
 
-@deprecated("use {0}.{1}".format(SourceAnalysis.__name__, SourceAnalysis.from_file.__name__))
+@deprecated(f"use {SourceAnalysis.__name__}.{SourceAnalysis.from_file.__name__}")
 def source_analysis(
     source_path,
     group,
