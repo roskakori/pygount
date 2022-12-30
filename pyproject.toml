@@ -6,6 +6,7 @@ target-version = [
     "py38",
     "py39",
     "py310",
+    "py311",
 ]
 exclude = '''
 /(
@@ -54,6 +55,7 @@ classifiers = [
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Software Development",
 ]
 packages = [
