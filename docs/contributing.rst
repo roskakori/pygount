@@ -98,7 +98,7 @@ Then create a tag in the repository:
 
 .. code-block:: sh
 
-    $ git tag -a -m "Tagged version 1.x.x." v1.x.x
+    $ git tag -a -m "Tag version 1.x.x" v1.x.x
     $ git push --tags
 
 Ideally one could publish the new version on PyPI using:
