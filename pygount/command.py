@@ -4,6 +4,7 @@ Command line interface for pygount.
 # Copyright (c) 2016-2022, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import argparse
+import contextlib
 import logging
 import os
 import sys
@@ -327,13 +328,13 @@ class Command:
         duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
         writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
 
-        with Progress(transient=True) as progress:
-            if self.output == "STDOUT":
-                file_contextmanager = pygount.common.nullcontext(sys.stdout)
-            else:
-                file_contextmanager = open(self.output, "w", encoding="utf-8", newline="")
+        if self.output == "STDOUT":
+            file_contextmanager = contextlib.nullcontext(sys.stdout)
+        else:
+            file_contextmanager = open(self.output, "w", encoding="utf-8", newline="")
 
-            with file_contextmanager as target_file, writer_class(target_file) as writer:
+        with file_contextmanager as target_file, writer_class(target_file) as writer:
+            with Progress(disable=not writer.has_to_track_progress, transient=True) as progress:
                 try:
                     for source_path, group in progress.track(source_paths_and_groups_to_analyze):
                         writer.add(
