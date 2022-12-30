@@ -2,11 +2,11 @@
 line-length = 120
 include = '\.pyi?$'
 target-version = [
-    "py36",
     "py37",
     "py38",
     "py39",
     "py310",
+    "py311",
 ]
 exclude = '''
 /(
@@ -24,7 +24,7 @@ default_section = "THIRDPARTY"
 known_first_party = "pygount,scripts"
 
 [tool.pytest.ini_options]
-minversion = "6.0"
+minversion = "7.2"
 addopts = [
     "-rA"
 ]
@@ -34,7 +34,7 @@ testpaths = [
 
 [tool.poetry]
 name = "pygount"
-version = "1.4.0"
+version = "1.5.0"
 description = "count source lines of code (SLOC) using pygments"
 readme = "README.md"
 authors = ["Thomas Aglassinger <roskakori@users.sourceforge.net>"]
@@ -51,11 +51,11 @@ classifiers = [
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Software Development",
 ]
 packages = [
@@ -63,22 +63,22 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6.3"
+python = ">=3.7, <4"
 pygments = "^2"
-chardet = "^4"
+chardet = "^5"
 rich = ">=9, <13"
 
 [tool.poetry.dev-dependencies]
-wheel = "^0.37"
-coveralls = "^3.3"
-coverage = "^5.5"  # 6+ required Python 3.7.
-pytest = "^6.2.5"  # 7+ required Python 3.7.
-pytest-cov = "^3"
-pre-commit = "^2.17"  # 2.18+ requires Python 3.7+.
-pur = "^6.1.0"
-Sphinx = "^4.3.2"
+wheel = "^0.38"
+coveralls = "^3"
+coverage = "^6"
+pytest = "^7"
+pytest-cov = "^4"
+pre-commit = "^2"
+pur = "^7"
+Sphinx = "^5"
 sphinx-rtd-theme = "^1"
-twine = "^3.8"  # 4+ requires Python 3.7+.
+twine = "^4"
 
 [tool.poetry.scripts]
 pygount = "pygount.command:main"

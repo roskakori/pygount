@@ -40,12 +40,12 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
 
     def _set_dialect_and_stop_parsing(self, dialect):
         self.dialect = dialect
-        raise SaxParserDone("language detected: {0}".format(dialect))
+        raise SaxParserDone(f"language detected: {dialect}")
 
     def startElement(self, name, attrs):  # noqa: N802
         self._element_count += 1
         if self._element_count == self._max_element_count:
-            raise SaxParserDone("no language found after parsing {0} elements".format(self._element_count))
+            raise SaxParserDone(f"no language found after parsing {self._element_count} elements")
         self._path += "/" + name
         xmlns = attrs.get("xmlns", "")
         if (self._path == "/project") and ("name" in attrs):

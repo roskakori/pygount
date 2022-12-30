@@ -8,14 +8,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
     env:
-      MAIN_PYTHON_VERSION: 3.8 # same as Ubuntu 20 LTS
+      MAIN_PYTHON_VERSION: "3.10" # same as Ubuntu 22 LTS
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Poetry
@@ -25,7 +25,7 @@ jobs:
           virtualenvs-in-project: true
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -52,7 +52,7 @@ jobs:
     # pull request merges to fail with don't commit to branch".
     if: github.ref != 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install pre-commit
         run: |
           sudo apt-get install python3
@@ -60,7 +60,7 @@ jobs:
           pip install pre-commit
       - name: Load cached pre-commit
         id: cached-pre-commit
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
