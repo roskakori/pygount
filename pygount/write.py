@@ -37,6 +37,7 @@ class BaseWriter:
         self.lines_per_second = 0
         self.duration = None
         self.duration_in_seconds = 0.0
+        self.has_to_track_progress = True
 
     def __enter__(self):
         return self
@@ -51,12 +52,11 @@ class BaseWriter:
         self.project_summary.update_file_percentages()
         self.finished_at = datetime.datetime.utcnow()
         self.duration = self.finished_at - self.started_at
-        self.duration_in_seconds = (
-            (1e-6 * self.duration.microseconds) + self.duration.seconds + self.duration.days * 3600 * 24
+        self.duration_in_seconds = max(
+            0.001, self.duration.microseconds * 1e-6 + self.duration.seconds + self.duration.days * 3600 * 24
         )
-        if self.duration_in_seconds > 0:
-            self.lines_per_second = self.project_summary.total_line_count / self.duration_in_seconds
-            self.files_per_second = self.project_summary.total_file_count / self.duration_in_seconds
+        self.lines_per_second = self.project_summary.total_line_count / self.duration_in_seconds
+        self.files_per_second = self.project_summary.total_file_count / self.duration_in_seconds
 
 
 class LineWriter(BaseWriter):
@@ -66,6 +66,7 @@ class LineWriter(BaseWriter):
 
     def __init__(self, target_stream):
         super().__init__(target_stream)
+        self.has_to_track_progress = False
         self.template = "{0}\t{1}\t{2}\t{3}"
 
     def add(self, source_analysis):

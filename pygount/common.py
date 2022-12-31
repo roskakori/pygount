@@ -3,7 +3,6 @@ Common classes and functions for pygount.
 """
 # Copyright (c) 2016-2023, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
-import contextlib
 import fnmatch
 import functools
 import inspect
@@ -12,7 +11,6 @@ import warnings
 from typing import Generator, List, Optional, Pattern, Sequence, Union
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
-
 ADDITIONAL_PATTERN = "[...]"
 
 #: Prefix to use for pattern strings to describe a regular expression instead of a shell pattern.
@@ -186,6 +184,3 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
         return new_func2
     else:
         raise TypeError(repr(type(reason)))
-
-
-nullcontext = contextlib.nullcontext

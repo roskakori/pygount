@@ -5,15 +5,21 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.5.1, 2022-12-31
+
+* Removed progress bar for ``--format=sloccount`` because it resulted into
+  blank lines when running on Windows and could cause interwoven output on
+  Unix (issue `#91 <https://github.com/roskakori/pygount/issues/91>`_).
+
 Version 1.5.0, 2022-12-30
 
-* Removed support for Python 3.6 and updated dependencies
+* Removed support for Python 3.6 and updated dependencies (issue
   `#93 <https://github.com/roskakori/pygount/issues/93>`_).
 
 Version 1.4.0, 2022-04-09
 
 * Added progress bar during scan phase and improved visual design of
-  ``--format=summary`` (contributed by Stanislav Zmiev, issue.
+  ``--format=summary`` (contributed by Stanislav Zmiev, issue
   `#73 <https://github.com/roskakori/pygount/issues/73>`_).
 * Added percentages to API. For example in addition to
   ``code_count`` now there also is ``code_percentage``.
