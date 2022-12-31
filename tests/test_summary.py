@@ -1,7 +1,7 @@
 """
 Tests to summarize analyses of multiple source codes.
 """
-# Copyright (c) 2016-2022, Thomas Aglassinger.
+# Copyright (c) 2016-2023, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 from pygount.analysis import SourceAnalysis, SourceState
 from pygount.summary import LanguageSummary, ProjectSummary
