@@ -7,8 +7,9 @@ This chapter describes the changes coming with each new version of pygount.
 
 Version 1.5.1, 2022-12-31
 
-* Fixed missing output on Windows with ``--format=sloccount`` (issue
-  `#91 <https://github.com/roskakori/pygount/issues/91>`_).
+* Removed progress bar for ``--format=sloccount`` because it resulted into
+  blank lines when running on Windows and could cause interwoven output on
+  Unix (issue `#91 <https://github.com/roskakori/pygount/issues/91>`_).
 
 Version 1.5.0, 2022-12-30
 
