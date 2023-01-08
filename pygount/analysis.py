@@ -12,7 +12,8 @@ import logging
 import os
 import re
 from enum import Enum
-from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, TextIO, Tuple, Union
+from io import BufferedIOBase, IOBase, RawIOBase, TextIOBase
+from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, Tuple, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -261,7 +262,7 @@ class SourceAnalysis:
         fallback_encoding: str = "cp1252",
         generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT),
         duplicate_pool: Optional[DuplicatePool] = None,
-        file_handle: Optional[TextIO] = None,
+        file_handle: Optional[IOBase] = None,
     ) -> "SourceAnalysis":
         """
         Factory method to create a :py:class:`SourceAnalysis` by analyzing
@@ -277,8 +278,9 @@ class SourceAnalysis:
           if a source code identify is as generated source code for which SLOC should not be counted
         :param duplicate_pool: a :class:`DuplicatePool` where information about possible duplicates is
           collected, or ``None`` if possible duplicates should be counted multiple times.
-        :param file_handle: a file-like object in text mode, or ``None`` to read and open the file from
-          ``source_path``
+        :param file_handle: a file-like object, or ``None`` to read and open the file from
+          ``source_path``. If the file is open in text mode, it must be opened with the correct
+          encoding.
         """
         assert encoding is not None
         assert generated_regexes is not None
@@ -309,6 +311,14 @@ class SourceAnalysis:
                 try:
                     with open(source_path, encoding=encoding) as source_file:
                         source_code = source_file.read()
+                except (LookupError, OSError, UnicodeError) as error:
+                    _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
+                    result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
+            elif not isinstance(file_handle, TextIOBase):
+                if encoding in ("automatic", "chardet"):
+                    encoding = encoding_for(source_path, encoding, fallback_encoding, file_handle=file_handle)
+                try:
+                    source_code = file_handle.read().decode(encoding)
                 except (LookupError, OSError, UnicodeError) as error:
                     _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
                     result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
@@ -693,7 +703,12 @@ def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Generator[Set[str], N
         yield line_marks
 
 
-def encoding_for(source_path: str, encoding: str = "automatic", fallback_encoding: Optional[str] = None) -> str:
+def encoding_for(
+    source_path: str,
+    encoding: str = "automatic",
+    fallback_encoding: Optional[str] = None,
+    file_handle: Optional[Union[BufferedIOBase, RawIOBase]] = None,
+) -> str:
     """
     The encoding used by the text file stored in ``source_path``.
 
@@ -713,8 +728,13 @@ def encoding_for(source_path: str, encoding: str = "automatic", fallback_encodin
     assert encoding is not None
 
     if encoding == "automatic":
-        with open(source_path, "rb") as source_file:
-            heading = source_file.read(128)
+        if file_handle is None:
+            with open(source_path, "rb") as source_file:
+                heading = source_file.read(128)
+        else:
+            file_handle.seekable and file_handle.seek(0)
+            heading = file_handle.read(128)
+            file_handle.seekable and file_handle.seek(0)
         result = None
         if len(heading) == 0:
             # File is empty, assume a dummy encoding.
@@ -744,11 +764,17 @@ def encoding_for(source_path: str, encoding: str = "automatic", fallback_encodin
             _detector is not None
         ), 'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
         _detector.reset()
-        with open(source_path, "rb") as source_file:
-            for line in source_file.readlines():
-                _detector.feed(line)
-                if _detector.done:
-                    break
+        if file_handle is None:
+            with open(source_path, "rb") as source_file:
+                lines = source_file.readlines()
+        else:
+            file_handle.seekable and file_handle.seek(0)
+            lines = file_handle.readlines()
+            file_handle.seekable and file_handle.seek(0)
+        for line in lines:
+            _detector.feed(line)
+            if _detector.done:
+                break
         result = _detector.result["encoding"]
         if result is None:
             _log.warning(
@@ -766,8 +792,13 @@ def encoding_for(source_path: str, encoding: str = "automatic", fallback_encodin
         else:
             try:
                 # Attempt to read the file as UTF-8.
-                with open(source_path, encoding="utf-8") as source_file:
-                    source_file.read()
+                if file_handle is None:
+                    with open(source_path, encoding="utf-8") as source_file:
+                        source_file.read()
+                else:
+                    file_handle.seekable and file_handle.seek(0)
+                    file_handle.read()
+                    file_handle.seekable and file_handle.seek(0)
                 result = "utf-8"
             except UnicodeDecodeError:
                 # UTF-8 did not work out, use the default as last resort.

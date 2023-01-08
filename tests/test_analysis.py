@@ -6,7 +6,7 @@ Tests for pygount source code analysis.
 import glob
 import os
 import unittest
-from io import StringIO
+from io import BytesIO, StringIO
 from typing import List, Set
 
 import pytest
@@ -199,10 +199,18 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.state == analysis.SourceState.binary
         assert source_analysis.code_count == 0
 
-    def test_can_analyze_textio(self):
+    def test_can_analyze_stringio(self):
         test_path = "imaginary/path/to/file.py"
         test_code = "from random import randint\n\n# Print a random dice roll\nprint(randint(6))\n"
         source_analysis = analysis.SourceAnalysis.from_file(test_path, "test", file_handle=StringIO(test_code))
+        assert source_analysis.state == analysis.SourceState.analyzed
+        assert source_analysis.language == "Python"
+        assert source_analysis.code_count == 2
+
+    def test_can_analyze_bytesio(self):
+        test_path = "imaginary/path/to/file.py"
+        test_code = b"from random import randint\n\n# Print a random dice roll\nprint(randint(6))\n"
+        source_analysis = analysis.SourceAnalysis.from_file(test_path, "test", file_handle=BytesIO(test_code))
         assert source_analysis.state == analysis.SourceState.analyzed
         assert source_analysis.language == "Python"
         assert source_analysis.code_count == 2
