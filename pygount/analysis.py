@@ -12,7 +12,7 @@ import logging
 import os
 import re
 from enum import Enum
-from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, Tuple, Union
+from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, TextIO, Tuple, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -261,10 +261,11 @@ class SourceAnalysis:
         fallback_encoding: str = "cp1252",
         generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT),
         duplicate_pool: Optional[DuplicatePool] = None,
+        file_handle: Optional[TextIO] = None,
     ) -> "SourceAnalysis":
         """
         Factory method to create a :py:class:`SourceAnalysis` by analyzing
-        the source code in ``source_path``.
+        the source code in ``source_path`` or the open file ``file_handle``.
 
         :param source_path: path to source code to analyze
         :param group: name of a logical group the sourc code belongs to, e.g. a
@@ -276,6 +277,8 @@ class SourceAnalysis:
           if a source code identify is as generated source code for which SLOC should not be counted
         :param duplicate_pool: a :class:`DuplicatePool` where information about possible duplicates is
           collected, or ``None`` if possible duplicates should be counted multiple times.
+        :param file_handle: a file-like object in text mode, or ``None`` to read and open the file from
+          ``source_path``
         """
         assert encoding is not None
         assert generated_regexes is not None
@@ -283,30 +286,34 @@ class SourceAnalysis:
         result = None
         lexer = None
         source_code = None
-        source_size = os.path.getsize(source_path)
-        if source_size == 0:
-            _log.info("%s: is empty", source_path)
-            result = SourceAnalysis.from_state(source_path, group, SourceState.empty)
-        elif is_binary_file(source_path):
-            _log.info("%s: is binary", source_path)
-            result = SourceAnalysis.from_state(source_path, group, SourceState.binary)
-        elif not has_lexer(source_path):
-            _log.info("%s: unknown language", source_path)
-            result = SourceAnalysis.from_state(source_path, group, SourceState.unknown)
-        elif duplicate_pool is not None:
+        if file_handle is None:
+            source_size = os.path.getsize(source_path)
+            if source_size == 0:
+                _log.info("%s: is empty", source_path)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.empty)
+            elif is_binary_file(source_path):
+                _log.info("%s: is binary", source_path)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.binary)
+            elif not has_lexer(source_path):
+                _log.info("%s: unknown language", source_path)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.unknown)
+        if duplicate_pool is not None:
             duplicate_path = duplicate_pool.duplicate_path(source_path)
             if duplicate_path is not None:
                 _log.info("%s: is a duplicate of %s", source_path, duplicate_path)
                 result = SourceAnalysis.from_state(source_path, group, SourceState.duplicate, duplicate_path)
         if result is None:
-            if encoding in ("automatic", "chardet"):
-                encoding = encoding_for(source_path, encoding, fallback_encoding)
-            try:
-                with open(source_path, encoding=encoding) as source_file:
-                    source_code = source_file.read()
-            except (LookupError, OSError, UnicodeError) as error:
-                _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
-                result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
+            if file_handle is None:
+                if encoding in ("automatic", "chardet"):
+                    encoding = encoding_for(source_path, encoding, fallback_encoding)
+                try:
+                    with open(source_path, encoding=encoding) as source_file:
+                        source_code = source_file.read()
+                except (LookupError, OSError, UnicodeError) as error:
+                    _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
+                    result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
+            else:
+                source_code = file_handle.read()
             if result is None:
                 lexer = guess_lexer(source_path, source_code)
                 assert lexer is not None
