@@ -130,7 +130,6 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
     """
 
     if isinstance(reason, str):
-
         # The @deprecated is used with a 'reason'.
         #
         # .. code-block:: python
@@ -158,7 +157,6 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
 
         return decorator
     elif inspect.isclass(reason) or inspect.isfunction(reason):
-
         # The @deprecated is used without any 'reason'.
         #
         # .. code-block:: python
