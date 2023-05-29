@@ -6,12 +6,13 @@ Tests for pygount source code analysis.
 import glob
 import os
 import unittest
-from io import BytesIO, StringIO
+from io import BufferedIOBase, BytesIO, IOBase, RawIOBase, StringIO
 from typing import List, Set
 
 import pytest
 from pygments import lexers, token
 
+from pygount import Error as PygountError
 from pygount import analysis, common
 from pygount.analysis import guess_lexer
 
@@ -134,6 +135,12 @@ class AnalysisTest(unittest.TestCase):
         assert actual_line_parts == expected_line_parts
 
 
+class _NonSeekableStringIO(BufferedIOBase, RawIOBase, IOBase):
+    # Class to create a 'dummy object that mimics a non-seekable file handle'
+    def __init__(self):
+        self.seekable = False
+
+
 class FileAnalysisTest(TempFolderTest):
     def test_can_analyze_encoding_error(self):
         test_path = self.create_temp_file("encoding_error.py", 'print("\N{EURO SIGN}")', encoding="cp1252")
@@ -214,6 +221,18 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.state == analysis.SourceState.analyzed
         assert source_analysis.language == "Python"
         assert source_analysis.code_count == 2
+
+    def test_fails_on_non_seekable_file_handle_with_encoding_automatic(self):
+        file_handle = _NonSeekableStringIO()
+
+        with pytest.raises(PygountError, match=r".*file handle must be seekable.*"):
+            analysis.SourceAnalysis.from_file("README.md", "test", file_handle=file_handle, encoding="automatic")
+
+    def test_fails_on_non_seekable_file_handle_with_encoding_chardet(self):
+        file_handle = _NonSeekableStringIO()
+
+        with pytest.raises(PygountError, match=r".*file handle must be seekable.*"):
+            analysis.SourceAnalysis.from_file("README.md", "test", file_handle=file_handle, encoding="chardet")
 
 
 def test_can_repr_source_analysis_from_file():
