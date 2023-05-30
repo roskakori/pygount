@@ -6,7 +6,7 @@ Tests for pygount source code analysis.
 import glob
 import os
 import unittest
-from io import BufferedIOBase, BytesIO, IOBase, RawIOBase, StringIO
+from io import BytesIO, StringIO
 from typing import List, Set
 
 import pytest
@@ -135,7 +135,7 @@ class AnalysisTest(unittest.TestCase):
         assert actual_line_parts == expected_line_parts
 
 
-class _NonSeekableStringIO(BufferedIOBase, RawIOBase, IOBase):
+class _NonSeekableStringIO(BytesIO):
     # Class to create a 'dummy object that mimics a non-seekable file handle'
     def __init__(self):
         self.seekable = False
