@@ -62,18 +62,17 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7, <4"
+python = ">=3.8, <4"
 pygments = "^2"
 chardet = "^5"
 rich = ">=9, <14"
 
 [tool.poetry.dev-dependencies]
-wheel = "^0.38"
 coveralls = "^3"
 coverage = "^6"
 pytest = "^7"
 pytest-cov = "^4"
-pre-commit = "^2"
+pre-commit = "^3"
 pur = "^7"
 Sphinx = "^5"
 sphinx-rtd-theme = "^1"
