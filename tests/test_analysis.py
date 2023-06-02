@@ -135,7 +135,7 @@ class AnalysisTest(unittest.TestCase):
         assert actual_line_parts == expected_line_parts
 
 
-class _NonSeekableStringIO(BytesIO):
+class _NonSeekableEmptyBytesIO(BytesIO):
     # Class to create a 'dummy object that mimics a non-seekable file handle'
     def __init__(self):
         self.seekable = False
@@ -223,13 +223,13 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.code_count == 2
 
     def test_fails_on_non_seekable_file_handle_with_encoding_automatic(self):
-        file_handle = _NonSeekableStringIO()
+        file_handle = _NonSeekableEmptyBytesIO()
 
         with pytest.raises(PygountError, match=r".*file handle must be seekable.*"):
             analysis.SourceAnalysis.from_file("README.md", "test", file_handle=file_handle, encoding="automatic")
 
     def test_fails_on_non_seekable_file_handle_with_encoding_chardet(self):
-        file_handle = _NonSeekableStringIO()
+        file_handle = _NonSeekableEmptyBytesIO()
 
         with pytest.raises(PygountError, match=r".*file handle must be seekable.*"):
             analysis.SourceAnalysis.from_file("README.md", "test", file_handle=file_handle, encoding="chardet")
