@@ -12,7 +12,7 @@ import logging
 import os
 import re
 from enum import Enum
-from io import BufferedIOBase, IOBase, RawIOBase, TextIOBase
+from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
 from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, Tuple, Union
 
 import pygments.lexer
@@ -305,25 +305,21 @@ class SourceAnalysis:
                 _log.info("%s: is a duplicate of %s", source_path, duplicate_path)
                 result = SourceAnalysis.from_state(source_path, group, SourceState.duplicate, duplicate_path)
         if result is None:
-            if file_handle is None:
-                if encoding in ("automatic", "chardet"):
-                    encoding = encoding_for(source_path, encoding, fallback_encoding)
-                try:
+            try:
+                if file_handle is None:
+                    if encoding in ("automatic", "chardet"):
+                        encoding = encoding_for(source_path, encoding, fallback_encoding)
                     with open(source_path, encoding=encoding) as source_file:
                         source_code = source_file.read()
-                except (LookupError, OSError, UnicodeError) as error:
-                    _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
-                    result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
-            elif not isinstance(file_handle, TextIOBase):
-                if encoding in ("automatic", "chardet"):
-                    encoding = encoding_for(source_path, encoding, fallback_encoding, file_handle=file_handle)
-                try:
+                elif not isinstance(file_handle, TextIOBase):
+                    if encoding in ("automatic", "chardet"):
+                        encoding = encoding_for(source_path, encoding, fallback_encoding, file_handle=file_handle)
                     source_code = file_handle.read().decode(encoding)
-                except (LookupError, OSError, UnicodeError) as error:
-                    _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
-                    result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
-            else:
-                source_code = file_handle.read()
+                else:
+                    source_code = file_handle.read()
+            except (LookupError, OSError, UnicodeError) as error:
+                _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
             if result is None:
                 lexer = guess_lexer(source_path, source_code)
                 assert lexer is not None
@@ -732,9 +728,12 @@ def encoding_for(
             with open(source_path, "rb") as source_file:
                 heading = source_file.read(128)
         else:
-            file_handle.seekable and file_handle.seek(0)
+            if not file_handle.seekable:
+                raise pygount.Error(
+                    f"cannot automatically determine encoding: file handle must be seekable: {source_path}"
+                )
             heading = file_handle.read(128)
-            file_handle.seekable and file_handle.seek(0)
+            file_handle.seek(-len(heading), SEEK_CUR)
         result = None
         if len(heading) == 0:
             # File is empty, assume a dummy encoding.
@@ -768,9 +767,11 @@ def encoding_for(
             with open(source_path, "rb") as source_file:
                 lines = source_file.readlines()
         else:
-            file_handle.seekable and file_handle.seek(0)
+            if not file_handle.seekable:
+                raise pygount.Error(f"cannot determine encoding: file handle must be seekable: {source_path}")
+            file_position = file_handle.tell()
             lines = file_handle.readlines()
-            file_handle.seekable and file_handle.seek(0)
+            file_handle.seek(file_position)
         for line in lines:
             _detector.feed(line)
             if _detector.done:

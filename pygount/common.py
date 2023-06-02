@@ -94,7 +94,7 @@ def regexes_from(
                 regexes = regexes[1:]
             for supposed_regex in regexes:
                 assert isinstance(supposed_regex, _REGEX_TYPE), (
-                    "patterns_text must a text or sequnce or regular expressions but contains: %a" % supposed_regex
+                    "patterns_text must a text or sequence or regular expressions but contains: %a" % supposed_regex
                 )
             result.extend(regexes)
     except re.error as error:
@@ -107,7 +107,7 @@ def lines(text: str) -> Generator[str, None, None]:
     """
     Generator function to yield lines (delimited with ``'\n'``) stored in
     ``text``. This is useful when a regular expression should only match on a
-    per line basis in a memory efficient way.
+    per-line basis in a memory efficient way.
     """
     assert text is not None
     assert "\r" not in text
@@ -130,7 +130,6 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
     """
 
     if isinstance(reason, str):
-
         # The @deprecated is used with a 'reason'.
         #
         # .. code-block:: python
@@ -158,7 +157,6 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
 
         return decorator
     elif inspect.isclass(reason) or inspect.isfunction(reason):
-
         # The @deprecated is used without any 'reason'.
         #
         # .. code-block:: python
