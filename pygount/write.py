@@ -44,6 +44,7 @@ class BaseWriter:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+        return False
 
     def add(self, source_analysis):
         self.project_summary.add(source_analysis)

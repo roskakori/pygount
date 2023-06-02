@@ -218,6 +218,9 @@ class SourceAnalysis:
         self._string = string
         self._state = state
         self._state_info = state_info
+        # TODO#109 Check if path is git URL -> use regex;
+        #  if so, run git clone to temp dir and set path to local temp folder
+        #  -> use [mdtemp]/https://docs.python.org/3/library/tempfile.html#tempfile.mkdtemp(
 
     @staticmethod
     def from_state(
@@ -463,6 +466,17 @@ class SourceAnalysis:
         ``True`` if source counts can be counted towards a total.
         """
         return self.state in (SourceState.analyzed, SourceState.duplicate)
+
+    def close(self):
+        # TODO#109: Remove temp dir if exists.
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
     def __repr__(self):
         result = "{}(path={!r}, language={!r}, group={!r}, state={}".format(
