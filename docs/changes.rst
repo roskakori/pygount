@@ -5,6 +5,15 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.6.0, 2023-06-xx
+
+* Removed support for Python 3.7.
+* Improved API:
+
+  * Add option to pass a file handle to ``SourceAnalysis.from_file()``
+    (contributed by Dominik George, issue
+    `#100 <https://github.com/roskakori/pygount/issues/100>`_).
+
 Version 1.5.1, 2023-01-02
 
 * Removed progress bar for ``--format=sloccount`` because it resulted into
