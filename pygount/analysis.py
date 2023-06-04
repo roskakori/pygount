@@ -568,7 +568,7 @@ class SourceScanner:
     def is_valid_git_repo(git_repo: str) -> bool:
         # Regex to check valid  GIT Repository
         # from https://stackoverflow.com/questions/2514859/regular-expression-for-git-repository
-        git_regex = re.compile(r"((git|ssh|http(s)?)|(git@[\w\.]+))(:(\/\/)?)([\w\.@\:\/\-~]+)(\.git)(\/)?")
+        git_regex = re.compile(r"((git|ssh|http(s)?)|(git@[\w\.-]+))(:(\/\/)?)([\w\.@\:\/\-~]+)(\.git)(\/)?")
 
         if git_regex.match(git_repo):
             return True
