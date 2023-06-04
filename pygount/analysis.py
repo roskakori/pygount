@@ -520,15 +520,12 @@ class SourceScanner:
                 rmtree(self._source_patterns)
             except OSError as e:
                 print(f"Error: {e.filename} - {e.strerror}.")
-        print("exit method called")
 
     def __enter__(self):
-        print("enter")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
-        print("exit method called")
         return False
 
     @property
