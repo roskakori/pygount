@@ -13,8 +13,11 @@ import os
 import re
 from enum import Enum
 from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
+from shutil import rmtree
+from tempfile import mkdtemp
 from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, Tuple, Union
 
+import git
 import pygments.lexer
 import pygments.lexers
 import pygments.token
@@ -504,10 +507,29 @@ class SourceScanner:
         folders_to_skip=pygount.common.regexes_from(DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT),
         name_to_skip=pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT),
     ):
-        self._source_patterns = source_patterns
+        self._source_patterns = self._set_temp_path_from_git_repo(source_patterns)
         self._suffixes = pygount.common.regexes_from(suffixes)
         self._folder_regexps_to_skip = folders_to_skip
         self._name_regexps_to_skip = name_to_skip
+        self._is_git_link = False
+
+    def close(self):
+        # Remove temp dir if exists.
+        if self._is_git_link and os.path.isdir(self._source_patterns):
+            try:
+                rmtree(self._source_patterns)
+            except OSError as e:
+                print(f"Error: {e.filename} - {e.strerror}.")
+        print("exit method called")
+
+    def __enter__(self):
+        print("enter")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        print("exit method called")
+        return False
 
     @property
     def source_patterns(self):
@@ -534,6 +556,29 @@ class SourceScanner:
     @name_regexps_to_skip.setter
     def name_regexps_to_skip(self, regexps_or_pattern_text):
         self._name_regexp_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
+
+    @staticmethod
+    def is_valid_git_repo(git_repo: str) -> bool:
+        # Regex to check valid  GIT Repository
+        # from https://stackoverflow.com/questions/2514859/regular-expression-for-git-repository
+        git_regex = re.compile(r"((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(\.git)(/)?")
+
+        if git_regex.match(git_repo):
+            return True
+        else:
+            return False
+
+    def _set_temp_path_from_git_repo(self, source_patterns):
+        if source_patterns != [] and self.is_valid_git_repo(source_patterns[0]):
+            temp_folder = mkdtemp()
+
+            # TODO#109 implement a faster version than 'git clone'
+            # TODO#109 option to clone from a single hash
+            git.Repo.clone_from("https://github.com/roskakori/pygount", temp_folder)
+            self._is_git_link = True
+            return [temp_folder]
+
+        return source_patterns
 
     def _is_path_to_skip(self, name, is_folder):
         assert os.sep not in name, "name=%r" % name
