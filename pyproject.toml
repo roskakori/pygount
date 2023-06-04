@@ -66,6 +66,7 @@ python = ">=3.8, <4"
 pygments = "^2"
 chardet = "^5"
 rich = ">=9, <14"
+gitpython = "^3.1.31"
 
 [tool.poetry.dev-dependencies]
 coveralls = "^3"
