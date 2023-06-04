@@ -66,9 +66,9 @@ class SourceScannerTest(TempFolderTest):
 
     def test_can_find_files_from_cloned_git_repo(self):
         git_link = "https://github.com/roskakori/pygount.git"
-        scanner = analysis.SourceScanner([git_link])
-        actual_paths = list(scanner.source_paths())
-        assert actual_paths != []
+        with analysis.SourceScanner([git_link]) as scanner:
+            actual_paths = list(scanner.source_paths())
+            assert actual_paths != []
 
 
 class AnalysisTest(unittest.TestCase):

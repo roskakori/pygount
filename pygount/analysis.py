@@ -515,9 +515,11 @@ class SourceScanner:
 
     def close(self):
         # Remove temp dir if exists.
-        if self._is_git_link and os.path.isdir(self._source_patterns):
+        # TODO#109 Here self.is_git_link always returns False
+        # so the temporary folder never gets deleted
+        if self.is_git_link and os.path.isdir(self._source_patterns[0]):
             try:
-                rmtree(self._source_patterns)
+                rmtree(self._source_patterns[0])
             except OSError as e:
                 print(f"Error: {e.filename} - {e.strerror}.")
 
@@ -535,6 +537,14 @@ class SourceScanner:
     @property
     def suffixes(self):
         return self._suffixes
+
+    @property
+    def is_git_link(self):
+        return self._is_git_link
+
+    @is_git_link.setter
+    def is_git_link(self, value):
+        self._is_git_link = value
 
     @property
     def folder_regexps_to_skip(self):
@@ -558,7 +568,7 @@ class SourceScanner:
     def is_valid_git_repo(git_repo: str) -> bool:
         # Regex to check valid  GIT Repository
         # from https://stackoverflow.com/questions/2514859/regular-expression-for-git-repository
-        git_regex = re.compile(r"((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(\.git)(/)?")
+        git_regex = re.compile(r"((git|ssh|http(s)?)|(git@[\w\.]+))(:(\/\/)?)([\w\.@\:\/\-~]+)(\.git)(\/)?")
 
         if git_regex.match(git_repo):
             return True
@@ -567,14 +577,15 @@ class SourceScanner:
 
     def _set_temp_path_from_git_repo(self, source_patterns):
         if source_patterns != [] and self.is_valid_git_repo(source_patterns[0]):
+            self.is_git_link = True
             temp_folder = mkdtemp()
-
             # TODO#109 implement a faster version than 'git clone'
             # TODO#109 option to clone from a single hash
-            git.Repo.clone_from("https://github.com/roskakori/pygount", temp_folder)
-            self._is_git_link = True
+            git.Repo.clone_from(source_patterns[0], temp_folder)
             return [temp_folder]
 
+        # TODO#109 is this setting to False even needed
+        # self.is_git_link = False
         return source_patterns
 
     def _is_path_to_skip(self, name, is_folder):

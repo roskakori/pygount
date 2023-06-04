@@ -321,32 +321,34 @@ class Command:
 
     def execute(self):
         _log.setLevel(logging.INFO if self.is_verbose else logging.WARNING)
-        source_scanner = pygount.analysis.SourceScanner(
+        with pygount.analysis.SourceScanner(
             self.source_patterns, self.suffixes, self.folders_to_skip, self.names_to_skip
-        )
-        source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
-        duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
-        writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
-        is_stdout = self.output == "STDOUT"
-        target_context_manager = (
-            contextlib.nullcontext(sys.stdout) if is_stdout else open(self.output, "w", encoding="utf-8", newline="")
-        )
-        with target_context_manager as target_file, writer_class(target_file) as writer:
-            with Progress(disable=not writer.has_to_track_progress, transient=True) as progress:
-                try:
-                    for source_path, group in progress.track(source_paths_and_groups_to_analyze):
-                        writer.add(
-                            pygount.analysis.SourceAnalysis.from_file(
-                                source_path,
-                                group,
-                                self.default_encoding,
-                                self.fallback_encoding,
-                                generated_regexes=self._generated_regexs,
-                                duplicate_pool=duplicate_pool,
+        ) as source_scanner:
+            source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
+            duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
+            writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
+            is_stdout = self.output == "STDOUT"
+            target_context_manager = (
+                contextlib.nullcontext(sys.stdout)
+                if is_stdout
+                else open(self.output, "w", encoding="utf-8", newline="")
+            )
+            with target_context_manager as target_file, writer_class(target_file) as writer:
+                with Progress(disable=not writer.has_to_track_progress, transient=True) as progress:
+                    try:
+                        for source_path, group in progress.track(source_paths_and_groups_to_analyze):
+                            writer.add(
+                                pygount.analysis.SourceAnalysis.from_file(
+                                    source_path,
+                                    group,
+                                    self.default_encoding,
+                                    self.fallback_encoding,
+                                    generated_regexes=self._generated_regexs,
+                                    duplicate_pool=duplicate_pool,
+                                )
                             )
-                        )
-                finally:
-                    progress.stop()
+                    finally:
+                        progress.stop()
 
 
 def pygount_command(arguments=None):
