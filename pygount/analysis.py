@@ -507,11 +507,11 @@ class SourceScanner:
         folders_to_skip=pygount.common.regexes_from(DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT),
         name_to_skip=pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT),
     ):
+        self._is_git_link = False
         self._source_patterns = self._set_temp_path_from_git_repo(source_patterns)
         self._suffixes = pygount.common.regexes_from(suffixes)
         self._folder_regexps_to_skip = folders_to_skip
         self._name_regexps_to_skip = name_to_skip
-        self._is_git_link = False
 
     def close(self):
         # Remove temp dir if exists.
