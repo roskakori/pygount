@@ -64,7 +64,7 @@ class SourceScannerTest(TempFolderTest):
             actual_suffix = os.path.splitext(python_path)[1]
             assert actual_suffix == ".py"
 
-    def test_can_find_files_from_cloned_git_repo(self):
+    def test_can_find_files_from_cloned_git_link(self):
         git_link = "https://github.com/roskakori/pygount.git"
         with analysis.SourceScanner([git_link]) as scanner:
             actual_paths = list(scanner.source_paths())

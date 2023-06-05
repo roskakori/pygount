@@ -497,7 +497,7 @@ class SourceScanner:
         name_to_skip=pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT),
     ):
         self._is_git_link = False
-        self._source_patterns = self._set_temp_path_from_git_repo(source_patterns)
+        self._source_patterns = self._set_temp_path_from_git_link(source_patterns)
         self._suffixes = pygount.common.regexes_from(suffixes)
         self._folder_regexps_to_skip = folders_to_skip
         self._name_regexps_to_skip = name_to_skip
@@ -552,12 +552,12 @@ class SourceScanner:
         self._name_regexp_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
 
     @staticmethod
-    def is_valid_git_repo(git_repo: str) -> bool:
+    def is_valid_git_link(git_link: str) -> bool:
         # Regex to check valid  GIT Repository
         # from https://stackoverflow.com/questions/2514859/regular-expression-for-git-repository
         git_regex = re.compile(r"((git|ssh|http(s)?)|(git@[\w\.-]+))(:(\/\/)?)([\w\.@\:\/\-~]+)(\.git)(\/)?")
 
-        if git_regex.match(git_repo):
+        if git_regex.match(git_link):
             return True
         else:
             return False
@@ -582,8 +582,8 @@ class SourceScanner:
 
         return git_link, git_branch
 
-    def _set_temp_path_from_git_repo(self, source_patterns):
-        if source_patterns != [] and self.is_valid_git_repo(source_patterns[0]):
+    def _set_temp_path_from_git_link(self, source_patterns):
+        if source_patterns != [] and self.is_valid_git_link(source_patterns[0]):
             self.is_git_link = True
             temp_folder = mkdtemp()
             git_link, git_branch = self.repo_arguments(source_patterns[0])
