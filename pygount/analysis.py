@@ -562,15 +562,34 @@ class SourceScanner:
         else:
             return False
 
+    @staticmethod
+    def repo_arguments(git_link: str):
+        """
+        Returns the git link that ends with .git and branch name if it specified at the end with @branch
+        :param git_link: input of the git link that ends with .git or .git@branch
+        """
+        # example: master, feature-branch
+        # at this state it's set to '@master' or ''
+        git_branch = git_link.split(".git")[-1]
+
+        # example: https://github.com/roskakori/pygount.git
+        git_link = git_link.split(".git")[0] + ".git"
+
+        # set the argument for the clone command if any branch is specified after `.git/`
+        if git_branch != "":
+            # set from '@master' to 'master'
+            git_branch = "--branch " + git_branch.split("@")[1]
+
+        return git_link, git_branch
+
     def _set_temp_path_from_git_repo(self, source_patterns):
         if source_patterns != [] and self.is_valid_git_repo(source_patterns[0]):
             self.is_git_link = True
             temp_folder = mkdtemp()
-            # TODO#109 implement a faster version than 'git clone'
-            # TODO#109 option to clone from a single hash
-            git.Repo.clone_from(source_patterns[0], temp_folder)
-            return [temp_folder]
+            git_link, git_branch = self.repo_arguments(source_patterns[0])
 
+            git.Repo.clone_from(git_link, temp_folder, multi_options=["--depth 1", git_branch])
+            return [temp_folder]
         return source_patterns
 
     def _is_path_to_skip(self, name, is_folder):
