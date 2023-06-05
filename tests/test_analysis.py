@@ -70,6 +70,19 @@ class SourceScannerTest(TempFolderTest):
             actual_paths = list(scanner.source_paths())
             assert actual_paths != []
 
+    def test_can_split_repo_link_and_branch(self):
+        git_link_https_1 = "https://github.com/roskakori/pygount.git"
+        git_link_https_2 = "https://github.com/roskakori/pygount.git@master"
+        git_link_ssh_1 = "git@github.com:roskakori/pygount.git"
+        git_link_ssh_2 = "git@github.com:roskakori/pygount.git@v1.5.1"
+
+        assert "https://github.com/roskakori/pygount.git", "" == analysis.SourceScanner.repo_arguments(git_link_https_1)
+        assert "https://github.com/roskakori/pygount.git", "master" == analysis.SourceScanner.repo_arguments(
+            git_link_https_2
+        )
+        assert "git@github.com:roskakori/pygount.git", "" == analysis.SourceScanner.repo_arguments(git_link_ssh_1)
+        assert "git@github.com:roskakori/pygount.git", "v1.5.1" == analysis.SourceScanner.repo_arguments(git_link_ssh_2)
+
 
 class AnalysisTest(unittest.TestCase):
     def test_can_deline_tokens(self):
