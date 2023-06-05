@@ -470,17 +470,6 @@ class SourceAnalysis:
         """
         return self.state in (SourceState.analyzed, SourceState.duplicate)
 
-    def close(self):
-        # TODO#109: Remove temp dir if exists.
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-        return False
-
     def __repr__(self):
         result = "{}(path={!r}, language={!r}, group={!r}, state={}".format(
             self.__class__.__name__, self.path, self.language, self.group, self.state.name
@@ -515,11 +504,9 @@ class SourceScanner:
 
     def close(self):
         # Remove temp dir if exists.
-        # TODO#109 Here self.is_git_link always returns False
-        # so the temporary folder never gets deleted
-        if self.is_git_link and os.path.isdir(self._source_patterns[0]):
+        if self.is_git_link and os.path.isdir(self.source_patterns[0]):
             try:
-                rmtree(self._source_patterns[0])
+                rmtree(self.source_patterns[0])
             except OSError as e:
                 print(f"Error: {e.filename} - {e.strerror}.")
 
@@ -584,8 +571,6 @@ class SourceScanner:
             git.Repo.clone_from(source_patterns[0], temp_folder)
             return [temp_folder]
 
-        # TODO#109 is this setting to False even needed
-        # self.is_git_link = False
         return source_patterns
 
     def _is_path_to_skip(self, name, is_folder):
