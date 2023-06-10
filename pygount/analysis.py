@@ -133,6 +133,8 @@ _PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAME_PATTERNS) + 
 #: Regular expression to detect plain text files by name.
 _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
 
+#: Regular expression to detect git url with the optional tag or branch
+_GIT_URL_REGEX = re.compile(r"((git|ssh|http(s)?)|(git@[\w.-]+))(:(//)?)([\w.@:/\-~]+)(\.git)(/)?([\w./\-]+)?")
 
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
@@ -497,7 +499,7 @@ class SourceScanner:
         name_to_skip=pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT),
     ):
         self._is_git_link = False
-        self._source_patterns = self._set_temp_path_from_git_link(source_patterns)
+        self._source_patterns = self._create_temp_path_and_clone_git_repository(source_patterns)
         self._suffixes = pygount.common.regexes_from(suffixes)
         self._folder_regexps_to_skip = folders_to_skip
         self._name_regexps_to_skip = name_to_skip
@@ -507,8 +509,8 @@ class SourceScanner:
         if self.is_git_link and os.path.isdir(self.source_patterns[0]):
             try:
                 rmtree(self.source_patterns[0])
-            except OSError as e:
-                print(f"Error: {e.filename} - {e.strerror}.")
+            except OSError as error:
+                _log.warning("Cannot remove temporary folder: %s", error)
 
     def __enter__(self):
         return self
@@ -552,43 +554,29 @@ class SourceScanner:
         self._name_regexp_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
 
     @staticmethod
-    def is_valid_git_link(git_link: str) -> bool:
-        # Regex to check valid  GIT Repository
-        # from https://stackoverflow.com/questions/2514859/regular-expression-for-git-repository
-        git_regex = re.compile(r"((git|ssh|http(s)?)|(git@[\w\.-]+))(:(\/\/)?)([\w\.@\:\/\-~]+)(\.git)(\/)?")
-
-        if git_regex.match(git_link):
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def repo_arguments(git_link: str):
+    def valid_repo_url_and_tag(git_url: str) -> Tuple[str, str]:
         """
-        Returns the git link that ends with .git and branch name if it specified at the end with @branch
-        :param git_link: input of the git link that ends with .git or .git@branch
+        Returns the git link that ends with .git and tag if it specified at the end with /<tag>
+        :param git_url: input of the git link that ends with .git or .git/<tag>
         """
-        # example: master, feature-branch
-        # at this state it's set to '@master' or ''
-        git_branch = git_link.split(".git")[-1]
+        match = _GIT_URL_REGEX.match(git_url)
+        if match:
+            git_tag = match.group(10)
+            if git_tag is None:
+                git_tag = ""
+            git_url = git_url.strip(git_tag)
+            return git_url, git_tag
 
-        # example: https://github.com/roskakori/pygount.git
-        git_link = git_link.split(".git")[0] + ".git"
-
-        # set the argument for the clone command if any branch is specified after `.git/`
-        if git_branch != "":
-            # set from '@master' to 'master'
-            git_branch = "--branch " + git_branch.split("@")[1]
-
-        return git_link, git_branch
-
-    def _set_temp_path_from_git_link(self, source_patterns):
-        if source_patterns != [] and self.is_valid_git_link(source_patterns[0]):
+    def _create_temp_path_and_clone_git_repository(self, source_patterns):
+        if source_patterns != [] and (repo_url_and_tag := self.valid_repo_url_and_tag(source_patterns[0])) is not None:
             self.is_git_link = True
             temp_folder = mkdtemp()
-            git_link, git_branch = self.repo_arguments(source_patterns[0])
+            git_url, git_tag = repo_url_and_tag
+            # set the argument for the clone command if any branch is specified after `.git/`
+            if git_tag != "":
+                git_tag = "--branch " + git_tag
 
-            git.Repo.clone_from(git_link, temp_folder, multi_options=["--depth 1", git_branch])
+            git.Repo.clone_from(git_url, temp_folder, multi_options=["--depth 1", git_tag])
             return [temp_folder]
         return source_patterns
 

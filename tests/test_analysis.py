@@ -70,18 +70,19 @@ class SourceScannerTest(TempFolderTest):
             actual_paths = list(scanner.source_paths())
             assert actual_paths != []
 
-    def test_can_split_repo_link_and_branch(self):
-        git_link_https_1 = "https://github.com/roskakori/pygount.git"
-        git_link_https_2 = "https://github.com/roskakori/pygount.git@master"
-        git_link_ssh_1 = "git@github.com:roskakori/pygount.git"
-        git_link_ssh_2 = "git@github.com:roskakori/pygount.git@v1.5.1"
-
-        assert "https://github.com/roskakori/pygount.git", "" == analysis.SourceScanner.repo_arguments(git_link_https_1)
-        assert "https://github.com/roskakori/pygount.git", "master" == analysis.SourceScanner.repo_arguments(
-            git_link_https_2
+    def test_can_split_repo_url_and_tag(self):
+        assert ("https://github.com/roskakori/pygount.git", "") == analysis.SourceScanner.valid_repo_url_and_tag(
+            "https://github.com/roskakori/pygount.git"
         )
-        assert "git@github.com:roskakori/pygount.git", "" == analysis.SourceScanner.repo_arguments(git_link_ssh_1)
-        assert "git@github.com:roskakori/pygount.git", "v1.5.1" == analysis.SourceScanner.repo_arguments(git_link_ssh_2)
+        assert ("https://github.com/roskakori/pygount.git/", "master") == analysis.SourceScanner.valid_repo_url_and_tag(
+            "https://github.com/roskakori/pygount.git/master"
+        )
+        assert ("git@github.com:roskakori/pygount.git", "") == analysis.SourceScanner.valid_repo_url_and_tag(
+            "git@github.com:roskakori/pygount.git"
+        )
+        assert ("git@github.com:roskakori/pygount.git/", "v1.5.1") == analysis.SourceScanner.valid_repo_url_and_tag(
+            "git@github.com:roskakori/pygount.git/v1.5.1"
+        )
 
 
 class AnalysisTest(unittest.TestCase):
