@@ -8,7 +8,7 @@ import functools
 import inspect
 import re
 import warnings
-from typing import Generator, List, Optional, Pattern, Sequence, Union
+from typing import Iterator, List, Optional, Pattern, Sequence, Union
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
 ADDITIONAL_PATTERN = "[...]"
@@ -64,8 +64,8 @@ def regex_from(pattern: Union[str, Pattern], is_shell_pattern=False) -> Pattern:
 
 
 def regexes_from(
-    patterns_text: Union[str, Sequence[str]],
-    default_patterns_text: Optional[Union[str, Sequence[str]]] = None,
+    patterns_text: Union[str, Sequence[str], Sequence[Pattern]],
+    default_patterns_text: Optional[Union[str, Sequence[Pattern], Sequence[str]]] = None,
     source: Optional[str] = None,
 ) -> List[Pattern]:
     assert patterns_text is not None
@@ -103,7 +103,7 @@ def regexes_from(
     return result
 
 
-def lines(text: str) -> Generator[str, None, None]:
+def lines(text: str) -> Iterator[str]:
     """
     Generator function to yield lines (delimited with ``'\n'``) stored in
     ``text``. This is useful when a regular expression should only match on a
