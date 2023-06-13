@@ -551,7 +551,7 @@ class SourceScanner:
 
     @name_regexps_to_skip.setter
     def name_regexps_to_skip(self, regexps_or_pattern_text):
-        self._name_regexp_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
+        self._name_regexps_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
 
     @staticmethod
     def valid_repo_url_and_tag(git_url: str) -> Tuple[str, str]:
