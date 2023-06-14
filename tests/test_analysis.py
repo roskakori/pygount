@@ -84,6 +84,10 @@ class SourceScannerTest(TempFolderTest):
             "git@github.com:roskakori/pygount.git/v1.5.1"
         )
 
+    def test_can_find_files_from_cloned_git_remote_url_with_revision(self):
+        # TODO#109: Test that v0.1 does not have a pyproject.toml
+        pass
+
 
 class AnalysisTest(unittest.TestCase):
     def test_can_deline_tokens(self):
