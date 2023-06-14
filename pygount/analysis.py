@@ -13,11 +13,8 @@ import os
 import re
 from enum import Enum
 from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
-from shutil import rmtree
-from tempfile import mkdtemp
 from typing import Dict, Iterator, List, Optional, Pattern, Sequence, Set, Tuple, Union
 
-import git
 import pygments.lexer
 import pygments.lexers
 import pygments.token
@@ -27,6 +24,7 @@ import pygount.common
 import pygount.lexers
 import pygount.xmldialect
 from pygount.common import deprecated
+from pygount.git_storage import GitStorage, is_git_url
 
 # Attempt to import chardet.
 try:
@@ -73,7 +71,7 @@ class SourceState(Enum):
 
 
 #: Default patterns for regular expressions to detect generated code.
-#: The '(?i)' indicates that the patterns are case insensitive.
+#: The '(?i)' indicates that the patterns are case-insensitive.
 DEFAULT_GENERATED_PATTERNS_TEXT = pygount.common.REGEX_PATTERN_PREFIX + ", ".join(
     [
         r"(?i).*automatically generated",
@@ -131,9 +129,6 @@ _STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
 _PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAME_PATTERNS) + "$)"
 #: Regular expression to detect plain text files by name.
 _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
-
-#: Regular expression to detect git url with the optional tag or branch
-_GIT_URL_REGEX = re.compile(r"((git|ssh|http(s)?)|(git@[\w.-]+))(:(//)?)([\w.@:/\-~]+)(\.git)(/)?([\w./\-]+)?")
 
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
@@ -498,7 +493,7 @@ class SourceScanner:
         name_to_skip=None,
     ):
         self._is_git_link = False
-        self._source_patterns = self._create_temp_path_and_clone_git_repository(source_patterns)
+        self._source_patterns = source_patterns
         self._suffixes = pygount.common.regexes_from(suffixes)
         self._folder_regexps_to_skip = (
             folders_to_skip
@@ -510,14 +505,11 @@ class SourceScanner:
             if folders_to_skip is not None
             else pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         )
+        self._git_storages = []
 
     def close(self):
-        # Remove temp dir if exists.
-        if self.is_git_link and os.path.isdir(self.source_patterns[0]):
-            try:
-                rmtree(self.source_patterns[0])
-            except OSError as error:
-                _log.warning("Cannot remove temporary folder: %s", error)
+        for git_storage in self._git_storages:
+            git_storage.close()
 
     def __enter__(self):
         return self
@@ -559,33 +551,6 @@ class SourceScanner:
     @name_regexps_to_skip.setter
     def name_regexps_to_skip(self, regexps_or_pattern_text):
         self._name_regexps_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
-
-    @staticmethod
-    def valid_repo_url_and_tag(git_url: str) -> Tuple[str, str]:
-        """
-        Returns the git link that ends with .git and tag if it specified at the end with /<tag>
-        :param git_url: input of the git link that ends with .git or .git/<tag>
-        """
-        match = _GIT_URL_REGEX.match(git_url)
-        if match:
-            git_tag = match.group(10)
-            if git_tag is None:
-                git_tag = ""
-            git_url = git_url.strip(git_tag)
-            return git_url, git_tag
-
-    def _create_temp_path_and_clone_git_repository(self, source_patterns):
-        if source_patterns != [] and (repo_url_and_tag := self.valid_repo_url_and_tag(source_patterns[0])) is not None:
-            self.is_git_link = True
-            temp_folder = mkdtemp()
-            git_url, git_tag = repo_url_and_tag
-            # set the argument for the clone command if any branch is specified after `.git/`
-            if git_tag != "":
-                git_tag = "--branch " + git_tag
-
-            git.Repo.clone_from(git_url, temp_folder, multi_options=["--depth 1", git_tag])
-            return [temp_folder]
-        return source_patterns
 
     def _is_path_to_skip(self, name, is_folder) -> bool:
         assert os.sep not in name, "name=%r" % name
@@ -631,14 +596,21 @@ class SourceScanner:
                                 actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
                         yield path_to_analyse, actual_group
 
-    def _source_paths_and_groups_to_analyze(self, patterns_to_analyze) -> List[Tuple[str, str]]:
-        assert patterns_to_analyze is not None
+    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> List[Tuple[str, str]]:
+        assert source_patterns_to_analyze is not None
         result = []
-        for pattern in patterns_to_analyze:
+        for source_pattern_to_analyze in source_patterns_to_analyze:
             try:
-                result.extend(self._paths_and_group_to_analyze(pattern))
+                if is_git_url(source_pattern_to_analyze):
+                    git_storage = GitStorage(source_pattern_to_analyze)
+                    self._git_storages.append(git_storage)
+                    git_storage.extract()
+                    # TODO#109: Find a way not to include the ugly temp folder in the source path.
+                    result.extend(self._paths_and_group_to_analyze(git_storage.temp_folder))
+                else:
+                    result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
             except OSError as error:
-                raise OSError(f'cannot scan "{pattern}" for source files: {error}')
+                raise OSError(f'cannot scan "{source_pattern_to_analyze}" for source files: {error}')
         result = sorted(set(result))
         return result
 
