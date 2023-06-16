@@ -28,7 +28,7 @@ def test_can_extract_git_remote_url_and_revision():
 
 
 def test_can_extract_and_close_git_storage():
-    git_storage = GitStorage("git@github.com:roskakori/pygount.git")
+    git_storage = GitStorage("https://github.com/roskakori/pygount.git")
     readme_path = Path(git_storage.temp_folder) / "README.md"
     try:
         git_storage.extract()

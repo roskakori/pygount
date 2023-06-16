@@ -217,9 +217,6 @@ class SourceAnalysis:
         self._string = string
         self._state = state
         self._state_info = state_info
-        # TODO#109 Check if path is git URL -> use regex;
-        #  if so, run git clone to temp dir and set path to local temp folder
-        #  -> use [mdtemp]/https://docs.python.org/3/library/tempfile.html#tempfile.mkdtemp(
 
     @staticmethod
     def from_state(
@@ -492,7 +489,6 @@ class SourceScanner:
         folders_to_skip=None,
         name_to_skip=None,
     ):
-        self._is_git_link = False
         self._source_patterns = source_patterns
         self._suffixes = pygount.common.regexes_from(suffixes)
         self._folder_regexps_to_skip = (
@@ -525,14 +521,6 @@ class SourceScanner:
     @property
     def suffixes(self) -> List[Pattern]:
         return self._suffixes
-
-    @property
-    def is_git_link(self):
-        return self._is_git_link
-
-    @is_git_link.setter
-    def is_git_link(self, value):
-        self._is_git_link = value
 
     @property
     def folder_regexps_to_skip(self) -> List[Pattern]:

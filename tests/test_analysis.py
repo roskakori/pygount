@@ -70,20 +70,6 @@ class SourceScannerTest(TempFolderTest):
             actual_paths = list(scanner.source_paths())
             assert actual_paths != []
 
-    def test_can_split_repo_url_and_tag(self):
-        assert ("https://github.com/roskakori/pygount.git", "") == analysis.SourceScanner.valid_repo_url_and_tag(
-            "https://github.com/roskakori/pygount.git"
-        )
-        assert ("https://github.com/roskakori/pygount.git/", "master") == analysis.SourceScanner.valid_repo_url_and_tag(
-            "https://github.com/roskakori/pygount.git/master"
-        )
-        assert ("git@github.com:roskakori/pygount.git", "") == analysis.SourceScanner.valid_repo_url_and_tag(
-            "git@github.com:roskakori/pygount.git"
-        )
-        assert ("git@github.com:roskakori/pygount.git/", "v1.5.1") == analysis.SourceScanner.valid_repo_url_and_tag(
-            "git@github.com:roskakori/pygount.git/v1.5.1"
-        )
-
     def test_can_find_files_from_cloned_git_remote_url_with_revision(self):
         # TODO#109: Test that v0.1 does not have a pyproject.toml
         pass
