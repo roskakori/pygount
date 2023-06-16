@@ -27,12 +27,14 @@ def test_can_extract_git_remote_url_and_revision():
     )
 
 
-def test_can_extract_and_close_git_storage():
-    git_storage = GitStorage("https://github.com/roskakori/pygount.git")
-    readme_path = Path(git_storage.temp_folder) / "README.md"
+def test_can_extract_and_close_and_find_files_from_cloned_git_remote_url_with_revision():
+    git_storage = GitStorage("https://github.com/roskakori/pygount.git/v0.1")
+    pyproject_path = Path(git_storage.temp_folder) / "pyproject.toml"
+    readme_path = Path(git_storage.temp_folder) / "README.rst"
     try:
         git_storage.extract()
         assert readme_path.exists()
+        assert not pyproject_path.exists()
     finally:
         git_storage.close()
     assert not readme_path.exists()
