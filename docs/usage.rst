@@ -74,6 +74,30 @@ For further processing the results of pygount, ``--format=json`` should be the
 easiest to deal with. For more information see :doc:`json`.
 
 
+Remote repositories
+-------
+
+Pygount can analyze remote git repositories by shallow cloning to a temporary
+directory:
+
+.. code-block:: bash
+
+    $ pygount https://github.com/roskakori/pygount.git
+
+* It supports mixing multiple URLs with or without local folders, for example:
+
+.. code-block:: bash
+
+    $ pygount https://github.com/roskakori/pygount.git ~/development/sometool
+
+* It supports different protocols such as Git, HTTP/S and SSH.
+* The branch or tag can be specified in the URL, for example:
+
+    * ``https://github.com/roskakori/pygount.git/master``
+    * ``https://github.com/roskakori/pygount.git/feature/branch``
+    * ``git@github.com:roskakori/pygount.git/v1.6.0``
+
+
 Patterns
 --------
 
@@ -95,7 +119,7 @@ taken into account.
 .. option:: --generated
 
 So for example to specify that generated code can also contain the German word
-"generiert" in a case insensivie way use
+"generiert" in a case insensitive way use
 ``--generated="[regex][...](?i).*generiert"``.
 
 
