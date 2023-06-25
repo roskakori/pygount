@@ -6,7 +6,7 @@ General
 
 .. program:: pygount
 
-Simply run and specify the folder to analyze recursively, for example:
+Run and specify the folder to analyze recursively, for example:
 
 .. code-block:: bash
 
@@ -75,27 +75,44 @@ easiest to deal with. For more information see :doc:`json`.
 
 
 Remote repositories
--------
+-------------------
 
-Pygount can analyze remote git repositories by shallow cloning to a temporary
-directory:
+Additionally to local files, pygount can analyze remote git repositories:
 
 .. code-block:: bash
 
     $ pygount https://github.com/roskakori/pygount.git
 
-* It supports mixing multiple URLs with or without local folders, for example:
+In the background, this creates a shallow clone of the repository in a
+temporary folder that after the analysis is is removed automatically.
+
+Therefore you need to have at read access to the repository.
+
+If you want to analyze a specific revision, specify it at the end of the URL:
 
 .. code-block:: bash
 
-    $ pygount https://github.com/roskakori/pygount.git ~/development/sometool
+    $ pygount https://github.com/roskakori/pygount.git/v1.6.0
 
-* It supports different protocols such as Git, HTTP/S and SSH.
-* The branch or tag can be specified in the URL, for example:
+The remote URL supports the git standard protocols: git, HTTP/S and SSH.
 
-    * ``https://github.com/roskakori/pygount.git/master``
-    * ``https://github.com/roskakori/pygount.git/feature/branch``
-    * ``git@github.com:roskakori/pygount.git/v1.6.0``
+.. code-block:: bash
+
+    $ pygount git@github.com:username/project.git
+
+You can specify multiple repositories, for example to include both the
+web application, command line client and docker container of the
+`Weblate <https://weblate.org/>`_ project:
+
+.. code-block:: bash
+
+    $  pygount https://github.com/WeblateOrg/weblate.git https://github.com/WeblateOrg/wlc.git  https://github.com/WeblateOrg/docker.git
+
+And you can even mix local files and remote repositories:
+
+.. code-block:: bash
+
+    $ pygount ~/projects/some https://github.com/roskakori/pygount.git
 
 
 Patterns
