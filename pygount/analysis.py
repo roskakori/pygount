@@ -13,7 +13,7 @@ import os
 import re
 from enum import Enum
 from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
-from typing import Dict, Generator, List, Optional, Pattern, Sequence, Set, Tuple, Union
+from typing import Dict, Iterator, List, Optional, Pattern, Sequence, Set, Tuple, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -24,9 +24,9 @@ import pygount.common
 import pygount.lexers
 import pygount.xmldialect
 from pygount.common import deprecated
+from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
 # Attempt to import chardet.
-
 try:
     import chardet.universaldetector
 
@@ -71,7 +71,7 @@ class SourceState(Enum):
 
 
 #: Default patterns for regular expressions to detect generated code.
-#: The '(?i)' indicates that the patterns are case insensitive.
+#: The '(?i)' indicates that the patterns are case-insensitive.
 DEFAULT_GENERATED_PATTERNS_TEXT = pygount.common.REGEX_PATTERN_PREFIX + ", ".join(
     [
         r"(?i).*automatically generated",
@@ -129,7 +129,6 @@ _STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
 _PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAME_PATTERNS) + "$)"
 #: Regular expression to detect plain text files by name.
 _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
-
 
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
@@ -487,24 +486,44 @@ class SourceScanner:
         self,
         source_patterns,
         suffixes="*",
-        folders_to_skip=pygount.common.regexes_from(DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT),
-        name_to_skip=pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT),
+        folders_to_skip=None,
+        name_to_skip=None,
     ):
         self._source_patterns = source_patterns
         self._suffixes = pygount.common.regexes_from(suffixes)
-        self._folder_regexps_to_skip = folders_to_skip
-        self._name_regexps_to_skip = name_to_skip
+        self._folder_regexps_to_skip = (
+            folders_to_skip
+            if folders_to_skip is not None
+            else pygount.common.regexes_from(DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
+        )
+        self._name_regexps_to_skip = (
+            name_to_skip
+            if folders_to_skip is not None
+            else pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
+        )
+        self._git_storages = []
+
+    def close(self):
+        for git_storage in self._git_storages:
+            git_storage.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
     @property
     def source_patterns(self):
         return self._source_patterns
 
     @property
-    def suffixes(self):
+    def suffixes(self) -> List[Pattern]:
         return self._suffixes
 
     @property
-    def folder_regexps_to_skip(self):
+    def folder_regexps_to_skip(self) -> List[Pattern]:
         return self._folder_regexps_to_skip
 
     @folder_regexps_to_skip.setter
@@ -514,19 +533,19 @@ class SourceScanner:
         )
 
     @property
-    def name_regexps_to_skip(self):
+    def name_regexps_to_skip(self) -> List[Pattern]:
         return self._name_regexps_to_skip
 
     @name_regexps_to_skip.setter
     def name_regexps_to_skip(self, regexps_or_pattern_text):
-        self._name_regexp_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
+        self._name_regexps_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
 
-    def _is_path_to_skip(self, name, is_folder):
+    def _is_path_to_skip(self, name, is_folder) -> bool:
         assert os.sep not in name, "name=%r" % name
         regexps_to_skip = self._folder_regexps_to_skip if is_folder else self._name_regexps_to_skip
         return any(path_name_to_skip_regex.match(name) is not None for path_name_to_skip_regex in regexps_to_skip)
 
-    def _paths_and_group_to_analyze_in(self, folder, group):
+    def _paths_and_group_to_analyze_in(self, folder, group) -> Tuple[str, str]:
         assert folder is not None
         assert group is not None
 
@@ -541,7 +560,7 @@ class SourceScanner:
                 else:
                     yield path, group
 
-    def _paths_and_group_to_analyze(self, path_to_analyse_pattern, group=None):
+    def _paths_and_group_to_analyze(self, path_to_analyse_pattern, group=None) -> Iterator[Tuple[str, str]]:
         for path_to_analyse in glob.glob(path_to_analyse_pattern):
             if os.path.islink(path_to_analyse):
                 _log.debug("skip link: %s", path_to_analyse)
@@ -565,18 +584,26 @@ class SourceScanner:
                                 actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
                         yield path_to_analyse, actual_group
 
-    def _source_paths_and_groups_to_analyze(self, patterns_to_analyze):
-        assert patterns_to_analyze is not None
+    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> List[Tuple[str, str]]:
+        assert source_patterns_to_analyze is not None
         result = []
-        for pattern in patterns_to_analyze:
+        for source_pattern_to_analyze in source_patterns_to_analyze:
             try:
-                result.extend(self._paths_and_group_to_analyze(pattern))
+                remote_url, revision = git_remote_url_and_revision_if_any(source_pattern_to_analyze)
+                if remote_url is not None:
+                    git_storage = GitStorage(remote_url, revision)
+                    self._git_storages.append(git_storage)
+                    git_storage.extract()
+                    # TODO#113: Find a way to exclude the ugly temp folder from the source path.
+                    result.extend(self._paths_and_group_to_analyze(git_storage.temp_folder))
+                else:
+                    result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
             except OSError as error:
-                raise OSError(f'cannot scan "{pattern}" for source files: {error}')
+                raise OSError(f'cannot scan "{source_pattern_to_analyze}" for source files: {error}')
         result = sorted(set(result))
         return result
 
-    def source_paths(self) -> Generator[str, None, None]:
+    def source_paths(self) -> Iterator[str]:
         """
         Paths to source code files matching all the conditions for this scanner.
         """
@@ -642,7 +669,7 @@ def white_code_words(language_id: str) -> Dict[str, List[str]]:
     return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
 
 
-def _delined_tokens(tokens: Sequence[Tuple[TokenType, str]]) -> Generator[TokenType, None, None]:
+def _delined_tokens(tokens: Sequence[Tuple[TokenType, str]]) -> Iterator[TokenType]:
     for token_type, token_text in tokens:
         newline_index = token_text.find("\n")
         while newline_index != -1:
@@ -653,7 +680,7 @@ def _delined_tokens(tokens: Sequence[Tuple[TokenType, str]]) -> Generator[TokenT
             yield token_type, token_text
 
 
-def _pythonized_comments(tokens: Sequence[Tuple[TokenType, str]]) -> Generator[TokenType, None, None]:
+def _pythonized_comments(tokens: Sequence[Tuple[TokenType, str]]) -> Iterator[TokenType]:
     """
     Similar to tokens but converts strings after a colon (:) to comments.
     """
@@ -670,7 +697,7 @@ def _pythonized_comments(tokens: Sequence[Tuple[TokenType, str]]) -> Generator[T
         yield token_type, token_text
 
 
-def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Generator[Set[str], None, None]:
+def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[Set[str]]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
     if lexer.name == "Python":

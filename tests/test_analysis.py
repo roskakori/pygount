@@ -64,6 +64,13 @@ class SourceScannerTest(TempFolderTest):
             actual_suffix = os.path.splitext(python_path)[1]
             assert actual_suffix == ".py"
 
+    def test_can_find_files_from_mixed_cloned_git_remote_url_and_local(self):
+        git_remote_url = "https://github.com/roskakori/pygount.git"
+        with analysis.SourceScanner([git_remote_url, PYGOUNT_SOURCE_FOLDER]) as scanner:
+            actual_paths = list(scanner.source_paths())
+            assert actual_paths != []
+            assert actual_paths[0][1] != actual_paths[-1][1]
+
 
 class AnalysisTest(unittest.TestCase):
     def test_can_deline_tokens(self):

@@ -5,8 +5,11 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 1.6.0, 2023-06-xx
+Version 1.6.0, 2023-06-26
 
+* Add support for analysis of remote git URL's in addition to local files
+  (contributed by Rojdi Thomallari, issue
+  `#109 <https://github.com/roskakori/pygount/issues/109>`_).
 * Removed support for Python 3.7.
 * Improved API:
 

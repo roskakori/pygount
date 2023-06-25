@@ -39,7 +39,7 @@ $ pygount ~/projects/example
 To limit the analysis to certain file types identified by their suffix:
 
 ```bash
-$ pygount --suffix=cfg,py,yml  ~/projects/example
+$ pygount --suffix=cfg,py,yml ~/projects/example
 ```
 
 To get a summary of each programming language with sum counts and percentage:
@@ -48,22 +48,35 @@ To get a summary of each programming language with sum counts and percentage:
 $ pygount --format=summary ~/projects/example
 ```
 
-As an example here is the summary output for pygount's own source code:
+To analyze a remote git repository directly without having to clone it first:
+
+```bash
+$ pygount --format=summary https://github.com/roskakori/pygount.git
+```
+
+You can pass a specific revision at the end of the remote URL:
+
+```bash
+$ pygount --format=summary https://github.com/roskakori/pygount.git/v1.5.1
+```
+
+This example results in the following summary output:
 
 ```
-    Language      Files    %     Code    %     Comment    %
-----------------  -----  ------  ----  ------  -------  ------
-Python               19   51.35  1924   72.99      322   86.10
-reStructuredText      7   18.92   332   12.59        7    1.87
-markdown              3    8.11   327   12.41        1    0.27
-Batchfile             1    2.70    24    0.91        1    0.27
-YAML                  1    2.70    11    0.42        2    0.53
-Makefile              1    2.70     9    0.34        7    1.87
-INI                   1    2.70     5    0.19        0    0.00
-TOML                  1    2.70     4    0.15        0    0.00
-Text                  3    8.11     0    0.00       34    9.09
-----------------  -----  ------  ----  ------  -------  ------
-Sum total            37          2636              374
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━┓
+┃ Language         ┃ Files ┃     % ┃ Code ┃    % ┃ Comment ┃    % ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━┩
+│ Python           │    18 │  47.4 │ 2132 │ 63.6 │     418 │ 12.5 │
+│ TOML             │     2 │   5.3 │ 1204 │ 82.7 │       1 │  0.1 │
+│ reStructuredText │     9 │  23.7 │  566 │ 64.8 │       1 │  0.1 │
+│ Markdown         │     3 │   7.9 │   53 │ 49.1 │       0 │  0.0 │
+│ Batchfile        │     1 │   2.6 │   24 │ 68.6 │       1 │  2.9 │
+│ Text only        │     2 │   5.3 │   24 │ 82.8 │       0 │  0.0 │
+│ Bash             │     2 │   5.3 │   12 │ 80.0 │       3 │ 20.0 │
+│ Makefile         │     1 │   2.6 │    9 │ 45.0 │       7 │ 35.0 │
+├──────────────────┼───────┼───────┼──────┼──────┼─────────┼──────┤
+│ Sum              │    38 │ 100.0 │ 4024 │ 68.4 │     431 │  7.3 │
+└──────────────────┴───────┴───────┴──────┴──────┴─────────┴──────┘
 ```
 
 Plenty of tools can post process SLOC information, for example the
