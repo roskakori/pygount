@@ -24,7 +24,7 @@ import pygount.common
 import pygount.lexers
 import pygount.xmldialect
 from pygount.common import deprecated
-from pygount.git_storage import GitStorage, is_git_url
+from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
 # Attempt to import chardet.
 try:
@@ -589,11 +589,12 @@ class SourceScanner:
         result = []
         for source_pattern_to_analyze in source_patterns_to_analyze:
             try:
-                if is_git_url(source_pattern_to_analyze):
-                    git_storage = GitStorage(source_pattern_to_analyze)
+                remote_url, revision = git_remote_url_and_revision_if_any(source_pattern_to_analyze)
+                if remote_url is not None:
+                    git_storage = GitStorage(remote_url, revision)
                     self._git_storages.append(git_storage)
                     git_storage.extract()
-                    # TODO#109: Find a way not to include the ugly temp folder in the source path.
+                    # TODO#109: Find a way to exclude the ugly temp folder from the source path.
                     result.extend(self._paths_and_group_to_analyze(git_storage.temp_folder))
                 else:
                     result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))

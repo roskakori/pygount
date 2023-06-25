@@ -1,7 +1,7 @@
 import re
 import shutil
 from tempfile import mkdtemp
-from typing import Tuple
+from typing import Optional, Tuple
 
 import git
 
@@ -12,19 +12,18 @@ _GIT_URL_REGEX = re.compile(
 )
 
 
-def is_git_url(git_url: str) -> bool:
-    return _GIT_URL_REGEX.match(git_url) is not None
-
-
-def git_remote_url_and_revision(git_url: str) -> Tuple[str, str]:
+def git_remote_url_and_revision_if_any(git_url: str) -> Tuple[Optional[str], Optional[str]]:
     git_url_match = _GIT_URL_REGEX.match(git_url)
-    assert git_url_match is not None
-    return git_url_match.group("remote_url"), git_url_match.group("revision")
+    return (
+        (None, None) if git_url_match is None else (git_url_match.group("remote_url"), git_url_match.group("revision"))
+    )
 
 
 class GitStorage:
-    def __init__(self, remote_url_and_revision):
-        self._remote_url, self._revision = git_remote_url_and_revision(remote_url_and_revision)
+    def __init__(self, remote_url: str, revision: Optional[str] = None):
+        assert remote_url is not None
+        self._remote_url = remote_url
+        self._revision = revision
         self._temp_folder = mkdtemp()
 
     @property
