@@ -594,7 +594,7 @@ class SourceScanner:
                     git_storage = GitStorage(remote_url, revision)
                     self._git_storages.append(git_storage)
                     git_storage.extract()
-                    # TODO#109: Find a way to exclude the ugly temp folder from the source path.
+                    # TODO#113: Find a way to exclude the ugly temp folder from the source path.
                     result.extend(self._paths_and_group_to_analyze(git_storage.temp_folder))
                 else:
                     result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
