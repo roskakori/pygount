@@ -258,4 +258,3 @@ cython_debug/
 /cloc.xml
 /tests/.temp/
 /htmlcov/
-/.venv-sphinx/

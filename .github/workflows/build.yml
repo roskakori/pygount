@@ -57,11 +57,15 @@ jobs:
         id: cached-virtualenv
         uses: actions/cache@v3
         with:
-          path: .venv-sphinx
-          key: venv-sphinx-${{ runner.os }}-${{ hashFiles('docs/requirements.txt') }}
+          path: ~/.cache/venv
+          key: venv-${{ runner.os }}-${{ hashFiles('docs/requirements.txt') }}
       - name: Build documentation
         run: |
-          sh scripts/build_documentation.sh
+          virtualenv ~/.cache/venv
+          . ~/.cache/venv/bin/activate
+          cd docs
+          pip install -r requirements.txt
+          make html
 
   check-style:
     runs-on: ubuntu-latest
