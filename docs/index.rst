@@ -1,5 +1,5 @@
 Pygount
-=======
+#######
 
 Pygount is a command line tool to scan folders for source code files and
 count the number of source code lines in it. It is similar to tools like
