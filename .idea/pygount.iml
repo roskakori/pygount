@@ -10,6 +10,7 @@
       <excludeFolder url="file://$MODULE_DIR$/htmlcov" />
       <excludeFolder url="file://$MODULE_DIR$/docs/_static" />
       <excludeFolder url="file://$MODULE_DIR$/docs/_templates" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv-sphinx" />
     </content>
     <orderEntry type="jdk" jdkName="Poetry (pygount)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
