@@ -1,5 +1,5 @@
 Background
-==========
+##########
 
 How pygount counts code
 --------------------------
