@@ -1,5 +1,5 @@
 Continuous integration
------------------------------
+######################
 
 Pygount can produce output that can be processed by the
 `SLOCCount plug-in <https://wiki.jenkins-ci.org/display/JENKINS/SLOCCount+Plugin>`_

@@ -1,5 +1,5 @@
 Contributing
-============
+############
 
 Project setup
 -------------
