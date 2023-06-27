@@ -101,17 +101,11 @@ Then create a tag in the repository:
     $ git tag -a -m "Tag version 1.x.x" v1.x.x
     $ git push --tags
 
-Ideally one could publish the new version on PyPI using:
+Publish the new version on PyPI:
 
 .. code-block:: sh
 
-    $ poetry publish  # Probably fails
+    $ poetry publish
 
-However, at the time of this writing poetry cannot publish projects that were
-initially published using twine.
-
-So instead you have to run:
-
-.. code-block:: sh
-
-    $ poetry run twine upload dist/*.whl
+Finally, add a release based on the tag from above to the
+`release page <https://github.com/roskakori/pygount/releases>`_.
