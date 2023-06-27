@@ -74,9 +74,13 @@ pytest = "^7"
 pytest-cov = "^4"
 pre-commit = "^3"
 pur = "^7"
-Sphinx = "^5"
-sphinx-rtd-theme = "^1"
 twine = "^4"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+Sphinx = "^7"
 
 [tool.poetry.scripts]
 pygount = "pygount.command:main"
