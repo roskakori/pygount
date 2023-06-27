@@ -41,31 +41,14 @@ jobs:
           poetry run pytest --cov=pygount --cov-branch
       - name: Update coveralls
         if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
+        run: |
+          poetry run sh scripts/build_documentation.sh
+      - name: Update coveralls
+        if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           poetry run coveralls --service=github
-
-  build-documentation:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install python3 virtualenv
-        run: |
-          sudo apt-get install python3 python3-pip virtualenv
-      - name: Load cached virtualenv
-        id: cached-virtualenv
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/venv
-          key: venv-${{ runner.os }}-${{ hashFiles('docs/requirements.txt') }}
-      - name: Build documentation
-        run: |
-          virtualenv ~/.cache/venv
-          . ~/.cache/venv/bin/activate
-          cd docs
-          pip install -r requirements.txt
-          make html
 
   check-style:
     runs-on: ubuntu-latest

@@ -5,6 +5,12 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.6.1, 2023-07-xx
+
+* Fix the ReadTheDocs documentation build by switching to the built-in
+  alabaster theme (issue
+  `#116 <https://github.com/roskakori/pygount/issues/116>`_).
+
 Version 1.6.0, 2023-06-26
 
 * Add support for analysis of remote git URL's in addition to local files
