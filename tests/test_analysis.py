@@ -145,7 +145,11 @@ class AnalysisTest(unittest.TestCase):
 class _NonSeekableEmptyBytesIO(BytesIO):
     # Class to create a 'dummy object that mimics a non-seekable file handle'
     def __init__(self):
-        self.seekable = False
+        super().__init__()
+        # self.seekable = False
+
+    def seekable(self) -> bool:
+        return False
 
 
 class FileAnalysisTest(TempFolderTest):
