@@ -42,7 +42,7 @@ To build and browse the coverage report in HTML format:
 
 .. code-block:: bash
 
-    $ poetry run pytest --cov-report=html
+    $ sh scripts/test_coverage.sh
     $ open htmlcov/index.html  # macOS only
 
 
