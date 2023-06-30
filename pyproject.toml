@@ -2,7 +2,6 @@
 line-length = 120
 include = '\.pyi?$'
 target-version = [
-    "py37",
     "py38",
     "py39",
     "py310",
@@ -34,7 +33,7 @@ testpaths = [
 
 [tool.poetry]
 name = "pygount"
-version = "1.6.0"
+version = "1.6.1"
 description = "count source lines of code (SLOC) using pygments"
 readme = "README.md"
 authors = ["Thomas Aglassinger <roskakori@users.sourceforge.net>"]

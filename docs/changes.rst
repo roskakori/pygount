@@ -7,7 +7,9 @@ This chapter describes the changes coming with each new version of pygount.
 
 Version 1.6.1, 2023-07-xx
 
-* Fix the ReadTheDocs documentation build by switching to the built-in
+* Fixed missing check for seekable file handles (issue
+  `#114 <https://github.com/roskakori/pygount/issues/114>`_).
+* Fixed the ReadTheDocs documentation build by switching to the built-in
   alabaster theme (issue
   `#116 <https://github.com/roskakori/pygount/issues/116>`_).
 

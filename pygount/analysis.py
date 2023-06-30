@@ -726,6 +726,11 @@ def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[Set[str]]:
         yield line_marks
 
 
+def check_file_handle_is_seekable(file_handle: Optional[Union[BufferedIOBase, RawIOBase]], source_path: str):
+    if not file_handle.seekable():
+        raise pygount.Error(f"cannot determine encoding: file handle must be seekable: {source_path}")
+
+
 def encoding_for(
     source_path: str,
     encoding: str = "automatic",
@@ -755,10 +760,7 @@ def encoding_for(
             with open(source_path, "rb") as source_file:
                 heading = source_file.read(128)
         else:
-            if not file_handle.seekable:
-                raise pygount.Error(
-                    f"cannot automatically determine encoding: file handle must be seekable: {source_path}"
-                )
+            check_file_handle_is_seekable(file_handle, source_path)
             heading = file_handle.read(128)
             file_handle.seek(-len(heading), SEEK_CUR)
         result = None
@@ -794,8 +796,7 @@ def encoding_for(
             with open(source_path, "rb") as source_file:
                 lines = source_file.readlines()
         else:
-            if not file_handle.seekable:
-                raise pygount.Error(f"cannot determine encoding: file handle must be seekable: {source_path}")
+            check_file_handle_is_seekable(file_handle, source_path)
             file_position = file_handle.tell()
             lines = file_handle.readlines()
             file_handle.seek(file_position)
@@ -824,9 +825,10 @@ def encoding_for(
                     with open(source_path, encoding="utf-8") as source_file:
                         source_file.read()
                 else:
-                    file_handle.seekable and file_handle.seek(0)
+                    check_file_handle_is_seekable(file_handle, source_path)
+                    file_position = file_handle.tell()
                     file_handle.read()
-                    file_handle.seekable and file_handle.seek(0)
+                    file_handle.seek(file_position)
                 result = "utf-8"
             except UnicodeDecodeError:
                 # UTF-8 did not work out, use the default as last resort.
