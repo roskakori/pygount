@@ -102,6 +102,7 @@ class Command:
         self._has_duplicates = False
         self._has_summary = False
         self._is_verbose = False
+        self._is_graph = False
         self._names_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         self._output = _DEFAULT_OUTPUT
         self._output_format = _DEFAULT_OUTPUT_FORMAT
@@ -173,6 +174,13 @@ class Command:
 
     def set_is_verbose(self, is_verbose, source=None):
         self._is_verbose = bool(is_verbose)
+
+    @property
+    def is_graph(self):
+        return self._is_graph
+
+    def set_is_graph(self, is_graph, source=None):
+        self._is_graph = bool(is_graph)
 
     @property
     def names_to_skip(self):
@@ -247,6 +255,11 @@ class Command:
             help=_HELP_GENERATED,
         )
         parser.add_argument(
+            "--graph",
+            "-G",
+            help="create a graph image showing how the SLOC changed over time for each git tag",
+        )
+        parser.add_argument(
             "--names-to-skip",
             "-N",
             metavar="PATTERNS",
@@ -313,6 +326,7 @@ class Command:
         self.set_generated_regexps(args.generated, "option --generated")
         self.set_has_duplicates(args.duplicates, "option --duplicates")
         self.set_is_verbose(args.verbose, "option --verbose")
+        self.set_is_graph(args.graph, "option --graph")
         self.set_names_to_skip(args.names_to_skip, "option --folders-to-skip")
         self.set_output(args.out, "option --out")
         self.set_output_format(args.format, "option --format")
