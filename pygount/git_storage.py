@@ -25,6 +25,7 @@ class GitStorage:
         self._remote_url = remote_url
         self._revision = revision
         self._temp_folder = mkdtemp()
+        self._repo = None
 
     @property
     def temp_folder(self) -> str:
@@ -34,7 +35,10 @@ class GitStorage:
         multi_options = ["--depth", "1"]
         if self._revision is not None:
             multi_options.extend(["--branch", self._revision])
-        git.Repo.clone_from(self._remote_url, self._temp_folder, multi_options=multi_options)
+        self._repo = git.Repo.clone_from(self._remote_url, self._temp_folder, multi_options=multi_options)
+
+    def unshallow(self):
+        self._repo.git.pull("--unshallow")
 
     def close(self):
         shutil.rmtree(self._temp_folder, ignore_errors=True)
