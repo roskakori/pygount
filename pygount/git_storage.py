@@ -40,5 +40,11 @@ class GitStorage:
     def unshallow(self):
         self._repo.git.pull("--unshallow")
 
+    def checkout(self, revision):
+        self._repo.git.checkout(revision)
+
+    def revisions(self) -> list[str]:
+        return self._repo.tags
+
     def close(self):
         shutil.rmtree(self._temp_folder, ignore_errors=True)

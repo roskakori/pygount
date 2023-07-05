@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pygount.git_graph import GitGraph
 from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
 
@@ -33,3 +34,8 @@ def test_can_extract_and_close_and_find_files_from_cloned_git_remote_url_with_re
     finally:
         git_storage.close()
     assert not readme_path.exists()
+
+
+def test_can_analyze_multiple_revisions():
+    git_graph = GitGraph("https://github.com/roskakori/pygount.git", revisions_regex_str="1.6*")
+    git_graph.execute()
