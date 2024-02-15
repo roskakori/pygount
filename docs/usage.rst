@@ -153,7 +153,7 @@ to be counted again.
 For two files to be considered duplicates the following conditions must be met:
 
 #. Both files have the same size.
-#. Both files have the same `MD5 <https://en.wikipedia.org/wiki/MD5>`_
+#. Both files have the same `SHA-256 <https://en.wikipedia.org/wiki/SHA-2>`_
    hashcode.
 
 This allows for an efficient detection with a very small possibility for false
