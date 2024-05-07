@@ -1,6 +1,7 @@
 """
 Writers to store the results of a pygount analysis.
 """
+
 # Copyright (c) 2016-2023, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import datetime
@@ -54,10 +55,17 @@ class BaseWriter:
         self.finished_at = datetime.datetime.utcnow()
         self.duration = self.finished_at - self.started_at
         self.duration_in_seconds = max(
-            0.001, self.duration.microseconds * 1e-6 + self.duration.seconds + self.duration.days * 3600 * 24
+            0.001,
+            self.duration.microseconds * 1e-6
+            + self.duration.seconds
+            + self.duration.days * 3600 * 24,
         )
-        self.lines_per_second = self.project_summary.total_line_count / self.duration_in_seconds
-        self.files_per_second = self.project_summary.total_file_count / self.duration_in_seconds
+        self.lines_per_second = (
+            self.project_summary.total_line_count / self.duration_in_seconds
+        )
+        self.files_per_second = (
+            self.project_summary.total_file_count / self.duration_in_seconds
+        )
 
 
 class LineWriter(BaseWriter):
@@ -73,7 +81,10 @@ class LineWriter(BaseWriter):
     def add(self, source_analysis):
         source_line_count = source_analysis.code_count + source_analysis.string_count
         line_to_write = self.template.format(
-            source_line_count, source_analysis.language, source_analysis.group, source_analysis.path
+            source_line_count,
+            source_analysis.language,
+            source_analysis.group,
+            source_analysis.path,
         )
         self._target_stream.write(line_to_write + os.linesep)
 
@@ -89,7 +100,11 @@ class ClocXmlWriter(BaseWriter):
         super().__init__(target_stream)
         self._results_element = ElementTree.Element("results")
         self._header_element = ElementTree.SubElement(self._results_element, "header")
-        ElementTree.SubElement(self._header_element, "cloc_url", text="https://github.com/roskakori/pygount")
+        ElementTree.SubElement(
+            self._header_element,
+            "cloc_url",
+            text="https://github.com/roskakori/pygount",
+        )
         ElementTree.SubElement(self._header_element, "cloc_version", text=CLOC_VERSION)
         self._files_element = ElementTree.SubElement(self._results_element, "files")
 
@@ -112,17 +127,38 @@ class ClocXmlWriter(BaseWriter):
     def close(self):
         super().close()
         # Add various statistics to <header>.
-        ElementTree.SubElement(self._header_element, "elapsed_seconds", text="%.f" % self.duration_in_seconds)
-        ElementTree.SubElement(self._header_element, "n_files", text="%d" % self.project_summary.total_file_count)
-        ElementTree.SubElement(self._header_element, "n_lines", text="%d" % self.project_summary.total_line_count)
-        ElementTree.SubElement(self._header_element, "files_per_second", text="%.f" % self.files_per_second)
-        ElementTree.SubElement(self._header_element, "lines_per_second", text="%.f" % self.lines_per_second)
-        ElementTree.SubElement(self._header_element, "report_file", text=self.target_name)
+        ElementTree.SubElement(
+            self._header_element,
+            "elapsed_seconds",
+            text="%.f" % self.duration_in_seconds,
+        )
+        ElementTree.SubElement(
+            self._header_element,
+            "n_files",
+            text="%d" % self.project_summary.total_file_count,
+        )
+        ElementTree.SubElement(
+            self._header_element,
+            "n_lines",
+            text="%d" % self.project_summary.total_line_count,
+        )
+        ElementTree.SubElement(
+            self._header_element, "files_per_second", text="%.f" % self.files_per_second
+        )
+        ElementTree.SubElement(
+            self._header_element, "lines_per_second", text="%.f" % self.lines_per_second
+        )
+        ElementTree.SubElement(
+            self._header_element, "report_file", text=self.target_name
+        )
 
         # Add totals to <files>.
         file_attributes = {
             "blank": str(self.project_summary.total_empty_count),
-            "code": str(self.project_summary.total_code_count + self.project_summary.total_string_count),
+            "code": str(
+                self.project_summary.total_code_count
+                + self.project_summary.total_string_count
+            ),
             "comment": str(self.project_summary.total_documentation_count),
         }
         ElementTree.SubElement(self._files_element, "total", attrib=file_attributes)
@@ -130,7 +166,9 @@ class ClocXmlWriter(BaseWriter):
         # Write the whole XML file.
         if self._target_stream.encoding is not None:
             # Write XML declaration only for files but skip it for io.StringIO.
-            self._target_stream.write(f'<?xml version="1.0" encoding="{self._target_stream.encoding}"?>')
+            self._target_stream.write(
+                f'<?xml version="1.0" encoding="{self._target_stream.encoding}"?>'
+            )
         xml_root = ElementTree.ElementTree(self._results_element)
         xml_root.write(self._target_stream, encoding="unicode", xml_declaration=False)
 
@@ -158,7 +196,15 @@ class SummaryWriter(BaseWriter):
         for column, justify in self._COLUMNS_WITH_JUSTIFY:
             table.add_column(column, justify=justify, overflow="fold")
 
-        language_summaries = sorted(self.project_summary.language_to_language_summary_map.values(), reverse=True)
+        language_summaries = sorted(
+            self.project_summary.language_to_language_summary_map.values(),
+            reverse=True,
+            key=lambda language_summary: (
+                language_summary.code_count,
+                language_summary.file_count,
+                language_summary.language,
+            ),
+        )
         for index, language_summary in enumerate(language_summaries, start=1):
             table.add_row(
                 language_summary.language,

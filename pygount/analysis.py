@@ -331,7 +331,10 @@ class SourceAnalysis:
             if source_size == 0:
                 _log.info("%s: is empty", source_path)
                 result = SourceAnalysis.from_state(
-                    source_path, group, SourceState.empty
+                    source_path,
+                    group,
+                    SourceState.empty,
+                    language_field_formatter=language_field_formatter,
                 )
             elif is_binary_file(source_path):
                 _log.info("%s: is binary", source_path)
@@ -344,7 +347,10 @@ class SourceAnalysis:
             elif not has_lexer(source_path):
                 _log.info("%s: unknown language", source_path)
                 result = SourceAnalysis.from_state(
-                    source_path, group, SourceState.unknown
+                    source_path,
+                    group,
+                    SourceState.unknown,
+                    language_field_formatter=language_field_formatter,
                 )
         if duplicate_pool is not None:
             duplicate_path = duplicate_pool.duplicate_path(source_path)
