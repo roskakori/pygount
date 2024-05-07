@@ -60,6 +60,15 @@ You can pass a specific revision at the end of the remote URL:
 $ pygount --format=summary https://github.com/roskakori/pygount.git/v1.5.1
 ```
 
+You can tell Pygount to classify by file extension rather than Pygments language
+detection:
+
+```bash
+$ pygount --classify=extension https://github.com/roskakori/pygount.git/v1.5.1
+```
+
+
+
 This example results in the following summary output:
 
 ```

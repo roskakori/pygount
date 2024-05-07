@@ -1,6 +1,7 @@
 """
 Command line interface for pygount.
 """
+
 # Copyright (c) 2016-2023, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import argparse
@@ -8,6 +9,7 @@ import contextlib
 import logging
 import os
 import sys
+from typing import Callable
 
 from rich.progress import Progress
 
@@ -15,15 +17,23 @@ import pygount
 import pygount.analysis
 import pygount.common
 import pygount.write
+import pygount.language_classification
+
+VALID_CLASSIFIERS = ("pygments", "extension")
 
 #: Valid formats for option --format.
 VALID_OUTPUT_FORMATS = ("cloc-xml", "json", "sloccount", "summary")
 
+_DEFAULT_CLASSIFIER = "pygments"
 _DEFAULT_ENCODING = "automatic"
 _DEFAULT_OUTPUT_FORMAT = "sloccount"
 _DEFAULT_OUTPUT = "STDOUT"
 _DEFAULT_SOURCE_PATTERNS = os.curdir
 _DEFAULT_SUFFIXES = "*"
+
+
+_HELP_CLASSIFY = """How to display detected language; default: %(default)s"""
+
 
 _HELP_ENCODING = '''encoding to use when reading source code; use "automatic"
  to take BOMs, XML prolog and magic headers into account and fall back to
@@ -64,6 +74,14 @@ _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP = {
 }
 assert set(VALID_OUTPUT_FORMATS) == set(_OUTPUT_FORMAT_TO_WRITER_CLASS_MAP.keys())
 
+
+_CLASSIFIER_TO_FUNCTION_MAP: dict[str, Callable[[str, str], str]] = {
+    "pygments": pygount.language_classification.pygments_classifier,
+    "extension": pygount.language_classification.extension_classifier,
+}
+assert set(VALID_CLASSIFIERS) == set(_CLASSIFIER_TO_FUNCTION_MAP.keys())
+
+
 _log = logging.getLogger("pygount")
 
 
@@ -97,21 +115,31 @@ class Command:
 
     def __init__(self):
         self.set_encodings(_DEFAULT_ENCODING)
-        self._folders_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
-        self._generated_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
+        self._folders_to_skip = pygount.common.regexes_from(
+            pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT
+        )
+        self._generated_regexs = pygount.common.regexes_from(
+            pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT
+        )
         self._has_duplicates = False
         self._has_summary = False
         self._is_verbose = False
-        self._names_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
+        self._names_to_skip = pygount.common.regexes_from(
+            pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT
+        )
         self._output = _DEFAULT_OUTPUT
         self._output_format = _DEFAULT_OUTPUT_FORMAT
         self._source_patterns = _DEFAULT_SOURCE_PATTERNS
         self._suffixes = pygount.common.regexes_from(_DEFAULT_SUFFIXES)
 
     def set_encodings(self, encoding, source=None):
-        encoding_is_chardet = (encoding == "chardet") or (encoding.startswith("chardet;"))
+        encoding_is_chardet = (encoding == "chardet") or (
+            encoding.startswith("chardet;")
+        )
         if encoding_is_chardet and not pygount.analysis.has_chardet:  # pragma: no cover
-            raise pygount.common.OptionError('chardet must be installed to set default encoding to "chardet"')
+            raise pygount.common.OptionError(
+                'chardet must be installed to set default encoding to "chardet"'
+            )
         if encoding in ("automatic", "chardet"):
             default_encoding = encoding
             fallback_encoding = None
@@ -125,6 +153,13 @@ class Command:
                 fallback_encoding = pygount.analysis.DEFAULT_FALLBACK_ENCODING
         self.set_default_encoding(default_encoding, source)
         self.set_fallback_encoding(fallback_encoding, source)
+
+    @property
+    def classifier(self):
+        return self._classifier
+
+    def set_classifier(self, classifier, source=None):
+        self._classifier = classifier
 
     @property
     def default_encoding(self):
@@ -148,7 +183,9 @@ class Command:
 
     def set_folders_to_skip(self, regexes_or_patterns_text, source=None):
         self._folders_to_skip = pygount.common.regexes_from(
-            regexes_or_patterns_text, pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT, source
+            regexes_or_patterns_text,
+            pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT,
+            source,
         )
 
     @property
@@ -157,7 +194,9 @@ class Command:
 
     def set_generated_regexps(self, regexes_or_patterns_text, source=None):
         self._generated_regexs = pygount.common.regexes_from(
-            regexes_or_patterns_text, pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT, source
+            regexes_or_patterns_text,
+            pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT,
+            source,
         )
 
     @property
@@ -180,7 +219,9 @@ class Command:
 
     def set_names_to_skip(self, regexes_or_pattern_text, source=None):
         self._names_to_skip = pygount.common.regexes_from(
-            regexes_or_pattern_text, pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT, source
+            regexes_or_pattern_text,
+            pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT,
+            source,
         )
 
     @property
@@ -199,7 +240,8 @@ class Command:
         assert output_format is not None
         if output_format not in VALID_OUTPUT_FORMATS:
             raise pygount.common.OptionError(
-                f"format is {output_format} but must be one of: {VALID_OUTPUT_FORMATS}", source
+                f"format is {output_format} but must be one of: {VALID_OUTPUT_FORMATS}",
+                source,
             )
         self._output_format = output_format
 
@@ -218,12 +260,27 @@ class Command:
 
     def set_suffixes(self, regexes_or_patterns_text, source=None):
         assert regexes_or_patterns_text is not None
-        self._suffixes = pygount.common.regexes_from(regexes_or_patterns_text, _DEFAULT_SUFFIXES, source)
+        self._suffixes = pygount.common.regexes_from(
+            regexes_or_patterns_text, _DEFAULT_SUFFIXES, source
+        )
 
     def argument_parser(self):
-        parser = argparse.ArgumentParser(description="count source lines of code", epilog=_HELP_EPILOG)
-        parser.add_argument("--duplicates", "-d", action="store_true", help="analyze duplicate files")
-        parser.add_argument("--encoding", "-e", default=_DEFAULT_ENCODING, help=_HELP_ENCODING)
+        parser = argparse.ArgumentParser(
+            description="count source lines of code", epilog=_HELP_EPILOG
+        )
+        parser.add_argument(
+            "--classify",
+            metavar="CLASSIFY",
+            choices=VALID_CLASSIFIERS,
+            default=_DEFAULT_CLASSIFIER,
+            help=_HELP_CLASSIFY,
+        )
+        parser.add_argument(
+            "--duplicates", "-d", action="store_true", help="analyze duplicate files"
+        )
+        parser.add_argument(
+            "--encoding", "-e", default=_DEFAULT_ENCODING, help=_HELP_ENCODING
+        )
         parser.add_argument(
             "--folders-to-skip",
             "-F",
@@ -260,7 +317,13 @@ class Command:
             default=_DEFAULT_OUTPUT,
             help='file to write results to; use "STDOUT" for standard output; default: "%(default)s"',
         )
-        parser.add_argument("--suffix", "-s", metavar="PATTERNS", default=_DEFAULT_SUFFIXES, help=_HELP_SUFFIX)
+        parser.add_argument(
+            "--suffix",
+            "-s",
+            metavar="PATTERNS",
+            default=_DEFAULT_SUFFIXES,
+            help=_HELP_SUFFIX,
+        )
         parser.add_argument(
             "source_patterns",
             metavar="SHELL-PATTERN",
@@ -268,8 +331,12 @@ class Command:
             default=[os.getcwd()],
             help="source files and directories to scan; can use glob patterns; default: current directory",
         )
-        parser.add_argument("--verbose", "-v", action="store_true", help="explain what is being done")
-        parser.add_argument("--version", action="version", version="%(prog)s " + pygount.__version__)
+        parser.add_argument(
+            "--verbose", "-v", action="store_true", help="explain what is being done"
+        )
+        parser.add_argument(
+            "--version", action="version", version="%(prog)s " + pygount.__version__
+        )
         return parser
 
     def parsed_args(self, arguments):
@@ -282,7 +349,9 @@ class Command:
             fallback_encoding = None
         elif args.encoding == "chardet":
             if not pygount.analysis.has_chardet:  # pragma: no cover
-                parser.error("chardet must be installed in order to specify --encoding=chardet")
+                parser.error(
+                    "chardet must be installed in order to specify --encoding=chardet"
+                )
             default_encoding = args.encoding
             fallback_encoding = None
         else:
@@ -300,13 +369,16 @@ class Command:
                 try:
                     "".encode(encoding)
                 except LookupError:
-                    parser.error(f"{name} specified with --encoding must be a known Python encoding: {encoding}")
+                    parser.error(
+                        f"{name} specified with --encoding must be a known Python encoding: {encoding}"
+                    )
         return args, default_encoding, fallback_encoding
 
     def apply_arguments(self, arguments=None):
         if arguments is None:  # pragma: no cover
             arguments = sys.argv[1:]
         args, default_encoding, fallback_encoding = self.parsed_args(arguments)
+        self.set_classifier(args.classify, "option --encoding")
         self.set_default_encoding(default_encoding, "option --encoding")
         self.set_fallback_encoding(fallback_encoding, "option --encoding")
         self.set_folders_to_skip(args.folders_to_skip, "option --folders-to-skip")
@@ -322,27 +394,41 @@ class Command:
     def execute(self):
         _log.setLevel(logging.INFO if self.is_verbose else logging.WARNING)
         with pygount.analysis.SourceScanner(
-            self.source_patterns, self.suffixes, self.folders_to_skip, self.names_to_skip
+            self.source_patterns,
+            self.suffixes,
+            self.folders_to_skip,
+            self.names_to_skip,
         ) as source_scanner:
             source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
-            duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
+            duplicate_pool = (
+                pygount.analysis.DuplicatePool() if not self.has_duplicates else None
+            )
             writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
+            language_field_formatter = _CLASSIFIER_TO_FUNCTION_MAP[self.classifier]
+
             is_stdout = self.output == "STDOUT"
             target_context_manager = (
                 contextlib.nullcontext(sys.stdout)
                 if is_stdout
                 else open(self.output, "w", encoding="utf-8", newline="")
             )
-            with target_context_manager as target_file, writer_class(target_file) as writer:
-                with Progress(disable=not writer.has_to_track_progress, transient=True) as progress:
+            with target_context_manager as target_file, writer_class(
+                target_file
+            ) as writer:
+                with Progress(
+                    disable=not writer.has_to_track_progress, transient=True
+                ) as progress:
                     try:
-                        for source_path, group in progress.track(source_paths_and_groups_to_analyze):
+                        for source_path, group in progress.track(
+                            source_paths_and_groups_to_analyze
+                        ):
                             writer.add(
                                 pygount.analysis.SourceAnalysis.from_file(
                                     source_path,
                                     group,
                                     self.default_encoding,
                                     self.fallback_encoding,
+                                    language_field_formatter,
                                     generated_regexes=self._generated_regexs,
                                     duplicate_pool=duplicate_pool,
                                 )
