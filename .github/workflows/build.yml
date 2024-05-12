@@ -43,7 +43,7 @@ jobs:
         if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION }}
         run: |
           poetry run sh scripts/build_documentation.sh
-      - name: Update coveralls
+      - name: Update coveralls statistics
         if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

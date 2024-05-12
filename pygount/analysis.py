@@ -14,7 +14,7 @@ import os
 import re
 from enum import Enum
 from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
-from typing import Dict, Iterator, List, Optional, Pattern, Sequence, Set, Tuple, Union
+from typing import Iterator, List, Optional, Pattern, Sequence, Set, Tuple, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -113,7 +113,7 @@ _STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
     "news",
     "readme",
     "thanks",
-    # Github community recommendations, see
+    # GitHub community recommendations, see
     # <https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions>.
     # By now, in practice most projects use a suffix like "*.md" but some older ones
     # still might have such files without suffix.
@@ -246,12 +246,9 @@ class SourceAnalysis:
     @staticmethod
     def _check_state_info(state: SourceState, state_info: Optional[str]):
         states_that_require_state_info = [SourceState.duplicate, SourceState.error, SourceState.generated]
-        assert (state in states_that_require_state_info) == (
-            state_info is not None
-        ), "state={} and state_info={} but state_info must be specified for the following states: {}".format(
-            state,
-            state_info,
-            states_that_require_state_info,
+        assert (state in states_that_require_state_info) == (state_info is not None), (
+            f"state={state} and state_info={state_info} "
+            f"but state_info must be specified for the following states: {states_that_require_state_info}"
         )
 
     @staticmethod
@@ -260,7 +257,7 @@ class SourceAnalysis:
         group: str,
         encoding: str = "automatic",
         fallback_encoding: str = "cp1252",
-        generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT),
+        generated_regexes: Optional[List[Pattern]] = None,
         duplicate_pool: Optional[DuplicatePool] = None,
         file_handle: Optional[IOBase] = None,
     ) -> "SourceAnalysis":
@@ -269,7 +266,7 @@ class SourceAnalysis:
         the source code in ``source_path`` or the open file ``file_handle``.
 
         :param source_path: path to source code to analyze
-        :param group: name of a logical group the sourc code belongs to, e.g. a
+        :param group: name of a logical group the source code belongs to, e.g. a
           package.
         :param encoding: encoding according to :func:`encoding_for`
         :param fallback_encoding: fallback encoding according to
@@ -283,7 +280,6 @@ class SourceAnalysis:
           encoding.
         """
         assert encoding is not None
-        assert generated_regexes is not None
 
         result = None
         lexer = None
@@ -323,8 +319,15 @@ class SourceAnalysis:
             if result is None:
                 lexer = guess_lexer(source_path, source_code)
                 assert lexer is not None
-        if (result is None) and (len(generated_regexes) != 0):
-            number_line_and_regex = matching_number_line_and_regex(pygount.common.lines(source_code), generated_regexes)
+        actual_generated_regexes = (
+            generated_regexes
+            if generated_regexes is not None
+            else pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT)
+        )
+        if (result is None) and (len(actual_generated_regexes) != 0):
+            number_line_and_regex = matching_number_line_and_regex(
+                pygount.common.lines(source_code), actual_generated_regexes
+            )
             if number_line_and_regex is not None:
                 number, _, regex = number_line_and_regex
                 message = f"line {number} matches {regex}"
@@ -452,7 +455,7 @@ class SourceAnalysis:
           the :py:attr:`path` is a duplicate of
         * :py:attr:`SourceState.error`: the :py:exc:`Exception` causing the
           error
-        * :py:attr:`SourceState.generated`: a human readable explanation why
+        * :py:attr:`SourceState.generated`: a human-readable explanation why
           the file is considered to be generated
         """
         return self._state_info
@@ -625,7 +628,7 @@ for _language in _LANGUAGE_TO_WHITE_WORDS_MAP.keys():
 
 
 def matching_number_line_and_regex(
-    source_lines: Sequence[str], generated_regexes: Sequence[Pattern], max_line_count: int = 15
+    source_lines: Iterator[str], generated_regexes: Sequence[Pattern], max_line_count: int = 15
 ) -> Optional[Tuple[int, str, Pattern]]:
     """
     The first line and its number (starting with 0) in the source code that
@@ -661,7 +664,7 @@ def white_characters(language_id: str) -> str:
     return "(),:;[]{}"
 
 
-def white_code_words(language_id: str) -> Dict[str, List[str]]:
+def white_code_words(language_id: str) -> Set[str]:
     """
     Words that do not count as code if it is the only word in a line.
     """
@@ -683,7 +686,7 @@ def _delined_tokens(tokens: Sequence[Tuple[TokenType, str]]) -> Iterator[TokenTy
 
 def _pythonized_comments(tokens: Sequence[Tuple[TokenType, str]]) -> Iterator[TokenType]:
     """
-    Similar to tokens but converts strings after a colon (:) to comments.
+    Similar to tokens but converts strings after a colon (`:`) to comments.
     """
     is_after_colon = True
     for token_type, token_text in tokens:
@@ -890,7 +893,14 @@ def source_analysis(
     group,
     encoding="automatic",
     fallback_encoding="cp1252",
-    generated_regexes=pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT),
+    generated_regexes: Optional[List[Pattern]] = None,
     duplicate_pool: Optional[DuplicatePool] = None,
 ):
-    return SourceAnalysis.from_file(source_path, group, encoding, fallback_encoding, generated_regexes, duplicate_pool)
+    actual_generated_regexes = (
+        generated_regexes
+        if generated_regexes is not None
+        else pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT)
+    )
+    return SourceAnalysis.from_file(
+        source_path, group, encoding, fallback_encoding, actual_generated_regexes, duplicate_pool
+    )
