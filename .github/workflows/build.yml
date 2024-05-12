@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     env:
-      MAIN_PYTHON_VERSION: "3.10" # same as Ubuntu 22 LTS
+      MAIN_PYTHON_VERSION: "3.12" # same as Ubuntu 24 LTS
 
     steps:
       - uses: actions/checkout@v3
@@ -39,12 +39,12 @@ jobs:
       - name: Run the test suite
         run: |
           poetry run pytest --cov=pygount --cov-branch
-      - name: Update coveralls
-        if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
+      - name: Build documentation
+        if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION }}
         run: |
           poetry run sh scripts/build_documentation.sh
       - name: Update coveralls
-        if: ${{ matrix.python-version }} == $MAIN_PYTHON_VERSION
+        if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

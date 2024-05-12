@@ -1,6 +1,7 @@
 """
 Tests for :py:mod:`pygount.common` module.
 """
+
 # Copyright (c) 2016-2023, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import re
