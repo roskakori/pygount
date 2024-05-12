@@ -330,6 +330,7 @@ class Command:
         self.set_folders_to_skip(args.folders_to_skip, "option --folders-to-skip")
         self.set_generated_regexps(args.generated, "option --generated")
         self.set_has_duplicates(args.duplicates, "option --duplicates")
+        self.set_has_to_merge_embedded_languages(args.merge_embedded_languages, "option --merge-embedded-languages")
         self.set_is_verbose(args.verbose, "option --verbose")
         self.set_names_to_skip(args.names_to_skip, "option --folders-to-skip")
         self.set_output(args.out, "option --out")
