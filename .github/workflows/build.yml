@@ -40,11 +40,11 @@ jobs:
         run: |
           poetry run pytest --cov=pygount --cov-branch
       - name: Build documentation
-        if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION}}
+        if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION }}
         run: |
           poetry run sh scripts/build_documentation.sh
       - name: Update coveralls
-        if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION}}
+        if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
