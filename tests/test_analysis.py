@@ -15,7 +15,7 @@ from pygments import lexers, token
 
 from pygount import Error as PygountError
 from pygount import analysis, common
-from pygount.analysis import guess_lexer
+from pygount.analysis import base_language, guess_lexer
 
 from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
 from .test_xmldialect import EXAMPLE_ANT_CODE
@@ -229,6 +229,26 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.state == analysis.SourceState.analyzed
         assert source_analysis.language == "Python"
         assert source_analysis.code_count == 2
+
+    def test_can_analyze_embedded_language(self):
+        test_html_django_path = self.create_temp_file(
+            "some.html",
+            ["<!DOCTYPE html>", "{% load i18n %}", '<html lang="{{ language_code }}" />'],
+        )
+        source_analysis = analysis.SourceAnalysis.from_file(test_html_django_path, "test", encoding="utf-8")
+        assert source_analysis.language.lower() == "html+django/jinja"
+        assert source_analysis.code_count == 3
+
+    def test_can_merge_embedded_language(self):
+        test_html_django_path = self.create_temp_file(
+            "some.html",
+            ["<!DOCTYPE html>", "{% load i18n %}", '<html lang="{{ language_code }}" />'],
+        )
+        source_analysis = analysis.SourceAnalysis.from_file(
+            test_html_django_path, "test", encoding="utf-8", merge_embedded_language=True
+        )
+        assert source_analysis.language.lower() == "html"
+        assert source_analysis.code_count == 3
 
     def test_fails_on_non_seekable_file_handle_with_encoding_automatic(self):
         file_handle = _NonSeekableEmptyBytesIO()
@@ -472,6 +492,15 @@ def test_can_match_deprecated_functions():
     assert str(analysis.pseudo_source_analysis(missing_path, group, analysis.SourceState.error, reason)) == str(
         analysis.SourceAnalysis.from_state(missing_path, group, analysis.SourceState.error, reason)
     )
+
+
+def test_can_compute_base_language():
+    assert base_language("JavaScript") == "JavaScript"
+    assert base_language("JavaScript+Lasso") == "JavaScript"
+    assert base_language("JavaScript+") == "JavaScript+"  # no actual language
+    assert base_language("C++") == "C++"
+    assert base_language("++C") == "++C"  # no actual language
+    assert base_language("") == ""  # no actual language, but should not crash either
 
 
 class DuplicatePoolTest(TempFolderTest):

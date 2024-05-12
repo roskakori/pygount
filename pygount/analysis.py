@@ -48,6 +48,8 @@ DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
 #: Pygments token type; we need to define our own type because pygments' ``_TokenType`` is internal.
 TokenType = type(pygments.token.Token)
 
+_BASE_LANGUAGE_REGEX = re.compile(r"^(?P<base_language>[^+]+)\+[^+].*$")
+
 
 class SourceState(Enum):
     """
@@ -260,6 +262,7 @@ class SourceAnalysis:
         generated_regexes: Optional[List[Pattern]] = None,
         duplicate_pool: Optional[DuplicatePool] = None,
         file_handle: Optional[IOBase] = None,
+        merge_embedded_language: bool = False,
     ) -> "SourceAnalysis":
         """
         Factory method to create a :py:class:`SourceAnalysis` by analyzing
@@ -278,6 +281,9 @@ class SourceAnalysis:
         :param file_handle: a file-like object, or ``None`` to read and open the file from
           ``source_path``. If the file is open in text mode, it must be opened with the correct
           encoding.
+        :param merge_embedded_language: If pygments detects a base and embedded language, the source
+          code counts towards the base language. For example: "JavaScript+Lasso" counts as
+          "JavaScript".
         """
         assert encoding is not None
 
@@ -336,7 +342,7 @@ class SourceAnalysis:
         if result is None:
             assert lexer is not None
             assert source_code is not None
-            language = lexer.name
+            language = base_language(lexer.name) if merge_embedded_language else lexer.name
             if ("xml" in language.lower()) or (language == "Genshi"):
                 dialect = pygount.xmldialect.xml_dialect(source_path, source_code)
                 if dialect is not None:
@@ -904,3 +910,8 @@ def source_analysis(
     return SourceAnalysis.from_file(
         source_path, group, encoding, fallback_encoding, actual_generated_regexes, duplicate_pool
     )
+
+
+def base_language(language: str) -> str:
+    base_language_match = _BASE_LANGUAGE_REGEX.match(language)
+    return language if base_language_match is None else base_language_match.group("base_language")

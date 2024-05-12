@@ -45,6 +45,9 @@ _HELP_FORMAT = 'output format, one of: {}; default: "%(default)s"'.format(
 _HELP_GENERATED = """comma separated list of regular expressions to detect
  generated code; default: %(default)s"""
 
+_HELP_MERGE_EMBEDDED_LANGUAGES = """merge counts for embedded languages into
+ their base language; for example, HTML+Jinja2 counts as HTML"""
+
 _HELP_FOLDERS_TO_SKIP = """comma separated list of glob patterns for folder
  names not to analyze. Use "..." as first entry to append patterns to the
  default patterns; default: %(default)s"""
@@ -102,6 +105,7 @@ class Command:
         self._generated_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
         self._has_duplicates = False
         self._has_summary = False
+        self._has_to_merge_embedded_languages = False
         self._is_verbose = False
         self._names_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         self._output = _DEFAULT_OUTPUT
@@ -167,6 +171,13 @@ class Command:
 
     def set_has_duplicates(self, has_duplicates, source=None):
         self._has_duplicates = bool(has_duplicates)
+
+    @property
+    def has_to_merge_embedded_languages(self):
+        return self._has_to_merge_embedded_languages
+
+    def set_has_to_merge_embedded_languages(self, has_to_merge_embedded_languages, source=None):
+        self._has_to_merge_embedded_languages = bool(has_to_merge_embedded_languages)
 
     @property
     def is_verbose(self):
@@ -246,6 +257,12 @@ class Command:
             metavar="PATTERNS",
             default=pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT,
             help=_HELP_GENERATED,
+        )
+        parser.add_argument(
+            "--merge-embedded-languages",
+            "-m",
+            action="store_true",
+            help=_HELP_MERGE_EMBEDDED_LANGUAGES,
         )
         parser.add_argument(
             "--names-to-skip",
@@ -346,6 +363,7 @@ class Command:
                                     self.fallback_encoding,
                                     generated_regexes=self._generated_regexs,
                                     duplicate_pool=duplicate_pool,
+                                    merge_embedded_language=self.has_to_merge_embedded_languages,
                                 )
                             )
                     finally:
