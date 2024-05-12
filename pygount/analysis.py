@@ -2,7 +2,7 @@
 Functions to analyze source code and count lines in it.
 """
 
-# Copyright (c) 2016-2023, Thomas Aglassinger.
+# Copyright (c) 2016-2024, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import codecs
 import collections

@@ -18,7 +18,7 @@ import pygount
 # -- Project information -----------------------------------------------------
 
 project = "pygount"
-copyright = "2016-2023, Thomas Aglassinger"
+copyright = "2016-2024, Thomas Aglassinger"
 author = "Thomas Aglassinger"
 
 # The full version, including alpha/beta/rc tags

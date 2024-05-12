@@ -2,7 +2,7 @@
 Test to write results of pygount analyses.
 """
 
-# Copyright (c) 2016-2023, Thomas Aglassinger.
+# Copyright (c) 2016-2024, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import io
 import re

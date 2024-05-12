@@ -2,7 +2,7 @@
 Function to obtain the language dialect used by XML source code.
 """
 
-# Copyright (c) 2016-2023, Thomas Aglassinger.
+# Copyright (c) 2016-2024, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import logging
 import re
