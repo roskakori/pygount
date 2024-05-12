@@ -1,6 +1,7 @@
 """
 Common constants and functions used by multiple tests.
 """
+
 # Copyright (c) 2016-2023, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import os

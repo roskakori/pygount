@@ -61,20 +61,20 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8, <4"
+python = ">=3.8, <3.13"  # NOTE We cannot use <4 because of coveralls.
 pygments = "^2"
 chardet = "^5"
 rich = ">=9, <14"
-gitpython = "^3.1.31"
+gitpython = "^3"
 
 [tool.poetry.dev-dependencies]
-coveralls = "^3"
-coverage = "^6"
-pytest = "^7"
-pytest-cov = "^4"
+coveralls = "^4"
+coverage = "^7"
+pytest = "^8"
+pytest-cov = "^5"
 pre-commit = "^3"
 pur = "^7"
-twine = "^4"
+twine = "^5"
 
 [tool.poetry.group.docs]
 optional = true
@@ -93,5 +93,5 @@ pygount = "pygount.command:main"
 max-line-length = 120
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.8.1"]
 build-backend = "poetry.core.masonry.api"
