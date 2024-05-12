@@ -5,6 +5,11 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.7.0, 2023-07-02
+
+* Add Python 3.12 and made it the main version for CI (issue
+  `#145 <https://github.com/roskakori/pygount/issues/145>`_).
+
 Version 1.6.1, 2023-07-02
 
 * Fixed missing check for seekable file handles (issue
