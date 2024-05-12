@@ -73,6 +73,22 @@ to the data.
 For further processing the results of pygount, ``--format=json`` should be the
 easiest to deal with. For more information see :doc:`json`.
 
+.. option:: --merge-embedded-languages
+
+Some languages such as HTML or JavaScript allow to embed other languages in their source code. In that case, the source code is assigned to a language
+that contains both the base and end embedded language in its name, for example:
+
+- HTML+Jinja
+- JavaScript+Lasso
+
+If you prefer count all variants of a base language only under its own name,
+specify ``--merge-embedded-languages``. The example above will then show as:
+
+- HTML
+- JavaScript
+
+Consequently, multiple different embedded languages will all count for its
+common base language.
 
 Remote repositories
 -------------------

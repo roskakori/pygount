@@ -5,8 +5,11 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 1.7.0, 2023-07-02
+Version 1.7.0, 2024-05-13
 
+* Add command line option ``--merge-embedded-languages`` to merge embedded
+  languages into their base language. For example, "HTML+Django/Jinja" counts
+  as "HTML" (issue `#105 <https://github.com/roskakori/pygount/issues/105>`_).
 * Add Python 3.12 and made it the main version for CI (issue
   `#145 <https://github.com/roskakori/pygount/issues/145>`_).
 
