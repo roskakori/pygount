@@ -32,7 +32,7 @@ class BaseWriter:
         except AttributeError:
             self.target_name = "<io>"
         self.project_summary = ProjectSummary()
-        self.started_at = datetime.datetime.utcnow()
+        self.started_at = self._utc_now()
         self.finished_at = None
         self.files_per_second = 0
         self.lines_per_second = 0
@@ -52,13 +52,18 @@ class BaseWriter:
 
     def close(self):
         self.project_summary.update_file_percentages()
-        self.finished_at = datetime.datetime.utcnow()
+        self.finished_at = self._utc_now()
         self.duration = self.finished_at - self.started_at
         self.duration_in_seconds = max(
             0.001, self.duration.microseconds * 1e-6 + self.duration.seconds + self.duration.days * 3600 * 24
         )
         self.lines_per_second = self.project_summary.total_line_count / self.duration_in_seconds
         self.files_per_second = self.project_summary.total_file_count / self.duration_in_seconds
+
+    @staticmethod
+    def _utc_now() -> datetime.datetime:
+        # After switching to Python 3.11+, we can change this to `now(datetime.UTC)`.
+        return datetime.datetime.now(datetime.timezone.utc)
 
 
 class LineWriter(BaseWriter):
