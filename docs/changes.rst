@@ -7,6 +7,12 @@ This chapter describes the changes coming with each new version of pygount.
 
 Version 1.7.0, 2024-05-13
 
+* Fix analysis with
+  `FIPS <https://en.wikipedia.org/wiki/Federal_Information_Processing_Standards>`_
+  mode by changing computation of hash for duplicate detection from MD5 to
+  SHA256. As side effect, reasonably modern machines should receive a
+  (probably unnoticeable) minor performance boost (contributed by Matthew
+  Vine, issue `#137 <https://github.com/roskakori/pygount/issues/137>`_).
 * Add command line option ``--merge-embedded-languages`` to merge embedded
   languages into their base language. For example, "HTML+Django/Jinja" counts
   as "HTML" (issue `#105 <https://github.com/roskakori/pygount/issues/105>`_).
