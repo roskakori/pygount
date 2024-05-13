@@ -1,33 +1,43 @@
 Background
 ##########
 
+.. _How to count code:
+
 How pygount counts code
---------------------------
+-----------------------
 
-Pygount basically counts physical lines of source code.
+Pygount primarily counts the physical lines of source code. It begins by using
+lexers from Pygments, if available. If Pygments doesn't have a suitable lexer,
+pygount employs its own internal lexers to differentiate between code and
+comments. These include:
 
-First, it lexes the code using the lexers ``pygments`` assigned to it. If
-``pygments`` cannot find an appropriate lexer, pygount has a few additional
-internal lexers that can at least distinguish between code and comments:
+- Minimalist lexers for m4, VBScript, and WebFOCUS, capable of distinguishing between comments and code.
+- The Java lexer repurposed for OMG IDL.
 
-* m4, VBScript and WebFOCUS use minimalistic lexers that can distinguish
-  between comments and code.
-* OMG IDL repurposes the existing Java lexer.
+Additionally, plain text is treated with a separate lexer that considers all lines as comments.
 
-Furthermore plain text has a separate lexer that counts all lines as comments.
+Lines consisting solely of comment tokens or whitespace are counted as comments.
 
-Lines that only contain comment tokens and white space count as comments.
-Lines that only contain white space are not taken into account. Everything
-else counts as code.
+Lines with only whitespace are ignored.
 
-If a line contains only "white characters" it is not taken into account
-presumably because the code is only formatted that way to make it easier to
-read. Currently white characters are::
+All other content is considered code.
+
+White characters
+----------------
+
+A line containing only "white characters" is also ignored because the do not
+contribute to code complexity in any meaningful way. Currently white
+characters are::
 
     (),:;[]{}
 
-Because of that, pygount reports about 10 to 20 percent fewer SLOC for C-like
-languages than other similar tools.
+Because of that, pygount tends to report about 5 to 15 percent fewer SLOC for
+C-like languages than other similar tools.
+
+.. _No operations:
+
+No operations
+-------------
 
 For some languages "no operations" are detected and treated as white space.
 For example Python's ``pass`` or Transact-SQL's ``begin`` and ``end`` .
@@ -44,6 +54,30 @@ As example consider this Python code:
 
 This counts as 1 line of code and 3 lines of comments. The line with ``pass``
 is considered a "no operation" and thus not taken into account.
+
+.. _Pure string lines:
+
+Pure string lines
+-----------------
+
+Many programming languages support the concept of strings, which typically
+often contain text to be shown to the end user or simple constant values.
+Similar to white character and "no operations", in most cases they do not
+add much to the complexity of the code. Notable exceptions are strings
+containing code for domain specific languages, templates or SQL statements.
+
+Pygount currently takes an opinionated approach on how to count pure string
+lines depending on the output format:
+
+- With ``--format=summary``, pure string lines are ignored similar to empty lines
+- With ``--format`` set to ``sloccount`` or ``cloc-xml`` string lines are counted
+  as code, resulting in somewhat similar counts as the original tools.
+- With ``format=json`` all variants are available as attributes and you can choose
+  which one you prefer.
+
+In hindsight, this is an inconsistency that might warrant a cleanup. See issue
+`#122 <https://github.com/roskakori/pygount/issues/122>`_ for a discussion and
+issue `#122 <https://github.com/roskakori/pygount/issues/122>`_
 
 .. _binary:
 
@@ -62,11 +96,11 @@ performs no further analysis.
 
 
 Comparison with other tools
------------------------------------
+---------------------------
 
 Pygount can analyze more languages than other common tools such as sloccount
 or cloc because it builds on ``pygments``, which provides lexers for hundreds
-of languages. This also makes it easy to support another language: simply
+of languages. This also makes it easy to support another language: Just
 `write your own lexer <http://pygments.org/docs/lexerdevelopment/>`_.
 
 For certain corner cases pygount gives more accurate results because it
@@ -74,9 +108,9 @@ actually lexes the code unlike other tools that mostly look for comment
 markers and can get confused when they show up inside strings. In practice
 though this should not make much of a difference.
 
-Pygount is slower than most other tools. Partially this is due to actually
-lexing instead of just scanning the code. Partially other tools can use
-statically compiled languages such as Java or C, which are generally faster
-than dynamic languages. For many applications though pygount should be
+Pygount is slower than most other tools. Partially, this is due to actually
+lexing instead of just scanning the code. Partially, because other tools can
+use statically compiled languages such as Java or C, which are generally
+faster than dynamic languages. For many applications though pygount should be
 "fast enough", especially when running as an asynchronous step during a
 continuous integration build.

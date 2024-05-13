@@ -21,7 +21,7 @@ from .summary import ProjectSummary
 #: Version of cloc the --format=cloc-xml pretends to be.
 CLOC_VERSION = "1.60"
 
-JSON_FORMAT_VERSION = "1.0.0"
+JSON_FORMAT_VERSION = "1.1.0"
 
 
 class BaseWriter:
@@ -201,11 +201,13 @@ class JsonWriter(BaseWriter):
         super().add(source_analysis)
         self.source_analyses.append(
             {
-                "emptyCount": source_analysis.empty_count,
+                "codeCount": source_analysis.code_count,
                 "documentationCount": source_analysis.documentation_count,
+                "emptyCount": source_analysis.empty_count,
                 "group": source_analysis.group,
                 "isCountable": source_analysis.is_countable,
                 "language": source_analysis.language,
+                "lineCount": source_analysis.line_count,
                 "path": source_analysis.path,
                 "state": source_analysis.state.name,
                 "stateInfo": source_analysis.state_info,
@@ -224,6 +226,8 @@ class JsonWriter(BaseWriter):
                 {
                     "documentationCount": language_summary.documentation_count,
                     "documentationPercentage": language_summary.documentation_percentage,
+                    "codeCount": language_summary.code_count,
+                    "codePercentage": language_summary.code_percentage,
                     "emptyCount": language_summary.empty_count,
                     "emptyPercentage": language_summary.empty_percentage,
                     "fileCount": language_summary.file_count,
@@ -232,6 +236,8 @@ class JsonWriter(BaseWriter):
                     "language": language_summary.language,
                     "sourceCount": language_summary.source_count,
                     "sourcePercentage": language_summary.source_percentage,
+                    "stringCount": language_summary.string_count,
+                    "stringPercentage": language_summary.string_percentage,
                 }
                 for language_summary in self.project_summary.language_to_language_summary_map.values()
             ],
@@ -243,6 +249,8 @@ class JsonWriter(BaseWriter):
                 "startedAt": self.started_at.isoformat(),
             },
             "summary": {
+                "totalCodeCount": self.project_summary.total_code_count,
+                "totalCodePercentage": self.project_summary.total_code_percentage,
                 "totalDocumentationCount": self.project_summary.total_documentation_count,
                 "totalDocumentationPercentage": self.project_summary.total_documentation_percentage,
                 "totalEmptyCount": self.project_summary.total_empty_count,
@@ -250,6 +258,8 @@ class JsonWriter(BaseWriter):
                 "totalFileCount": self.project_summary.total_file_count,
                 "totalSourceCount": self.project_summary.total_source_count,
                 "totalSourcePercentage": self.project_summary.total_source_percentage,
+                "totalStringCount": self.project_summary.total_string_count,
+                "totalStringPercentage": self.project_summary.total_string_percentage,
             },
         }
         json.dump(json_map, self._target_stream)
