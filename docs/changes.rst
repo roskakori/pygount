@@ -5,6 +5,23 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 1.8.0, 2024-05-13
+
+* Add all available counts and percentages to JSON format (issue
+  `#122 <https://github.com/roskakori/pygount/issues/122>`_).
+
+  In particular, this makes available the ``codeCount``, which is similar to
+  the already existing ``sourceCount`` but does exclude lines that contain
+  only strings. You can check their availability by validating that the
+  ``formatVersion`` is at least 1.1.0.
+
+  The documentation about ":ref:`How to count code`" has more information
+  about the available counts and the ways they are computed.
+
+  Pygount 2.0 will probably introduce some breaking changes in this area,
+  which can already be previewed and discussed at issue
+  `#152 <https://github.com/roskakori/pygount/issues/152>`_.
+
 Version 1.7.0, 2024-05-13
 
 * Fix analysis with

@@ -200,12 +200,12 @@ class ProjectSummary:
         return _percentage_or_0(self.total_empty_count, self.total_line_count)
 
     @property
-    def total_string_count(self) -> int:
-        return self._total_string_count
+    def total_file_count(self) -> int:
+        return self._total_file_count
 
     @property
-    def total_string_percentage(self) -> float:
-        return _percentage_or_0(self.total_string_count, self.total_line_count)
+    def total_line_count(self) -> int:
+        return self._total_line_count
 
     @property
     def total_source_count(self) -> int:
@@ -216,12 +216,12 @@ class ProjectSummary:
         return _percentage_or_0(self.total_source_count, self.total_line_count)
 
     @property
-    def total_file_count(self) -> int:
-        return self._total_file_count
+    def total_string_count(self) -> int:
+        return self._total_string_count
 
     @property
-    def total_line_count(self) -> int:
-        return self._total_line_count
+    def total_string_percentage(self) -> float:
+        return _percentage_or_0(self.total_string_count, self.total_line_count)
 
     def add(self, source_analysis: SourceAnalysis) -> None:
         """

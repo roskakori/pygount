@@ -416,6 +416,13 @@ class SourceAnalysis:
         return self._empty
 
     @property
+    def line_count(self) -> int:
+        """number of total lines, which is what you text editor a `wc -l`
+        would show
+        """
+        return self.code_count + self.documentation_count + self.empty_count + self.string_count
+
+    @property
     def string_count(self) -> int:
         """number of lines containing only strings but no other code"""
         return self._string
