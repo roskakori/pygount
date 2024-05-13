@@ -77,7 +77,8 @@ lines depending on the output format:
 
 In hindsight, this is an inconsistency that might warrant a cleanup. See issue
 `#122 <https://github.com/roskakori/pygount/issues/122>`_ for a discussion and
-issue `#122 <https://github.com/roskakori/pygount/issues/122>`_
+issue `#152 <https://github.com/roskakori/pygount/issues/152>`_ for a plan on
+how to clean this up.
 
 .. _binary:
 

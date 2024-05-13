@@ -64,11 +64,8 @@ The ``*Count`` fields have the following meaning:
 * ``sourceCount``: The source lines of code, similar to the traditional SLOC
 * ``stringCount``: The number of :ref:`Pure string lines`
 
-
-
 Here, ``sourceCount`` is the number of source lines of code (SLOC),
 ``documentationCount`` the number of lines containing comments and
-
 
 The ``state`` can have one of the following values:
 
@@ -160,7 +157,6 @@ Another alternativ would be `jq <https://stedolan.github.io/jq/>`_:
 .. code-block:: sh
 
   pygount --format json | jq .
-
 
 .. _JSON format history:
 
