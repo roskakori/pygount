@@ -74,7 +74,7 @@ coveralls = "^4"
 coverage = "^7"
 pytest = "^8"
 pytest-cov = "^5"
-pre-commit = "^3"
+pre-commit = "^3.5"  # TODO#158: Change to "^3".
 pur = "^7"
 twine = "^5"
 
