@@ -39,7 +39,7 @@ _HELP_EPILOG = """SHELL-PATTERN is a pattern using *, ? and ranges like [a-z]
  existing default values."""
 
 _HELP_FORMAT = 'output format, one of: {}; default: "%(default)s"'.format(
-    ", ".join(['"' + format + '"' for format in VALID_OUTPUT_FORMATS])
+    ", ".join(['"' + output_format + '"' for output_format in VALID_OUTPUT_FORMATS])
 )
 
 _HELP_GENERATED = """comma separated list of regular expressions to detect
@@ -86,11 +86,9 @@ def _check_encoding(name, encoding_to_check, alternative_encoding, source=None):
             "".encode(encoding_to_check)
         except LookupError:
             raise pygount.common.OptionError(
-                '{} is "{}" but must be "{}" or a known Python encoding'.format(
-                    name, encoding_to_check, alternative_encoding
-                ),
+                f'{name} is "{encoding_to_check}" but must be "{alternative_encoding}" or a known Python encoding',
                 source,
-            )
+            ) from None
 
 
 class Command:
@@ -120,14 +118,13 @@ class Command:
         if encoding in ("automatic", "chardet"):
             default_encoding = encoding
             fallback_encoding = None
+        elif encoding.startswith(("automatic;", "chardet;")):
+            first_encoding_semicolon_index = encoding.find(";")
+            default_encoding = encoding[:first_encoding_semicolon_index]
+            fallback_encoding = encoding[first_encoding_semicolon_index + 1 :]
         else:
-            if encoding.startswith("automatic;") or encoding.startswith("chardet;"):
-                first_encoding_semicolon_index = encoding.find(";")
-                default_encoding = encoding[:first_encoding_semicolon_index]
-                fallback_encoding = encoding[first_encoding_semicolon_index + 1 :]
-            else:
-                default_encoding = encoding
-                fallback_encoding = pygount.analysis.DEFAULT_FALLBACK_ENCODING
+            default_encoding = encoding
+            fallback_encoding = pygount.analysis.DEFAULT_FALLBACK_ENCODING
         self.set_default_encoding(default_encoding, source)
         self.set_fallback_encoding(fallback_encoding, source)
 
@@ -350,25 +347,26 @@ class Command:
             target_context_manager = (
                 contextlib.nullcontext(sys.stdout)
                 if is_stdout
-                else open(self.output, "w", encoding="utf-8", newline="")
+                else open(self.output, "w", encoding="utf-8", newline="")  # noqa: SIM115
             )
-            with target_context_manager as target_file, writer_class(target_file) as writer:
-                with Progress(disable=not writer.has_to_track_progress, transient=True) as progress:
-                    try:
-                        for source_path, group in progress.track(source_paths_and_groups_to_analyze):
-                            writer.add(
-                                pygount.analysis.SourceAnalysis.from_file(
-                                    source_path,
-                                    group,
-                                    self.default_encoding,
-                                    self.fallback_encoding,
-                                    generated_regexes=self._generated_regexs,
-                                    duplicate_pool=duplicate_pool,
-                                    merge_embedded_language=self.has_to_merge_embedded_languages,
-                                )
+            with target_context_manager as target_file, writer_class(target_file) as writer, Progress(
+                disable=not writer.has_to_track_progress, transient=True
+            ) as progress:
+                try:
+                    for source_path, group in progress.track(source_paths_and_groups_to_analyze):
+                        writer.add(
+                            pygount.analysis.SourceAnalysis.from_file(
+                                source_path,
+                                group,
+                                self.default_encoding,
+                                self.fallback_encoding,
+                                generated_regexes=self._generated_regexs,
+                                duplicate_pool=duplicate_pool,
+                                merge_embedded_language=self.has_to_merge_embedded_languages,
                             )
-                    finally:
-                        progress.stop()
+                        )
+                finally:
+                    progress.stop()
 
 
 def pygount_command(arguments=None):

@@ -24,7 +24,6 @@ def test_can_lex_idl():
         ]
     )
     text_tokens = list(lexer.get_tokens(text))
-    print(text_tokens)
     assert text_tokens == [
         (token.Token.Comment.Multiline, "/* some\n * comment */"),
         (token.Token.Text.Whitespace, "\n"),

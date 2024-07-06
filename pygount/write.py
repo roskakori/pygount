@@ -118,11 +118,11 @@ class ClocXmlWriter(BaseWriter):
     def close(self):
         super().close()
         # Add various statistics to <header>.
-        ElementTree.SubElement(self._header_element, "elapsed_seconds", text="%.f" % self.duration_in_seconds)
-        ElementTree.SubElement(self._header_element, "n_files", text="%d" % self.project_summary.total_file_count)
-        ElementTree.SubElement(self._header_element, "n_lines", text="%d" % self.project_summary.total_line_count)
-        ElementTree.SubElement(self._header_element, "files_per_second", text="%.f" % self.files_per_second)
-        ElementTree.SubElement(self._header_element, "lines_per_second", text="%.f" % self.lines_per_second)
+        ElementTree.SubElement(self._header_element, "elapsed_seconds", text=str(self.duration_in_seconds))
+        ElementTree.SubElement(self._header_element, "n_files", text=str(self.project_summary.total_file_count))
+        ElementTree.SubElement(self._header_element, "n_lines", text=str(self.project_summary.total_line_count))
+        ElementTree.SubElement(self._header_element, "files_per_second", text=f"{self.files_per_second:f}")
+        ElementTree.SubElement(self._header_element, "lines_per_second", text=f"{self.lines_per_second:f}")
         ElementTree.SubElement(self._header_element, "report_file", text=self.target_name)
 
         # Add totals to <files>.

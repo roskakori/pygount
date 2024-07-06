@@ -24,7 +24,7 @@ import pygments.util
 import pygount.common
 import pygount.lexers
 import pygount.xmldialect
-from pygount.common import deprecated
+from pygount.common import deprecated, mapped_repr
 from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
 # Attempt to import chardet.
@@ -481,17 +481,24 @@ class SourceAnalysis:
         return self.state in (SourceState.analyzed, SourceState.duplicate)
 
     def __repr__(self):
-        result = "{}(path={!r}, language={!r}, group={!r}, state={}".format(
-            self.__class__.__name__, self.path, self.language, self.group, self.state.name
-        )
+        name_to_value_map = {
+            "path": repr(self.path),
+            "language": repr(self.language),
+            "group": repr(self.group),
+            "state": self.state.name,
+        }
         if self.state == SourceState.analyzed:
-            result += ", code_count={}, documentation_count={}, empty_count={}, string_count={}".format(
-                self.code_count, self.documentation_count, self.empty_count, self.string_count
+            name_to_value_map.update(
+                {
+                    "code_count": self.code_count,
+                    "documentation_count": self.documentation_count,
+                    "empty_count": self.empty_count,
+                    "string_count": self.string_count,
+                }
             )
         if self.state_info is not None:
-            result += f", state_info={self.state_info!r}"
-        result += ")"
-        return result
+            name_to_value_map["state_info"] = repr(self.state_info)
+        return mapped_repr(self, name_to_value_map)
 
 
 class SourceScanner:
@@ -558,7 +565,7 @@ class SourceScanner:
         self._name_regexps_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
 
     def _is_path_to_skip(self, name, is_folder) -> bool:
-        assert os.sep not in name, "name=%r" % name
+        assert os.sep not in name, f"name={name!r}"
         regexps_to_skip = self._folder_regexps_to_skip if is_folder else self._name_regexps_to_skip
         return any(path_name_to_skip_regex.match(name) is not None for path_name_to_skip_regex in regexps_to_skip)
 
@@ -604,8 +611,11 @@ class SourceScanner:
     def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> List[Tuple[str, str]]:
         assert source_patterns_to_analyze is not None
         result = []
-        for source_pattern_to_analyze in source_patterns_to_analyze:
-            try:
+        # NOTE: We could avoid initializing `source_pattern_to_analyze` here by moving the `try` inside
+        #  the loop, but this would incor a performance overhead (ruff's PERF203).
+        source_pattern_to_analyze = None
+        try:
+            for source_pattern_to_analyze in source_patterns_to_analyze:
                 remote_url, revision = git_remote_url_and_revision_if_any(source_pattern_to_analyze)
                 if remote_url is not None:
                     git_storage = GitStorage(remote_url, revision)
@@ -615,8 +625,9 @@ class SourceScanner:
                     result.extend(self._paths_and_group_to_analyze(git_storage.temp_folder))
                 else:
                     result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
-            except OSError as error:
-                raise OSError(f'cannot scan "{source_pattern_to_analyze}" for source files: {error}')
+        except OSError as error:
+            assert source_pattern_to_analyze is not None
+            raise OSError(f'cannot scan "{source_pattern_to_analyze}" for source files: {error}') from error
         result = sorted(set(result))
         return result
 
@@ -636,7 +647,7 @@ class SourceScanner:
 
 
 _LANGUAGE_TO_WHITE_WORDS_MAP = {"batchfile": {"@"}, "python": {"pass"}, "sql": {"begin", "end"}}
-for _language in _LANGUAGE_TO_WHITE_WORDS_MAP.keys():
+for _language in _LANGUAGE_TO_WHITE_WORDS_MAP:
     assert _language.islower()
 
 
@@ -686,32 +697,35 @@ def white_code_words(language_id: str) -> Set[str]:
     return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
 
 
-def _delined_tokens(tokens: Sequence[Tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenType]:
     for token_type, token_text in tokens:
-        newline_index = token_text.find("\n")
+        remaining_token_text = token_text
+        newline_index = remaining_token_text.find("\n")
         while newline_index != -1:
-            yield token_type, token_text[: newline_index + 1]
-            token_text = token_text[newline_index + 1 :]
-            newline_index = token_text.find("\n")
-        if token_text != "":
-            yield token_type, token_text
+            yield token_type, remaining_token_text[: newline_index + 1]
+            remaining_token_text = remaining_token_text[newline_index + 1 :]
+            newline_index = remaining_token_text.find("\n")
+        if remaining_token_text != "":
+            yield token_type, remaining_token_text
 
 
-def _pythonized_comments(tokens: Sequence[Tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenType]:
     """
     Similar to tokens but converts strings after a colon (`:`) to comments.
     """
     is_after_colon = True
-    for token_type, token_text in tokens:
+    for token_type, result_token_text in tokens:
         if is_after_colon and (token_type in pygments.token.String):
-            token_type = pygments.token.Comment
-        elif token_text == ":":
-            is_after_colon = True
-        elif token_type not in pygments.token.Comment:
-            is_whitespace = len(token_text.rstrip(" \f\n\r\t")) == 0
-            if not is_whitespace:
-                is_after_colon = False
-        yield token_type, token_text
+            result_token_type = pygments.token.Comment
+        else:
+            result_token_type = token_type
+            if result_token_text == ":":
+                is_after_colon = True
+            elif token_type not in pygments.token.Comment:
+                is_whitespace = len(result_token_text.rstrip(" \f\n\r\t")) == 0
+                if not is_whitespace:
+                    is_after_colon = False
+        yield result_token_type, result_token_text
 
 
 def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[Set[str]]:
@@ -785,11 +799,14 @@ def encoding_for(
             # File is empty, assume a dummy encoding.
             result = "utf-8"
         if result is None:
-            # Check for known BOMs.
-            for bom, encoding in _BOM_TO_ENCODING_MAP.items():
-                if heading[: len(bom)] == bom:
-                    result = encoding
-                    break
+            result = next(
+                (
+                    encoding_for_bom
+                    for bom, encoding_for_bom in _BOM_TO_ENCODING_MAP.items()
+                    if heading[: len(bom)] == bom
+                ),
+                None,
+            )
         if result is None:
             # Look for common headings that indicate the encoding.
             ascii_heading = heading.decode("ascii", errors="replace")

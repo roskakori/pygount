@@ -9,6 +9,7 @@ import re
 from typing import Dict, Hashable
 
 from .analysis import SourceAnalysis
+from .common import mapped_repr
 
 _PSEUDO_LANGUAGE_REGEX = re.compile("^__[a-z]+__$")
 
@@ -139,12 +140,22 @@ class LanguageSummary:
         self._has_up_to_date_percentages = True
 
     def __repr__(self):
-        result = f"{self.__class__.__name__}(language={self.language!r}, file_count={self.file_count}"
+        name_to_value_map = {
+            "language": f"{self.language!r}",
+            "file_count": self.file_count,
+        }
         if not self.is_pseudo_language:
-            result += ", code_count={}, documentation_count={}, empty_count={}, string_count={}".format(
-                self.code_count, self.documentation_count, self.empty_count, self.string_count
+            name_to_value_map.update(
+                {
+                    "code_count": self.code_count,
+                    "documentation_count": self.documentation_count,
+                    "empty_count": self.empty_count,
+                    "string_count": self.string_count,
+                }
             )
-        result += ")"
+        return mapped_repr(self, name_to_value_map)
+        result = ", ".join(f"{name}={value}" for name, value in name_to_value_map.items())
+        result = f"{self.__class__.__name__}({result})"
         return result
 
 

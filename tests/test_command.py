@@ -2,6 +2,8 @@
 Tests for pygount command line interface.
 """
 
+import contextlib
+
 # Copyright (c) 2016-2024, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
 import json
@@ -35,10 +37,8 @@ class CommandTest(TempFolderTest):
 
     def test_can_execute_on_own_code(self):
         output_path = os.path.join(self.tests_temp_folder, "test_can_execute_on_own_code.txt")
-        try:
+        with contextlib.suppress(FileNotFoundError):  # Ignore missing file as it is going to be recreated.
             os.remove(output_path)
-        except FileNotFoundError:  # pragma: no cover
-            pass  # Ignore missing file as it is going to be recreated.
         command = Command()
         command.set_output(output_path)
         command.set_output_format("cloc-xml")

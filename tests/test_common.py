@@ -78,7 +78,7 @@ def test_can_represent_text_as_list():
 def test_can_represent_iterable_as_list():
     assert pygount.common.as_list([]) == []
     assert pygount.common.as_list(["a", 1, None]) == ["a", 1, None]
-    assert pygount.common.as_list(tuple()) == []
+    assert pygount.common.as_list(()) == []
     assert pygount.common.as_list(range(3)) == [0, 1, 2]
 
 
@@ -101,3 +101,14 @@ def test_can_convert_multiple_lines():
 
 def test_can_convert_empty_lines():
     assert list(pygount.common.lines("\n\n\n")) == ["", "", ""]
+
+
+def test_can_compute_mapped_repr():
+    class Dummy:
+        pass
+
+    assert pygount.common.mapped_repr(Dummy(), {}) == "Dummy()"
+    assert (
+        pygount.common.mapped_repr(Dummy(), {"some": "such", "other": 1, "whatever": True})
+        == "Dummy(some=such, other=1, whatever=True)"
+    )
