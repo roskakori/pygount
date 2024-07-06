@@ -25,8 +25,6 @@ class Error(Exception):
     Error to indicate that something went wrong during a pygount run.
     """
 
-    pass
-
 
 class OptionError(Error):
     """
@@ -55,10 +53,7 @@ def as_list(items_or_text: Union[str, Sequence[str]]) -> List[str]:
 def regex_from(pattern: Union[str, Pattern], is_shell_pattern=False) -> Pattern:
     assert pattern is not None
     if isinstance(pattern, str):
-        if is_shell_pattern:
-            result = re.compile(fnmatch.translate(pattern))
-        else:
-            result = re.compile(pattern)
+        result = re.compile(fnmatch.translate(pattern)) if is_shell_pattern else re.compile(pattern)
     else:
         result = pattern  # Assume pattern already is a compiled regular expression
     return result
@@ -86,20 +81,19 @@ def regexes_from(
                 patterns_text_without_prefixes = patterns_text_without_prefixes[len(ADDITIONAL_PATTERN) :]
 
             patterns = as_list(patterns_text_without_prefixes)
-            for pattern in patterns:
-                result.append(regex_from(pattern, is_shell_pattern))
+            result = [regex_from(pattern, is_shell_pattern) for pattern in patterns]
         else:
             regexes = list(patterns_text)
             if len(regexes) >= 1 and regexes[0] is None:
                 default_regexes = regexes_from(default_patterns_text)
                 regexes = regexes[1:]
             for supposed_regex in regexes:
-                assert isinstance(supposed_regex, _REGEX_TYPE), (
-                    "patterns_text must a text or sequence or regular expressions but contains: %a" % supposed_regex
-                )
+                assert isinstance(
+                    supposed_regex, _REGEX_TYPE
+                ), f"patterns_text must a text or sequence or regular expressions but contains: {supposed_regex}"
             result.extend(regexes)
     except re.error as error:
-        raise OptionError(f"cannot parse pattern for regular repression: {error}", source)
+        raise OptionError(f"cannot parse pattern for regular repression: {error}", source) from None
     result.extend(default_regexes)
     return result
 
@@ -157,7 +151,7 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
             return new_func1
 
         return decorator
-    elif inspect.isclass(reason) or inspect.isfunction(reason):
+    if inspect.isclass(reason) or inspect.isfunction(reason):
         # The @deprecated is used without any 'reason'.
         #
         # .. code-block:: python
@@ -167,11 +161,7 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
         #      pass
 
         func2 = reason
-
-        if inspect.isclass(func2):
-            fmt2 = "Call to deprecated class {name}."
-        else:
-            fmt2 = "Call to deprecated function {name}."
+        fmt2 = "Call to deprecated class {name}." if inspect.isclass(func2) else "Call to deprecated function {name}."
 
         @functools.wraps(func2)
         def new_func2(*args, **kwargs):
@@ -181,5 +171,10 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
             return func2(*args, **kwargs)
 
         return new_func2
-    else:
-        raise TypeError(repr(type(reason)))
+    raise TypeError(repr(type(reason)))
+
+
+def mapped_repr(type_, name_to_value_map) -> str:
+    result = ", ".join(f"{name}={value}" for name, value in name_to_value_map.items())
+    result = f"{type_.__class__.__name__}({result})"
+    return result

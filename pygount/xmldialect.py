@@ -23,12 +23,10 @@ _SAX_MESSAGE_WITHOUT_PATH_PATTERN = re.compile(r"^<.+>(?P<message_without_path>:
 _log = logging.getLogger("pygount")
 
 
-class SaxParserDone(Exception):  # noqa: N818
+class SaxParserDone(Exception):
     """
     Pseudo error to indicate that the Sax parser ist done.
     """
-
-    pass
 
 
 class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
@@ -43,7 +41,7 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
         self.dialect = dialect
         raise SaxParserDone(f"language detected: {dialect}")
 
-    def startElement(self, name, attrs):  # noqa: N802
+    def startElement(self, name, attrs):
         self._element_count += 1
         if self._element_count == self._max_element_count:
             raise SaxParserDone(f"no language found after parsing {self._element_count} elements")
@@ -60,7 +58,7 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
         elif xmlns.startswith("http://www.netbeans.org/ns/project/"):
             self._set_dialect_and_stop_parsing("NetBeans Project")
 
-    def endElement(self, name):  # noqa: N802
+    def endElement(self, name):
         self._path = self._path[: -len(name) - 1]
 
 

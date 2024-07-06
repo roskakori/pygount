@@ -22,10 +22,11 @@ def test_can_collect_totals():
         analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed, None),
         analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed, None),
     )
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", prefix="pygount_", suffix=".tmp") as target_stream:
-        with write.BaseWriter(target_stream) as writer:
-            for source_analysis in source_analyses:
-                writer.add(source_analysis)
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", prefix="pygount_", suffix=".tmp"
+    ) as target_stream, write.BaseWriter(target_stream) as writer:
+        for source_analysis in source_analyses:
+            writer.add(source_analysis)
     assert writer.project_summary.total_file_count == 2
     assert writer.project_summary.total_line_count == 110
     assert writer.duration_in_seconds > 0
@@ -113,8 +114,7 @@ class SummaryWriterTest(TempFolderTest):
         # actual data are only available during close() at which point they
         # would not be accessible to StringIO.getvalue().
         summary_path = Path(self.tests_temp_folder, "summary.tmp")
-        with summary_path.open("w", encoding="utf-8") as summary_file:
-            with write.SummaryWriter(summary_file) as writer:
-                for source_analysis in source_analyses:
-                    writer.add(source_analysis)
+        with summary_path.open("w", encoding="utf-8") as summary_file, write.SummaryWriter(summary_file) as writer:
+            for source_analysis in source_analyses:
+                writer.add(source_analysis)
         return summary_path.read_text("utf-8").splitlines()

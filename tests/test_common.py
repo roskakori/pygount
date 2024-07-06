@@ -78,7 +78,7 @@ def test_can_represent_text_as_list():
 def test_can_represent_iterable_as_list():
     assert pygount.common.as_list([]) == []
     assert pygount.common.as_list(["a", 1, None]) == ["a", 1, None]
-    assert pygount.common.as_list(tuple()) == []
+    assert pygount.common.as_list(()) == []
     assert pygount.common.as_list(range(3)) == [0, 1, 2]
 
 

@@ -15,7 +15,14 @@ from pygments import lexers, token
 
 from pygount import Error as PygountError
 from pygount import analysis, common
-from pygount.analysis import base_language, guess_lexer
+from pygount.analysis import (
+    _BOM_TO_ENCODING_MAP,
+    _delined_tokens,
+    _line_parts,
+    _pythonized_comments,
+    base_language,
+    guess_lexer,
+)
 
 from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
 from .test_xmldialect import EXAMPLE_ANT_CODE
@@ -75,16 +82,16 @@ class SourceScannerTest(TempFolderTest):
 
 class AnalysisTest(unittest.TestCase):
     def test_can_deline_tokens(self):
-        assert list(analysis._delined_tokens([(token.Comment, "# a")])) == [(token.Comment, "# a")]
-        assert list(analysis._delined_tokens([(token.Comment, "# a\n#  b")])) == [
+        assert list(_delined_tokens([(token.Comment, "# a")])) == [(token.Comment, "# a")]
+        assert list(_delined_tokens([(token.Comment, "# a\n#  b")])) == [
             (token.Comment, "# a\n"),
             (token.Comment, "#  b"),
         ]
-        assert list(analysis._delined_tokens([(token.Comment, "# a\n#  b\n")])) == [
+        assert list(_delined_tokens([(token.Comment, "# a\n#  b\n")])) == [
             (token.Comment, "# a\n"),
             (token.Comment, "#  b\n"),
         ]
-        assert list(analysis._delined_tokens([(token.Comment, "# a\n#  b\n # c\n")])) == [
+        assert list(_delined_tokens([(token.Comment, "# a\n#  b\n # c\n")])) == [
             (token.Comment, "# a\n"),
             (token.Comment, "#  b\n"),
             (token.Comment, " # c\n"),
@@ -92,13 +99,13 @@ class AnalysisTest(unittest.TestCase):
 
     def test_can_compute_python_line_parts(self):
         python_lexer = lexers.get_lexer_by_name("python")
-        assert list(analysis._line_parts(python_lexer, "#")) == [set("d")]
-        assert list(analysis._line_parts(python_lexer, "s = 'x'  # x")) == [set("cds")]
+        assert list(_line_parts(python_lexer, "#")) == [set("d")]
+        assert list(_line_parts(python_lexer, "s = 'x'  # x")) == [set("cds")]
 
     def test_can_detect_white_text(self):
         python_lexer = lexers.get_lexer_by_name("python")
-        assert list(analysis._line_parts(python_lexer, "{[()]};")) == [set()]
-        assert list(analysis._line_parts(python_lexer, "pass")) == [set()]
+        assert list(_line_parts(python_lexer, "{[()]};")) == [set()]
+        assert list(_line_parts(python_lexer, "pass")) == [set()]
 
     def test_can_convert_python_strings_to_comments(self):
         source_code = (
@@ -106,14 +113,14 @@ class AnalysisTest(unittest.TestCase):
         )
         python_lexer = lexers.get_lexer_by_name("python")
         python_tokens = python_lexer.get_tokens(source_code)
-        for token_type, token_text in list(analysis._pythonized_comments(analysis._delined_tokens(python_tokens))):
+        for token_type, _ in list(_pythonized_comments(_delined_tokens(python_tokens))):
             assert token_type not in token.String
 
     @staticmethod
     def _line_parts(lexer_name: str, source_lines: List[str]) -> List[Set[str]]:
         lexer = lexers.get_lexer_by_name(lexer_name)
         source_code = "\n".join(source_lines)
-        return list(analysis._line_parts(lexer, source_code))
+        return list(_line_parts(lexer, source_code))
 
     def test_can_analyze_python(self):
         source_lines = [
@@ -327,7 +334,7 @@ def test_can_use_deprecated_counts():
 
 
 class EncodingTest(TempFolderTest):
-    _ENCODING_TO_BOM_MAP = {encoding: bom for bom, encoding in analysis._BOM_TO_ENCODING_MAP.items()}
+    _ENCODING_TO_BOM_MAP = {encoding: bom for bom, encoding in _BOM_TO_ENCODING_MAP.items()}
     _TEST_CODE = "x = '\u00fd \u20ac'"
 
     def _test_can_detect_bom_encoding(self, encoding):
@@ -341,7 +348,7 @@ class EncodingTest(TempFolderTest):
         assert actual_encoding == encoding
 
     def test_can_detect_bom_encodings(self):
-        for _, encoding in analysis._BOM_TO_ENCODING_MAP.items():
+        for encoding in _BOM_TO_ENCODING_MAP.values():
             self._test_can_detect_bom_encoding(encoding)
 
     def test_can_detect_plain_encoding(self):
@@ -389,9 +396,8 @@ class EncodingTest(TempFolderTest):
         actual_encoding = analysis.encoding_for(test_path, "utf-8")
         assert actual_encoding == "utf-8"
         # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
-        with open(test_path, encoding=actual_encoding) as broken_test_file:
-            with pytest.raises(UnicodeDecodeError):
-                broken_test_file.read()
+        with open(test_path, encoding=actual_encoding) as broken_test_file, pytest.raises(UnicodeDecodeError):
+            broken_test_file.read()
 
     def test_can_detect_binary_with_zero_byte(self):
         test_path = self.create_temp_binary_file("binary", b"hello\0world")
@@ -407,9 +413,7 @@ class GeneratedCodeTest(TempFolderTest):
     # Example code for
     # generated source code.
     print("I'm generated!")
-    """.split(
-        "\n"
-    )
+    """.split("\n")
     _STANDARD_GENERATED_REGEXES = common.regexes_from(
         common.REGEX_PATTERN_PREFIX + ".*some,.*other,.*generated,.*print"
     )
