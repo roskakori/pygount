@@ -101,3 +101,14 @@ def test_can_convert_multiple_lines():
 
 def test_can_convert_empty_lines():
     assert list(pygount.common.lines("\n\n\n")) == ["", "", ""]
+
+
+def test_can_compute_mapped_repr():
+    class Dummy:
+        pass
+
+    assert pygount.common.mapped_repr(Dummy(), {}) == "Dummy()"
+    assert (
+        pygount.common.mapped_repr(Dummy(), {"some": "such", "other": 1, "whatever": True})
+        == "Dummy(some=such, other=1, whatever=True)"
+    )
