@@ -1,8 +1,6 @@
 JSON
 ####
 
-.. program:: pygount
-
 The JavaScript objects notation (JSON) is widely used to interchange data.
 Running pygount with :option:`--format` "json" is a simple way to provide
 the results of an analysis for further processing.
