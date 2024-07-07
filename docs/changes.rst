@@ -1,14 +1,14 @@
 Changes
 #######
 
-.. program:: pygount
-
 This chapter describes the changes coming with each new version of pygount.
 
-Version 1.8.1, 2024-07-06
+Version 1.8.1, 2024-07-xx
 
 * Development: Change linter to ruff and in turn clean up code (issue
   `#157 <https://github.com/roskakori/pygount/issues/157>`_).
+* Development: Change default branch to main (issue
+  `#160 <https://github.com/roskakori/pygount/issues/160>`_).
 
 Version 1.8.0, 2024-05-13
 
