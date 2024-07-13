@@ -27,6 +27,8 @@ import pygount.xmldialect
 from pygount.common import mapped_repr
 from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
+GIT_REPO_REGEX = re.compile(r"^(https?://|git@)")
+
 # Attempt to import chardet.
 try:
     import chardet.universaldetector
@@ -604,6 +606,13 @@ class SourceScanner:
                     # TODO#113: Find a way to exclude the ugly temp folder from the source path.
                     result.extend(self._paths_and_group_to_analyze(git_storage.temp_folder))
                 else:
+                    git_url_match = re.match(GIT_REPO_REGEX, source_pattern_to_analyze)
+                    if git_url_match is not None:
+                        raise pygount.Error(
+                            'URL to git repository must end with ".git", for example '
+                            "git@github.com:roskakori/pygount.git or "
+                            "https://github.com/roskakori/pygount.git."
+                        )
                     result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
         except OSError as error:
             assert source_pattern_to_analyze is not None
