@@ -77,9 +77,8 @@ class LineWriter(BaseWriter):
         self.template = "{0}\t{1}\t{2}\t{3}"
 
     def add(self, source_analysis):
-        source_line_count = source_analysis.code_count + source_analysis.string_count
         line_to_write = self.template.format(
-            source_line_count, source_analysis.language, source_analysis.group, source_analysis.path
+            source_analysis.code_count, source_analysis.language, source_analysis.group, source_analysis.path
         )
         self._target_stream.write(line_to_write + os.linesep)
 
