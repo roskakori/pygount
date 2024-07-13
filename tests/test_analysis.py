@@ -325,14 +325,6 @@ def test_can_guess_lexer_for_cmakelists():
     assert lexer.name == "CMake"
 
 
-def test_can_use_deprecated_counts():
-    source_analysis = analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed)
-    assert source_analysis.code == source_analysis.code_count
-    assert source_analysis.documentation == source_analysis.documentation_count
-    assert source_analysis.empty == source_analysis.empty_count
-    assert source_analysis.string == source_analysis.string_count
-
-
 class EncodingTest(TempFolderTest):
     _ENCODING_TO_BOM_MAP = {encoding: bom for bom, encoding in _BOM_TO_ENCODING_MAP.items()}
     _TEST_CODE = "x = '\u00fd \u20ac'"
@@ -482,20 +474,6 @@ def test_has_no_duplicate_in_pygount_source():
         if source_path.endswith(".py"):
             duplicate_path = duplicate_pool.duplicate_path(source_path)
             assert duplicate_path is None, f"{source_path} must not be duplicate of {duplicate_path}"
-
-
-def test_can_match_deprecated_functions():
-    source_path = __file__
-    group = "some"
-    assert str(analysis.source_analysis(source_path, group)) == str(
-        analysis.SourceAnalysis.from_file(source_path, group)
-    )
-
-    missing_path = "missing.py"
-    reason = "missing"
-    assert str(analysis.pseudo_source_analysis(missing_path, group, analysis.SourceState.error, reason)) == str(
-        analysis.SourceAnalysis.from_state(missing_path, group, analysis.SourceState.error, reason)
-    )
 
 
 def test_can_compute_base_language():

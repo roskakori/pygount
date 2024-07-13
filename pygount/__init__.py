@@ -6,7 +6,7 @@ Pygount counts lines of source code using pygments lexers.
 # All rights reserved. Distributed under the BSD License.
 from importlib.metadata import version
 
-from .analysis import DuplicatePool, SourceAnalysis, SourceScanner, SourceState, encoding_for, source_analysis
+from .analysis import DuplicatePool, SourceAnalysis, SourceScanner, SourceState, encoding_for
 from .common import Error, OptionError
 from .summary import LanguageSummary, ProjectSummary
 
@@ -23,5 +23,4 @@ __all__ = [
     "SourceAnalysis",
     "SourceScanner",
     "SourceState",
-    "source_analysis",
 ]
