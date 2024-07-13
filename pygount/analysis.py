@@ -24,7 +24,7 @@ import pygments.util
 import pygount.common
 import pygount.lexers
 import pygount.xmldialect
-from pygount.common import deprecated, mapped_repr
+from pygount.common import mapped_repr
 from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
 # Attempt to import chardet.
@@ -431,26 +431,6 @@ class SourceAnalysis:
     def source_count(self) -> int:
         """number of source lines of code (the sum of code_count and string_count)"""
         return self.code_count + self.string_count
-
-    @property
-    def code(self) -> int:
-        # TODO #47: Remove deprecated property.
-        return self._code
-
-    @property
-    def documentation(self) -> int:
-        # TODO #47: Remove deprecated property.
-        return self._documentation
-
-    @property
-    def empty(self) -> int:
-        # TODO #47: Remove deprecated property.
-        return self._empty
-
-    @property
-    def string(self) -> int:
-        # TODO #47: Remove deprecated property.
-        return self._string
 
     @property
     def state(self) -> SourceState:
@@ -873,11 +853,6 @@ def encoding_for(
     return result
 
 
-@deprecated(f"use {SourceAnalysis.__name__}.{SourceAnalysis.from_state.__name__}")
-def pseudo_source_analysis(source_path, group, state, state_info=None):
-    return SourceAnalysis.from_state(source_path, group, state, state_info)
-
-
 #: BOMs to indicate that a file is a text file even if it contains zero bytes.
 _TEXT_BOMS = (codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE, codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF8)
 
@@ -915,25 +890,6 @@ def guess_lexer(source_path: str, text: str) -> pygments.lexer.Lexer:
             suffix = os.path.splitext(os.path.basename(source_path))[1].lstrip(".")
             result = _SUFFIX_TO_FALLBACK_LEXER_MAP.get(suffix)
     return result
-
-
-@deprecated(f"use {SourceAnalysis.__name__}.{SourceAnalysis.from_file.__name__}")
-def source_analysis(
-    source_path,
-    group,
-    encoding="automatic",
-    fallback_encoding="cp1252",
-    generated_regexes: Optional[List[Pattern]] = None,
-    duplicate_pool: Optional[DuplicatePool] = None,
-):
-    actual_generated_regexes = (
-        generated_regexes
-        if generated_regexes is not None
-        else pygount.common.regexes_from(DEFAULT_GENERATED_PATTERNS_TEXT)
-    )
-    return SourceAnalysis.from_file(
-        source_path, group, encoding, fallback_encoding, actual_generated_regexes, duplicate_pool
-    )
 
 
 def base_language(language: str) -> str:
