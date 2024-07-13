@@ -122,6 +122,8 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
     Decorator to mark functions as deprecated and log a warning in case it is called.
 
     Source: https://stackoverflow.com/questions/2536307/decorators-in-the-python-standard-lib-deprecated-specifically
+
+    Updated replace .format() with f-string
     """
 
     if isinstance(reason, str):
@@ -134,16 +136,15 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
         #      pass
 
         def decorator(func1):
-            if inspect.isclass(func1):
-                fmt1 = "Call to deprecated class {name} ({reason})."
-            else:
-                fmt1 = "Call to deprecated function {name} ({reason})."
+            class_or_func = "class" if inspect.isclass(func1) else "function"
 
             @functools.wraps(func1)
             def new_func1(*args, **kwargs):
                 warnings.simplefilter("always", DeprecationWarning)
                 warnings.warn(
-                    fmt1.format(name=func1.__name__, reason=reason), category=DeprecationWarning, stacklevel=2
+                    f"Call to deprecated {class_or_func} {func1.__name__} ({reason}).",
+                    category=DeprecationWarning,
+                    stacklevel=2,
                 )
                 warnings.simplefilter("default", DeprecationWarning)
                 return func1(*args, **kwargs)
@@ -151,6 +152,7 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
             return new_func1
 
         return decorator
+
     if inspect.isclass(reason) or inspect.isfunction(reason):
         # The @deprecated is used without any 'reason'.
         #
@@ -161,12 +163,16 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
         #      pass
 
         func2 = reason
-        fmt2 = "Call to deprecated class {name}." if inspect.isclass(func2) else "Call to deprecated function {name}."
+        class_or_func = "class" if inspect.isclass(func2) else "function"
 
         @functools.wraps(func2)
         def new_func2(*args, **kwargs):
             warnings.simplefilter("always", DeprecationWarning)
-            warnings.warn(fmt2.format(name=func2.__name__), category=DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                f"Call to deprecated {class_or_func} {func2.__name__}.",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
             warnings.simplefilter("default", DeprecationWarning)
             return func2(*args, **kwargs)
 

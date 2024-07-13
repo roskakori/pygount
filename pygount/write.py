@@ -74,11 +74,11 @@ class LineWriter(BaseWriter):
     def __init__(self, target_stream):
         super().__init__(target_stream)
         self.has_to_track_progress = False
-        self.template = "{0}\t{1}\t{2}\t{3}"
 
     def add(self, source_analysis):
-        line_to_write = self.template.format(
-            source_analysis.code_count, source_analysis.language, source_analysis.group, source_analysis.path
+        line_to_write = (
+            f"{source_analysis.code_count}\t{source_analysis.language}\t"
+            f"{source_analysis.group}\t{source_analysis.path}"
         )
         self._target_stream.write(line_to_write + os.linesep)
 
