@@ -11,8 +11,6 @@ _GIT_URL_REGEX = re.compile(
     r"(?P<remote_url>((git|ssh|http(s)?)|(git@[\w.-]+))(:(//)?)([\w.@:/\-~]+)(\.git))(/)?(?P<revision>[\w./\-]+)?"
 )
 
-_GIT_REPO_REGEX = re.compile(r"^(https?://|git@)")
-
 
 def git_remote_url_and_revision_if_any(git_url: str) -> Tuple[Optional[str], Optional[str]]:
     assert git_url is not None

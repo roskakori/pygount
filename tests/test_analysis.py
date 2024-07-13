@@ -64,11 +64,11 @@ class SourceScannerTest(TempFolderTest):
         scanned_names = [os.path.basename(source_path) for source_path, _ in scanner.source_paths()]
         assert scanned_names == [name_to_include]
 
-    def test_validate_invalid_git_error(self):
-        testcases = [["https://github.com/roskakori/pygount/"], ["git@github.com:roskakori/pygount"]]
-        for testcase in testcases:
-            with analysis.SourceScanner(testcase) as scanner, self.assertRaises(PygountError):
-                _ = list(scanner.source_paths())
+    def test_fails_on_non_repo_url(self):
+        non_repo_urls = [["https://github.com/roskakori/pygount/"], ["git@github.com:roskakori/pygount"]]
+        for non_repo_url in non_repo_urls:
+            with analysis.SourceScanner(non_repo_url) as scanner, pytest.raises(PygountError):
+                next(scanner.source_paths())
 
     def test_can_find_python_files_in_dot(self):
         scanner = analysis.SourceScanner(["."], "py")
