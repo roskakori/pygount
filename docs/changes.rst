@@ -11,6 +11,8 @@ Version 1.8.1, 2024-07-xx
   `#160 <https://github.com/roskakori/pygount/issues/160>`_).
 * Remove temporary directory in the output of a git analysis (contributed by
   Isabel Beckenbach, issue `#113 <https://github.com/roskakori/pygount/issues/113>`_)
+* Remove deprecated code: (contributed by Marco Gambone and Niels Vanden Bussche, issue
+  `#47 <https://github.com/roskakori/pygount/issues/47>`_).
 
 Version 1.8.0, 2024-05-13
 
