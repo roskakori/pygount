@@ -11,6 +11,10 @@ Version 1.8.1, 2024-07-xx
   `#160 <https://github.com/roskakori/pygount/issues/160>`_).
 * Removed deprecated code: (contributed by Marco Gambone and Niels Vanden Bussche, issue
   `#47 <https://github.com/roskakori/pygount/issues/47>`_).
+* Fix silent error on git failing: (contributed by Tom De Bièvre, issue
+  `#162 <https://github.com/roskakori/pygount/issues/162>`_)
+* Transform common project URLs to repository: (contributed by Tom De Bièvre, issue
+  `#164 <https://github.com/roskakori/pygount/issues/164>`_)
 
 Version 1.8.0, 2024-05-13
 
