@@ -13,6 +13,7 @@ from typing import List, Set
 import pytest
 from pygments import lexers, token
 
+import pygount
 from pygount import Error as PygountError
 from pygount import analysis, common
 from pygount.analysis import (
@@ -64,11 +65,17 @@ class SourceScannerTest(TempFolderTest):
         scanned_names = [os.path.basename(source_path) for source_path, _ in scanner.source_paths()]
         assert scanned_names == [name_to_include]
 
-    def test_fails_on_non_repo_url(self):
+    def test_succeeds_on_not_git_extension(self):
         non_repo_urls = [["https://github.com/roskakori/pygount/"], ["git@github.com:roskakori/pygount"]]
         for non_repo_url in non_repo_urls:
-            with analysis.SourceScanner(non_repo_url) as scanner, pytest.raises(PygountError):
-                next(scanner.source_paths())
+            with analysis.SourceScanner(non_repo_url) as scanner:
+                _ = list(scanner.source_paths())
+
+    def test_fails_on_non_git_urls(self):
+        non_repo_urls = [["https://no/git/url"], ["https://google.com/nogit"]]
+        for non_repo_url in non_repo_urls:
+            with analysis.SourceScanner(non_repo_url) as scanner, pytest.raises(pygount.Error):
+                _ = list(scanner.source_paths())
 
     def test_can_find_python_files_in_dot(self):
         scanner = analysis.SourceScanner(["."], "py")
