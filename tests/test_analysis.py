@@ -47,8 +47,8 @@ class SourceScannerTest(TempFolderTest):
         scanner = analysis.SourceScanner([PYGOUNT_SOURCE_FOLDER], "py")
         actual_paths = list(scanner.source_paths())
         assert actual_paths != []
-        for python_path, _ in actual_paths:
-            actual_suffix = os.path.splitext(python_path)[1]
+        for path_data in actual_paths:
+            actual_suffix = os.path.splitext(path_data.source_path)[1]
             assert actual_suffix == ".py"
 
     def test_can_skip_dot_folder(self):
@@ -61,15 +61,15 @@ class SourceScannerTest(TempFolderTest):
         self.create_temp_file(relative_path_to_skip, "skip = 2", do_create_folder=True)
 
         scanner = analysis.SourceScanner([project_folder])
-        scanned_names = [os.path.basename(source_path) for source_path, _ in scanner.source_paths()]
+        scanned_names = [os.path.basename(path_data.source_path) for path_data in scanner.source_paths()]
         assert scanned_names == [name_to_include]
 
     def test_can_find_python_files_in_dot(self):
         scanner = analysis.SourceScanner(["."], "py")
         actual_paths = list(scanner.source_paths())
         assert actual_paths != []
-        for python_path, _ in actual_paths:
-            actual_suffix = os.path.splitext(python_path)[1]
+        for path_data in actual_paths:
+            actual_suffix = os.path.splitext(path_data.source_path)[1]
             assert actual_suffix == ".py"
 
     def test_can_find_files_from_mixed_cloned_git_remote_url_and_local(self):
@@ -77,7 +77,8 @@ class SourceScannerTest(TempFolderTest):
         with analysis.SourceScanner([git_remote_url, PYGOUNT_SOURCE_FOLDER]) as scanner:
             actual_paths = list(scanner.source_paths())
             assert actual_paths != []
-            assert actual_paths[0][1] != actual_paths[-1][1]
+            assert actual_paths[0].source_path != actual_paths[-1].source_path
+            assert actual_paths[-1].tmp_dir is not None
 
 
 class AnalysisTest(unittest.TestCase):

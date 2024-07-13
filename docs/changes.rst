@@ -9,6 +9,8 @@ Version 1.8.1, 2024-07-xx
   `#157 <https://github.com/roskakori/pygount/issues/157>`_).
 * Development: Change default branch to main (issue
   `#160 <https://github.com/roskakori/pygount/issues/160>`_).
+* Remove temporary directory in the output of a git analysis (contributed by
+  Isabel Beckenbach, issue `#113 <https://github.com/roskakori/pygount/issues/113>`_)
 
 Version 1.8.0, 2024-05-13
 

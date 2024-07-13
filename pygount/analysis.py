@@ -12,6 +12,7 @@ import itertools
 import logging
 import os
 import re
+from dataclasses import dataclass
 from enum import Enum
 from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
 from typing import Iterator, List, Optional, Pattern, Sequence, Set, Tuple, Union
@@ -146,6 +147,13 @@ for _oracle_suffix in ("pck", "pkb", "pks", "pls"):
     _SUFFIX_TO_FALLBACK_LEXER_MAP[_oracle_suffix] = pygments.lexers.get_lexer_by_name("plpgsql")
 
 
+@dataclass(frozen=True)
+class PathData:
+    source_path: str
+    group: str
+    tmp_dir: Optional[str] = None
+
+
 class DuplicatePool:
     """
     A pool that collects information about potential duplicate files.
@@ -223,7 +231,11 @@ class SourceAnalysis:
 
     @staticmethod
     def from_state(
-        source_path: str, group: str, state: SourceState, state_info: Optional[str] = None
+        source_path: str,
+        group: str,
+        state: SourceState,
+        state_info: Optional[str] = None,
+        tmp_dir: Optional[str] = None,
     ) -> "SourceAnalysis":
         """
         Factory method to create a :py:class:`SourceAnalysis` with all counts
@@ -233,8 +245,9 @@ class SourceAnalysis:
         assert group is not None
         assert state != SourceState.analyzed, "use from() for analyzable sources"
         SourceAnalysis._check_state_info(state, state_info)
+        reduced_path = source_path.split(tmp_dir)[-1].lstrip(os.sep) if tmp_dir else source_path
         return SourceAnalysis(
-            path=source_path,
+            path=reduced_path,
             language=f"__{state.name}__",
             group=group,
             code=0,
@@ -263,6 +276,7 @@ class SourceAnalysis:
         duplicate_pool: Optional[DuplicatePool] = None,
         file_handle: Optional[IOBase] = None,
         merge_embedded_language: bool = False,
+        tmp_dir: Optional[str] = None,
     ) -> "SourceAnalysis":
         """
         Factory method to create a :py:class:`SourceAnalysis` by analyzing
@@ -284,6 +298,8 @@ class SourceAnalysis:
         :param merge_embedded_language: If pygments detects a base and embedded language, the source
           code counts towards the base language. For example: "JavaScript+Lasso" counts as
           "JavaScript".
+        :param tmp_dir: If a temporary directory was created, strip it from the path name. This happens
+          right now only for git repositories.
         """
         assert encoding is not None
 
@@ -355,8 +371,9 @@ class SourceAnalysis:
                     if mark_to_check in line_parts:
                         mark_to_increment = mark_to_check
                 mark_to_count_map[mark_to_increment] += 1
+            reduced_path = source_path.split(tmp_dir)[-1].lstrip(os.sep) if tmp_dir else source_path
             result = SourceAnalysis(
-                path=source_path,
+                path=reduced_path,
                 language=language,
                 group=group,
                 code=mark_to_count_map["c"],
@@ -569,7 +586,7 @@ class SourceScanner:
         regexps_to_skip = self._folder_regexps_to_skip if is_folder else self._name_regexps_to_skip
         return any(path_name_to_skip_regex.match(name) is not None for path_name_to_skip_regex in regexps_to_skip)
 
-    def _paths_and_group_to_analyze_in(self, folder, group) -> Tuple[str, str]:
+    def _paths_and_group_to_analyze_in(self, folder, group, tmp_dir) -> PathData:
         assert folder is not None
         assert group is not None
 
@@ -580,11 +597,11 @@ class SourceScanner:
                 if self._is_path_to_skip(os.path.basename(path), is_folder):
                     _log.debug("skip due to matching skip pattern: %s", path)
                 elif is_folder:
-                    yield from self._paths_and_group_to_analyze_in(path, group)
+                    yield from self._paths_and_group_to_analyze_in(path, group, tmp_dir)
                 else:
-                    yield path, group
+                    yield PathData(source_path=path, group=group, tmp_dir=tmp_dir)
 
-    def _paths_and_group_to_analyze(self, path_to_analyse_pattern, group=None) -> Iterator[Tuple[str, str]]:
+    def _paths_and_group_to_analyze(self, path_to_analyse_pattern, group=None, tmp_dir=None) -> Iterator[PathData]:
         for path_to_analyse in glob.glob(path_to_analyse_pattern):
             if os.path.islink(path_to_analyse):
                 _log.debug("skip link: %s", path_to_analyse)
@@ -600,15 +617,15 @@ class SourceScanner:
                             if actual_group == "":
                                 # Compensate for trailing path separator.
                                 actual_group = os.path.basename(os.path.dirname(path_to_analyse))
-                        yield from self._paths_and_group_to_analyze_in(path_to_analyse_pattern, actual_group)
+                        yield from self._paths_and_group_to_analyze_in(path_to_analyse_pattern, actual_group, tmp_dir)
                     else:
                         if actual_group is None:
                             actual_group = os.path.dirname(path_to_analyse)
                             if actual_group == "":
                                 actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
-                        yield path_to_analyse, actual_group
+                        yield PathData(source_path=path_to_analyse, group=actual_group, tmp_dir=tmp_dir)
 
-    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> List[Tuple[str, str]]:
+    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> List[PathData]:
         assert source_patterns_to_analyze is not None
         result = []
         # NOTE: We could avoid initializing `source_pattern_to_analyze` here by moving the `try` inside
@@ -622,28 +639,30 @@ class SourceScanner:
                     self._git_storages.append(git_storage)
                     git_storage.extract()
                     # TODO#113: Find a way to exclude the ugly temp folder from the source path.
-                    result.extend(self._paths_and_group_to_analyze(git_storage.temp_folder))
+                    result.extend(
+                        self._paths_and_group_to_analyze(git_storage.temp_folder, tmp_dir=git_storage.temp_folder)
+                    )
                 else:
                     result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
         except OSError as error:
             assert source_pattern_to_analyze is not None
             raise OSError(f'cannot scan "{source_pattern_to_analyze}" for source files: {error}') from error
-        result = sorted(set(result))
+        result = sorted(set(result), key=lambda data: (data.source_path, data.group))
         return result
 
-    def source_paths(self) -> Iterator[str]:
+    def source_paths(self) -> Iterator[PathData]:
         """
         Paths to source code files matching all the conditions for this scanner.
         """
         source_paths_and_groups_to_analyze = self._source_paths_and_groups_to_analyze(self.source_patterns)
 
-        for source_path, group in source_paths_and_groups_to_analyze:
-            suffix = os.path.splitext(source_path)[1].lstrip(".")
+        for path_data in source_paths_and_groups_to_analyze:
+            suffix = os.path.splitext(path_data.source_path)[1].lstrip(".")
             is_suffix_to_analyze = any(suffix_regexp.match(suffix) for suffix_regexp in self.suffixes)
             if is_suffix_to_analyze:
-                yield source_path, group
+                yield path_data
             else:
-                _log.info("skip due to suffix: %s", source_path)
+                _log.info("skip due to suffix: %s", path_data.source_path)
 
 
 _LANGUAGE_TO_WHITE_WORDS_MAP = {"batchfile": {"@"}, "python": {"pass"}, "sql": {"begin", "end"}}
