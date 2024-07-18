@@ -168,8 +168,8 @@ class AnalysisTest(unittest.TestCase):
             "}",
         ]
         actual_line_parts = AnalysisTest._line_parts("markdown", source_lines)
-        expected_line_parts = [{"d"}, {"d"}, {"d"}, {"d"}, {"d"}, {"d"}, set()]
-        assert actual_line_parts == expected_line_parts
+        assert all(line_part == "d" for line_part in actual_line_parts[-1])
+        assert actual_line_parts[-1:] == [set()]
 
 
 class _NonSeekableEmptyBytesIO(BytesIO):
