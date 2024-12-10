@@ -135,6 +135,9 @@ _PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAME_PATTERNS) + 
 #: Regular expression to detect plain text files by name.
 _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
 
+_MARK_UP_PATTERN = ".*\.(md|rst|txt|\d+)$"
+_MARK_UP_NAME_REGEX = re.compile(_MARK_UP_PATTERN)
+
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
     "fex": pygount.lexers.MinimalisticWebFocusLexer(),
@@ -146,6 +149,10 @@ _SUFFIX_TO_FALLBACK_LEXER_MAP = {
 }
 for _oracle_suffix in ("pck", "pkb", "pks", "pls"):
     _SUFFIX_TO_FALLBACK_LEXER_MAP[_oracle_suffix] = pygments.lexers.get_lexer_by_name("plpgsql")
+
+
+def is_markup_file(source_path: str):
+    return _MARK_UP_NAME_REGEX.match(os.path.basename(source_path))
 
 
 class DuplicatePool:
@@ -351,7 +358,8 @@ class SourceAnalysis:
                     language = dialect
             _log.info("%s: analyze as %s using encoding %s", source_path, language, encoding)
             mark_to_count_map = {"c": 0, "d": 0, "e": 0, "s": 0}
-            for line_parts in _line_parts(lexer, source_code):
+            is_markup = is_markup_file(source_path)
+            for line_parts in _line_parts(lexer, source_code, is_markup=is_markup):
                 mark_to_increment = "e"
                 for mark_to_check in ("d", "s", "c"):
                     if mark_to_check in line_parts:
@@ -717,7 +725,7 @@ def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[To
         yield result_token_type, result_token_text
 
 
-def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[Set[str]]:
+def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool) -> Iterator[Set[str]]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
     if lexer.name == "Python":
@@ -738,7 +746,8 @@ def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[Set[str]]:
         else:
             is_white_text = (token_text.strip() in white_words) or (token_text.rstrip(white_text) == "")
             if not is_white_text:
-                line_marks.add("c")  # 'code'
+                line_mark = "d" if is_markup else "c"
+                line_marks.add(line_mark)
         if token_text.endswith("\n"):
             yield line_marks
             line_marks = set()
