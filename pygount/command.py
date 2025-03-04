@@ -353,16 +353,17 @@ class Command:
                 disable=not writer.has_to_track_progress, transient=True
             ) as progress:
                 try:
-                    for source_path, group in progress.track(source_paths_and_groups_to_analyze):
+                    for path_data in progress.track(source_paths_and_groups_to_analyze):
                         writer.add(
                             pygount.analysis.SourceAnalysis.from_file(
-                                source_path,
-                                group,
+                                path_data.source_path,
+                                path_data.group,
                                 self.default_encoding,
                                 self.fallback_encoding,
                                 generated_regexes=self._generated_regexs,
                                 duplicate_pool=duplicate_pool,
                                 merge_embedded_language=self.has_to_merge_embedded_languages,
+                                tmp_dir=path_data.tmp_dir,
                             )
                         )
                 finally:
