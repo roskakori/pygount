@@ -44,7 +44,7 @@ chardet = "^5"
 rich = ">=9, <14"
 gitpython = "^3"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 coveralls = "^4"
 coverage = "^7"
 pytest = "^8"
