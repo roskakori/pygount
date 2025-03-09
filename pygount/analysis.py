@@ -710,7 +710,7 @@ def white_code_words(language_id: str) -> Set[str]:
     return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
 
 
-def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[Tuple[TokenType, str]]:
     for token_type, token_text in tokens:
         remaining_token_text = token_text
         newline_index = remaining_token_text.find("\n")
@@ -722,7 +722,7 @@ def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenTy
             yield token_type, remaining_token_text
 
 
-def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[Tuple[TokenType, str]]:
     """
     Similar to tokens but converts strings after a colon (`:`) to comments.
     """
