@@ -26,7 +26,6 @@ classifiers = [
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
@@ -38,7 +37,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.13"  # NOTE We cannot use <4 because of coveralls.
+python = ">=3.9, <3.13"  # NOTE We cannot use <4 because of coveralls.
 pygments = "^2"
 chardet = "^5"
 rich = ">=9, <14"
