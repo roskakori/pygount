@@ -262,7 +262,7 @@ class JsonWriter(BaseWriter):
                 "totalStringPercentage": self.project_summary.total_string_percentage,
             },
         }
-        json.dump(json_map, self._target_stream)
+        json.dump(json_map, self._target_stream, default=repr)
 
 
 def digit_width(line_count: int) -> int:

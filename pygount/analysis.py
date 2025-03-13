@@ -339,7 +339,7 @@ class SourceAnalysis:
                     source_code = file_handle.read()
             except (LookupError, OSError, UnicodeError) as error:
                 _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
-                result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.error, str(error))
             if result is None:
                 lexer = guess_lexer(source_path, source_code)
                 assert lexer is not None
@@ -855,6 +855,17 @@ def encoding_for(
     else:
         # Simply use the specified encoding.
         result = encoding
+    if result is not None:
+        try:
+            "".encode(result)
+        except LookupError:
+            _log.warning(
+                "%s: detected incorrect encoding %s, assuming fallback encoding %s",
+                source_path,
+                result,
+                fallback_encoding,
+            )
+            result = fallback_encoding
     if result is None:
         # Encoding 'automatic' or 'chardet' failed to detect anything.
         if fallback_encoding is not None:

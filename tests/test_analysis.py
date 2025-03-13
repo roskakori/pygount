@@ -181,16 +181,18 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.code_count == 1
         assert source_analysis.documentation_count == 2
 
-    def test_fails_on_unknown_magic_encoding_comment(self):
+    def test_recovers_on_unknown_magic_encoding_comment(self):
         test_path = self.create_temp_file(
             "unknown_magic_encoding_comment.py", ["# -*- coding: no_such_encoding -*-", 'print("hello")']
         )
-        no_such_encoding = analysis.encoding_for(test_path)
-        assert no_such_encoding == "no_such_encoding"
-        source_analysis = analysis.SourceAnalysis.from_file(test_path, "test", encoding=no_such_encoding)
-        assert source_analysis.language == "__error__"
-        assert source_analysis.state == analysis.SourceState.error
-        assert "unknown encoding" in str(source_analysis.state_info)
+        detected_encoding = analysis.encoding_for(test_path)
+        assert detected_encoding == "utf-8"
+        source_analysis = analysis.SourceAnalysis.from_file(test_path, "test", encoding=detected_encoding)
+        assert source_analysis.language == "Python"
+        assert source_analysis.code_count == 1
+        assert source_analysis.documentation_count == 1
+        assert source_analysis.state == analysis.SourceState.analyzed
+        assert source_analysis.state_info is None
 
     def test_can_analyze_oracle_sql(self):
         test_oracle_sql_path = self.create_temp_file(
