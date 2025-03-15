@@ -6,7 +6,7 @@ Summaries of analyses of multiple source codes.
 # All rights reserved. Distributed under the BSD License.
 import functools
 import re
-from typing import Dict, Hashable
+from collections.abc import Hashable
 
 from .analysis import SourceAnalysis
 from .common import mapped_repr
@@ -180,7 +180,7 @@ class ProjectSummary:
         self._total_line_count = 0
 
     @property
-    def language_to_language_summary_map(self) -> Dict[str, LanguageSummary]:
+    def language_to_language_summary_map(self) -> dict[str, LanguageSummary]:
         """
         A map containing summarized counts for each language added with :py:meth:`add()` so far.
         """

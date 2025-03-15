@@ -94,7 +94,7 @@ exclude = [
     "htmlcov",
 ]
 line-length = 120
-target-version = "py38"  # TODO#174 Change to 39.
+target-version = "py39"
 
 [tool.ruff.lint]
 ignore = [

@@ -349,9 +349,11 @@ class Command:
                 if is_stdout
                 else open(self.output, "w", encoding="utf-8", newline="")  # noqa: SIM115
             )
-            with target_context_manager as target_file, writer_class(target_file) as writer, Progress(
-                disable=not writer.has_to_track_progress, transient=True
-            ) as progress:
+            with (
+                target_context_manager as target_file,
+                writer_class(target_file) as writer,
+                Progress(disable=not writer.has_to_track_progress, transient=True) as progress,
+            ):
                 try:
                     for path_data in progress.track(source_paths_and_groups_to_analyze):
                         writer.add(
