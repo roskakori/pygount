@@ -13,8 +13,6 @@ from .summary import LanguageSummary, ProjectSummary
 __version__ = version(__name__)
 
 __all__ = [
-    "__version__",
-    "encoding_for",
     "DuplicatePool",
     "Error",
     "LanguageSummary",
@@ -23,4 +21,6 @@ __all__ = [
     "SourceAnalysis",
     "SourceScanner",
     "SourceState",
+    "__version__",
+    "encoding_for",
 ]

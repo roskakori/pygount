@@ -115,9 +115,7 @@ class AnalysisTest(unittest.TestCase):
         assert list(_line_parts(python_lexer, "pass")) == [set()]
 
     def test_can_convert_python_strings_to_comments(self):
-        source_code = (
-            "#!/bin/python\n" '"Some tool."\n' "#(C) by me\n" "def x():\n" '    "Some function"\n' "    return 1"
-        )
+        source_code = '#!/bin/python\n"Some tool."\n#(C) by me\ndef x():\n    "Some function"\n    return 1'
         python_lexer = lexers.get_lexer_by_name("python")
         python_tokens = python_lexer.get_tokens(source_code)
         for token_type, _ in list(_pythonized_comments(_delined_tokens(python_tokens))):
@@ -408,11 +406,13 @@ class EncodingTest(TempFolderTest):
 
 
 class GeneratedCodeTest(TempFolderTest):
-    _STANDARD_SOURCE_LINES = """#!/bin/python3
-    # Example code for
-    # generated source code.
-    print("I'm generated!")
-    """.split("\n")
+    _STANDARD_SOURCE_LINES = [
+        "#!/bin/python3",
+        "    # Example code for",
+        "    # generated source code.",
+        '    print("I\'m generated!")',
+        "    ",
+    ]
     _STANDARD_GENERATED_REGEXES = common.regexes_from(
         common.REGEX_PATTERN_PREFIX + ".*some,.*other,.*generated,.*print"
     )

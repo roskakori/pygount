@@ -830,9 +830,9 @@ def encoding_for(
                 if xml_prolog_match is not None:
                     result = xml_prolog_match.group("encoding")
     elif encoding == "chardet":
-        assert (
-            _detector is not None
-        ), 'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
+        assert _detector is not None, (
+            'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
+        )
         _detector.reset()
         if file_handle is None:
             with open(source_path, "rb") as source_file:
