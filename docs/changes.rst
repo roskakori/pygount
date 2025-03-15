@@ -5,7 +5,8 @@ This chapter describes the changes coming with each new version of pygount.
 
 Version 2.0.0, 2025-03-xx
 
-
+* Add support for Python 3.13 and later, issue
+  `#174 <https://github.com/roskakori/pygount/issues/174>`_)
 * Remove temporary directory in the output of a git analysis (contributed by
   Isabel Beckenbach, issue `#113 <https://github.com/roskakori/pygount/issues/113>`_)
 * Remove deprecated code: (contributed by Marco Gambone and Niels Vanden Bussche, issue
