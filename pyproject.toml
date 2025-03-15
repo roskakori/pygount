@@ -3,7 +3,7 @@ name = "pygount"
 version = "2.0.0"
 description = "count source lines of code (SLOC) using pygments"
 authors = [{ name = "Thomas Aglassinger", email = "roskakori@users.sourceforge.net" }]
-requires-python = ">=3.8, <3.13"  # TODO#174 Change to >=3.9
+requires-python = ">=3.9, <3.13"
 readme = "README.md"
 license = "BSD-3-Clause"
 keywords = [
@@ -19,7 +19,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -58,7 +57,7 @@ dev = [
     "coverage>=7,<8",
     "pytest>=8,<9",
     "pytest-cov>=5,<6",
-    "pre-commit~=3.5",  # TODO#174 Change to 4.1.
+    "pre-commit~=4.1",
     "pur>=7,<8",
     "ruff~=0.11",
 ]
