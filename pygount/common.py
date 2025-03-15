@@ -88,9 +88,9 @@ def regexes_from(
                 default_regexes = regexes_from(default_patterns_text)
                 regexes = regexes[1:]
             for supposed_regex in regexes:
-                assert isinstance(
-                    supposed_regex, _REGEX_TYPE
-                ), f"patterns_text must a text or sequence or regular expressions but contains: {supposed_regex}"
+                assert isinstance(supposed_regex, _REGEX_TYPE), (
+                    f"patterns_text must a text or sequence or regular expressions but contains: {supposed_regex}"
+                )
             result.extend(regexes)
     except re.error as error:
         raise OptionError(f"cannot parse pattern for regular repression: {error}", source) from None

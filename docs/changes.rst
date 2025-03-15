@@ -3,8 +3,10 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 1.8.1, 2024-07-xx
+Version 2.0.0, 2025-03-xx
 
+* Development: Change packaging to uv (issue
+  `#180 <https://github.com/roskakori/pygount/issues/180>`_).
 * Development: Change linter to ruff and in turn clean up code (issue
   `#157 <https://github.com/roskakori/pygount/issues/157>`_).
 * Development: Change default branch to main (issue
