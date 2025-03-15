@@ -8,7 +8,6 @@ import glob
 import os
 import unittest
 from io import BytesIO, StringIO
-from typing import List, Set
 
 import pytest
 from pygments import lexers, token
@@ -122,7 +121,7 @@ class AnalysisTest(unittest.TestCase):
             assert token_type not in token.String
 
     @staticmethod
-    def _line_parts(lexer_name: str, source_lines: List[str]) -> List[Set[str]]:
+    def _line_parts(lexer_name: str, source_lines: list[str]) -> list[set[str]]:
         lexer = lexers.get_lexer_by_name(lexer_name)
         source_code = "\n".join(source_lines)
         return list(_line_parts(lexer, source_code))

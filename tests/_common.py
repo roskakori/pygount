@@ -7,7 +7,8 @@ Common constants and functions used by multiple tests.
 import os
 import shutil
 import unittest
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 PYGOUNT_PROJECT_FOLDER = os.path.dirname(os.path.dirname(__file__))
 PYGOUNT_SOURCE_FOLDER = os.path.join(PYGOUNT_PROJECT_FOLDER, "pygount")

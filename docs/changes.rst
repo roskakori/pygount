@@ -5,16 +5,20 @@ This chapter describes the changes coming with each new version of pygount.
 
 Version 2.0.0, 2025-03-xx
 
+
+* Remove temporary directory in the output of a git analysis (contributed by
+  Isabel Beckenbach, issue `#113 <https://github.com/roskakori/pygount/issues/113>`_)
+* Remove deprecated code: (contributed by Marco Gambone and Niels Vanden Bussche, issue
+  `#47 <https://github.com/roskakori/pygount/issues/47>`_).
+* Remove support for Python 3.8, issue
+  `#158 <https://github.com/roskakori/pygount/issues/158>`_)
+
 * Development: Change packaging to uv (issue
   `#180 <https://github.com/roskakori/pygount/issues/180>`_).
 * Development: Change linter to ruff and in turn clean up code (issue
   `#157 <https://github.com/roskakori/pygount/issues/157>`_).
 * Development: Change default branch to main (issue
   `#160 <https://github.com/roskakori/pygount/issues/160>`_).
-* Remove temporary directory in the output of a git analysis (contributed by
-  Isabel Beckenbach, issue `#113 <https://github.com/roskakori/pygount/issues/113>`_)
-* Remove deprecated code: (contributed by Marco Gambone and Niels Vanden Bussche, issue
-  `#47 <https://github.com/roskakori/pygount/issues/47>`_).
 
 Version 1.8.0, 2024-05-13
 

@@ -1,7 +1,7 @@
 import re
 import shutil
 from tempfile import mkdtemp
-from typing import Optional, Tuple
+from typing import Optional
 
 import git
 
@@ -12,7 +12,7 @@ _GIT_URL_REGEX = re.compile(
 )
 
 
-def git_remote_url_and_revision_if_any(git_url: str) -> Tuple[Optional[str], Optional[str]]:
+def git_remote_url_and_revision_if_any(git_url: str) -> tuple[Optional[str], Optional[str]]:
     assert git_url is not None
     git_url_match = _GIT_URL_REGEX.match(git_url)
     return (

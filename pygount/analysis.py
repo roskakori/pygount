@@ -12,10 +12,12 @@ import itertools
 import logging
 import os
 import re
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
-from typing import Iterator, List, Optional, Pattern, Sequence, Set, Tuple, Union
+from re import Pattern
+from typing import Optional, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -274,7 +276,7 @@ class SourceAnalysis:
         group: str,
         encoding: str = "automatic",
         fallback_encoding: str = "cp1252",
-        generated_regexes: Optional[List[Pattern]] = None,
+        generated_regexes: Optional[list[Pattern]] = None,
         duplicate_pool: Optional[DuplicatePool] = None,
         file_handle: Optional[IOBase] = None,
         merge_embedded_language: bool = False,
@@ -542,11 +544,11 @@ class SourceScanner:
         return self._source_patterns
 
     @property
-    def suffixes(self) -> List[Pattern]:
+    def suffixes(self) -> list[Pattern]:
         return self._suffixes
 
     @property
-    def folder_regexps_to_skip(self) -> List[Pattern]:
+    def folder_regexps_to_skip(self) -> list[Pattern]:
         return self._folder_regexps_to_skip
 
     @folder_regexps_to_skip.setter
@@ -556,7 +558,7 @@ class SourceScanner:
         )
 
     @property
-    def name_regexps_to_skip(self) -> List[Pattern]:
+    def name_regexps_to_skip(self) -> list[Pattern]:
         return self._name_regexps_to_skip
 
     @name_regexps_to_skip.setter
@@ -607,7 +609,7 @@ class SourceScanner:
                                 actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
                         yield PathData(source_path=path_to_analyse, group=actual_group, tmp_dir=tmp_dir)
 
-    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> List[PathData]:
+    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> list[PathData]:
         assert source_patterns_to_analyze is not None
         result = []
         # NOTE: We could avoid initializing `source_pattern_to_analyze` here by moving the `try` inside
@@ -661,7 +663,7 @@ for _language in _LANGUAGE_TO_WHITE_WORDS_MAP:
 
 def matching_number_line_and_regex(
     source_lines: Iterator[str], generated_regexes: Sequence[Pattern], max_line_count: int = 15
-) -> Optional[Tuple[int, str, Pattern]]:
+) -> Optional[tuple[int, str, Pattern]]:
     """
     The first line and its number (starting with 0) in the source code that
     indicated that the source code is generated.
@@ -696,7 +698,7 @@ def white_characters(language_id: str) -> str:
     return "(),:;[]{}"
 
 
-def white_code_words(language_id: str) -> Set[str]:
+def white_code_words(language_id: str) -> set[str]:
     """
     Words that do not count as code if it is the only word in a line.
     """
@@ -705,7 +707,7 @@ def white_code_words(language_id: str) -> Set[str]:
     return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
 
 
-def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _delined_tokens(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenType]:
     for token_type, token_text in tokens:
         remaining_token_text = token_text
         newline_index = remaining_token_text.find("\n")
@@ -717,7 +719,7 @@ def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenTy
             yield token_type, remaining_token_text
 
 
-def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _pythonized_comments(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenType]:
     """
     Similar to tokens but converts strings after a colon (`:`) to comments.
     """
@@ -736,7 +738,7 @@ def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[To
         yield result_token_type, result_token_text
 
 
-def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[Set[str]]:
+def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[set[str]]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
     if lexer.name == "Python":

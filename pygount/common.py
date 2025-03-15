@@ -9,7 +9,9 @@ import functools
 import inspect
 import re
 import warnings
-from typing import Iterator, List, Optional, Pattern, Sequence, Union
+from collections.abc import Iterator, Sequence
+from re import Pattern
+from typing import Optional, Union
 
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
 ADDITIONAL_PATTERN = "[...]"
@@ -41,7 +43,7 @@ class OptionError(Error):
         return self.option_error_message
 
 
-def as_list(items_or_text: Union[str, Sequence[str]]) -> List[str]:
+def as_list(items_or_text: Union[str, Sequence[str]]) -> list[str]:
     if isinstance(items_or_text, str):
         # TODO: Allow to specify comma (,) in text using '[,]'.
         result = [item.strip() for item in items_or_text.split(",") if item.strip() != ""]
@@ -63,7 +65,7 @@ def regexes_from(
     patterns_text: Union[str, Sequence[str], Sequence[Pattern]],
     default_patterns_text: Optional[Union[str, Sequence[Pattern], Sequence[str]]] = None,
     source: Optional[str] = None,
-) -> List[Pattern]:
+) -> list[Pattern]:
     assert patterns_text is not None
 
     result = []
