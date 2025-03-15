@@ -84,8 +84,8 @@ To add a new release, first update the :file:`pyproject.toml`:
 
 .. code-block:: toml
 
-    [tool.poetry]
-    version = "1.x.x"
+    [project]
+    version = "2.x.x"
 
 Next build the project and run the tests to ensure everything works:
 
@@ -98,14 +98,14 @@ Then create a tag in the repository:
 
 .. code-block:: sh
 
-    $ git tag -a -m "Tag version 1.x.x" v1.x.x
+    $ git tag -a -m "Tag version 2.x.x" v2.x.x
     $ git push --tags
 
 Publish the new version on PyPI:
 
 .. code-block:: sh
 
-    $ poetry publish
+    $ uv publish
 
 Finally, add a release based on the tag from above to the
 `release page <https://github.com/roskakori/pygount/releases>`_.
