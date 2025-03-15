@@ -20,7 +20,7 @@ follows:
 
    .. code-block:: bash
 
-       $ poetry install
+       $ uv sync --group dev
 
 4. Install the pre-commit hook:
 
