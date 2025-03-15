@@ -261,6 +261,12 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.language.lower() == "html"
         assert source_analysis.code_count == 3
 
+    def test_can_analyze_unknown_magic_comment_encoding(self):
+        test_python_path = self.create_temp_file("some.py", ["# -*- coding: no_such_encoding -*-", "print('hello')"])
+        source_analysis = analysis.SourceAnalysis.from_file(test_python_path, "test")
+        assert source_analysis.language.lower() == "__error__"
+        assert source_analysis.state_info == "unknown encoding: no_such_encoding"
+
     def test_fails_on_non_seekable_file_handle_with_encoding_automatic(self):
         file_handle = _NonSeekableEmptyBytesIO()
 

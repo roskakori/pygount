@@ -5,6 +5,9 @@ This chapter describes the changes coming with each new version of pygount.
 
 Version 2.0.0, 2025-03-xx
 
+* Fix ``LookupError`` when processing files with a magic encoding comment
+  specifying an unknown encoding and using ``--format=json`` (contributed by
+  PyHedgehog, issue `#176 <https://github.com/roskakori/pygount/issues/176>`_)
 * Add support for Python 3.13 and later, issue
   `#174 <https://github.com/roskakori/pygount/issues/174>`_)
 * Remove temporary directory in the output of a git analysis (contributed by

@@ -264,6 +264,10 @@ class SourceAnalysis:
 
     @staticmethod
     def _check_state_info(state: SourceState, state_info: Optional[str]):
+        assert state_info is None or isinstance(state_info, str), (
+            f"state_info must be be None or str but is: {state_info!r}"
+        )
+
         states_that_require_state_info = [SourceState.duplicate, SourceState.error, SourceState.generated]
         assert (state in states_that_require_state_info) == (state_info is not None), (
             f"state={state} and state_info={state_info} "
@@ -341,7 +345,7 @@ class SourceAnalysis:
                     source_code = file_handle.read()
             except (LookupError, OSError, UnicodeError) as error:
                 _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
-                result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.error, str(error))
             if result is None:
                 lexer = guess_lexer(source_path, source_code)
                 assert lexer is not None
