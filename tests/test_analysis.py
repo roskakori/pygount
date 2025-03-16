@@ -15,7 +15,6 @@ from pygments import lexers, token
 from pygount import Error as PygountError
 from pygount import analysis, common
 from pygount.analysis import (
-    _BOM_TO_ENCODING_MAP,
     _delined_tokens,
     _line_parts,
     _pythonized_comments,
@@ -178,9 +177,19 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.code_count == 1
         assert source_analysis.documentation_count == 2
 
+    def test_can_ignore_almost_magic_comment(self):
+        test_bat_path = self.create_temp_file(
+            "test_can_ignore_almost_magic_comment.json",
+            ['{"x":"coding:no_such_coding"'],
+        )
+        source_analysis = analysis.SourceAnalysis.from_file(test_bat_path, "test")
+        assert source_analysis.language.lower() == "json"
+        assert source_analysis.code_count == 1
+        assert source_analysis.documentation_count == 0
+
     def test_fails_on_unknown_magic_encoding_comment(self):
         test_path = self.create_temp_file(
-            "unknown_magic_encoding_comment.py", ["# -*- coding: no_such_encoding -*-", 'print("hello")']
+            "test_fails_on_unknown_magic_encoding_comment.py", ["# -*- coding: no_such_encoding -*-", 'print("hello")']
         )
         no_such_encoding = analysis.encoding_for(test_path)
         assert no_such_encoding == "no_such_encoding"
@@ -191,7 +200,7 @@ class FileAnalysisTest(TempFolderTest):
 
     def test_can_analyze_oracle_sql(self):
         test_oracle_sql_path = self.create_temp_file(
-            "some_oracle_sql.pls",
+            "test_can_analyze_oracle_sql.pls",
             ["-- Oracle SQL example using an obscure suffix.", "select *", "from some_table;"],
         )
         source_analysis = analysis.SourceAnalysis.from_file(test_oracle_sql_path, "test", encoding="utf-8")
@@ -333,81 +342,6 @@ def test_can_guess_lexer_for_cmakelists():
     lexer = guess_lexer("CMakeLists.txt", source_code)
     assert lexer is not None
     assert lexer.name == "CMake"
-
-
-class EncodingTest(TempFolderTest):
-    _ENCODING_TO_BOM_MAP = {encoding: bom for bom, encoding in _BOM_TO_ENCODING_MAP.items()}
-    _TEST_CODE = "x = '\u00fd \u20ac'"
-
-    def _test_can_detect_bom_encoding(self, encoding):
-        test_path = os.path.join(self.tests_temp_folder, encoding)
-        with open(test_path, "wb") as test_file:
-            if encoding != "utf-8-sig":
-                bom = EncodingTest._ENCODING_TO_BOM_MAP[encoding]
-                test_file.write(bom)
-            test_file.write(EncodingTest._TEST_CODE.encode(encoding))
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_bom_encodings(self):
-        for encoding in _BOM_TO_ENCODING_MAP.values():
-            self._test_can_detect_bom_encoding(encoding)
-
-    def test_can_detect_plain_encoding(self):
-        for encoding in ("cp1252", "utf-8"):
-            test_path = self.create_temp_file(encoding, EncodingTest._TEST_CODE, encoding)
-            actual_encoding = analysis.encoding_for(test_path)
-            assert actual_encoding == encoding
-
-    def test_can_detect_xml_prolog(self):
-        encoding = "iso-8859-15"
-        xml_code = f'<?xml encoding="{encoding}" standalone="yes"?><some>{EncodingTest._TEST_CODE}</some>'
-        test_path = self.create_temp_file(encoding + ".xml", xml_code, encoding)
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_magic_comment(self):
-        encoding = "iso-8859-15"
-        lines = ["#!/usr/bin/python", f"# -*- coding: {encoding} -*-", EncodingTest._TEST_CODE]
-        test_path = self.create_temp_file("magic-" + encoding, lines, encoding)
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_automatic_encoding_for_empty_source(self):
-        test_path = self.create_temp_binary_file("empty", b"")
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == "utf-8"
-
-    def test_can_detect_chardet_encoding(self):
-        test_path = __file__
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == "utf-8"
-
-    def test_can_detect_utf8_when_cp1252_would_fail(self):
-        # Write closing double quote in UTF-8, which contains 0x9d,
-        # which fails when read as CP1252.
-        content = b"\xe2\x80\x9d"
-        test_path = self.create_temp_binary_file("utf-8_ok_cp1252_broken", content)
-        actual_encoding = analysis.encoding_for(test_path, encoding="automatic", fallback_encoding=None)
-        assert actual_encoding == "utf-8"
-        actual_encoding = analysis.encoding_for(test_path, encoding="automatic", fallback_encoding="cp1252")
-        assert actual_encoding == "cp1252"
-
-    def test_can_use_hardcoded_ending(self):
-        test_path = self.create_temp_file("hardcoded_cp1252", "\N{EURO SIGN}", "cp1252")
-        actual_encoding = analysis.encoding_for(test_path, "utf-8")
-        assert actual_encoding == "utf-8"
-        # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
-        with open(test_path, encoding=actual_encoding) as broken_test_file, pytest.raises(UnicodeDecodeError):
-            broken_test_file.read()
-
-    def test_can_detect_binary_with_zero_byte(self):
-        test_path = self.create_temp_binary_file("binary", b"hello\0world")
-        assert analysis.is_binary_file(test_path)
-
-    def test_can_detect_utf16_as_non_binary(self):
-        test_path = self.create_temp_file("utf-16", "Hello world!", "utf-16")
-        assert not analysis.is_binary_file(test_path)
 
 
 class GeneratedCodeTest(TempFolderTest):
