@@ -12,9 +12,12 @@ import itertools
 import logging
 import os
 import re
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 from enum import Enum
 from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
-from typing import Iterator, List, Optional, Pattern, Sequence, Set, Tuple, Union
+from re import Pattern
+from typing import Optional, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -51,6 +54,9 @@ DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
 TokenType = type(pygments.token.Token)
 
 _BASE_LANGUAGE_REGEX = re.compile(r"^(?P<base_language>[^+]+)\+[^+].*$")
+
+#: BOMs to indicate that a file is a text file even if it contains zero bytes.
+_TEXT_BOMS = (codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE, codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF8)
 
 
 class SourceState(Enum):
@@ -104,7 +110,29 @@ _BOM_TO_ENCODING_MAP = collections.OrderedDict(
     )
 )
 _XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>[-_.a-zA-Z0-9]+)".*\?>')
-_CODING_MAGIC_REGEX = re.compile(r".+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b", re.DOTALL)
+_MAGIC_COMMENT_LINE_START_REGEXES = [
+    re.compile(f"^{pattern}\\s*(?P<remainder>.+)$", re.IGNORECASE)
+    for pattern in [
+        r"#+",  # Python, Ruby
+        r"//+",  # C++, Dart, Java, ...
+        r"/\*+",  # C etc
+        r"--+",  # Ada, SQL, VHDL
+        r";+",  # Assembly
+        r"%+",  # Latex, MatLab, Prolog
+        r"rem\s",  # Basic, Windows batch
+        r"\*+",  # Pascal
+        r"\{",  # Pascal
+    ]
+]
+_MAGIC_COMMENT_LINE_REMAINDER_REGEXES = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in [
+        # Covers for example "encoding: cp1252" and "encoding=cp1252".
+        r"(en)?coding\s*[:=]\s*(?P<encoding>[-_.a-z0-9]+)\b",
+        # Covers for example "-*- coding: cp1252 -*-".
+        r"-\*-\s*coding\s*[:=]\s*(?P<encoding>[-_.a-z0-9]+)\s*(;.+\s*)?-\*-\s*",
+    ]
+]
 
 _STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
     # Text files for (moribund) gnits standards.
@@ -149,6 +177,13 @@ _SUFFIX_TO_FALLBACK_LEXER_MAP = {
 }
 for _oracle_suffix in ("pck", "pkb", "pks", "pls"):
     _SUFFIX_TO_FALLBACK_LEXER_MAP[_oracle_suffix] = pygments.lexers.get_lexer_by_name("plpgsql")
+
+
+@dataclass(frozen=True)
+class PathData:
+    source_path: str
+    group: str
+    tmp_dir: Optional[str] = None
 
 
 def is_markup_file(source_path: str):
@@ -232,7 +267,11 @@ class SourceAnalysis:
 
     @staticmethod
     def from_state(
-        source_path: str, group: str, state: SourceState, state_info: Optional[str] = None
+        source_path: str,
+        group: str,
+        state: SourceState,
+        state_info: Optional[str] = None,
+        tmp_dir: Optional[str] = None,
     ) -> "SourceAnalysis":
         """
         Factory method to create a :py:class:`SourceAnalysis` with all counts
@@ -242,8 +281,9 @@ class SourceAnalysis:
         assert group is not None
         assert state != SourceState.analyzed, "use from() for analyzable sources"
         SourceAnalysis._check_state_info(state, state_info)
+        reduced_path = source_path.split(tmp_dir)[-1].lstrip(os.sep) if tmp_dir else source_path
         return SourceAnalysis(
-            path=source_path,
+            path=reduced_path,
             language=f"__{state.name}__",
             group=group,
             code=0,
@@ -256,6 +296,10 @@ class SourceAnalysis:
 
     @staticmethod
     def _check_state_info(state: SourceState, state_info: Optional[str]):
+        assert state_info is None or isinstance(state_info, str), (
+            f"state_info must be be None or str but is: {state_info!r}"
+        )
+
         states_that_require_state_info = [SourceState.duplicate, SourceState.error, SourceState.generated]
         assert (state in states_that_require_state_info) == (state_info is not None), (
             f"state={state} and state_info={state_info} "
@@ -268,10 +312,11 @@ class SourceAnalysis:
         group: str,
         encoding: str = "automatic",
         fallback_encoding: str = "cp1252",
-        generated_regexes: Optional[List[Pattern]] = None,
+        generated_regexes: Optional[list[Pattern]] = None,
         duplicate_pool: Optional[DuplicatePool] = None,
         file_handle: Optional[IOBase] = None,
         merge_embedded_language: bool = False,
+        tmp_dir: Optional[str] = None,
     ) -> "SourceAnalysis":
         """
         Factory method to create a :py:class:`SourceAnalysis` by analyzing
@@ -293,6 +338,8 @@ class SourceAnalysis:
         :param merge_embedded_language: If pygments detects a base and embedded language, the source
           code counts towards the base language. For example: "JavaScript+Lasso" counts as
           "JavaScript".
+        :param tmp_dir: If a temporary directory was created, strip it from the path name. This happens
+          right now only for git repositories.
         """
         assert encoding is not None
 
@@ -330,7 +377,7 @@ class SourceAnalysis:
                     source_code = file_handle.read()
             except (LookupError, OSError, UnicodeError) as error:
                 _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
-                result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.error, str(error))
             if result is None:
                 lexer = guess_lexer(source_path, source_code)
                 assert lexer is not None
@@ -365,8 +412,9 @@ class SourceAnalysis:
                     if mark_to_check in line_parts:
                         mark_to_increment = mark_to_check
                 mark_to_count_map[mark_to_increment] += 1
+            reduced_path = source_path.split(tmp_dir)[-1].lstrip(os.sep) if tmp_dir else source_path
             result = SourceAnalysis(
-                path=source_path,
+                path=reduced_path,
                 language=language,
                 group=group,
                 code=mark_to_count_map["c"],
@@ -533,11 +581,11 @@ class SourceScanner:
         return self._source_patterns
 
     @property
-    def suffixes(self) -> List[Pattern]:
+    def suffixes(self) -> list[Pattern]:
         return self._suffixes
 
     @property
-    def folder_regexps_to_skip(self) -> List[Pattern]:
+    def folder_regexps_to_skip(self) -> list[Pattern]:
         return self._folder_regexps_to_skip
 
     @folder_regexps_to_skip.setter
@@ -547,7 +595,7 @@ class SourceScanner:
         )
 
     @property
-    def name_regexps_to_skip(self) -> List[Pattern]:
+    def name_regexps_to_skip(self) -> list[Pattern]:
         return self._name_regexps_to_skip
 
     @name_regexps_to_skip.setter
@@ -559,7 +607,7 @@ class SourceScanner:
         regexps_to_skip = self._folder_regexps_to_skip if is_folder else self._name_regexps_to_skip
         return any(path_name_to_skip_regex.match(name) is not None for path_name_to_skip_regex in regexps_to_skip)
 
-    def _paths_and_group_to_analyze_in(self, folder, group) -> Tuple[str, str]:
+    def _paths_and_group_to_analyze_in(self, folder, group, tmp_dir) -> PathData:
         assert folder is not None
         assert group is not None
 
@@ -570,11 +618,11 @@ class SourceScanner:
                 if self._is_path_to_skip(os.path.basename(path), is_folder):
                     _log.debug("skip due to matching skip pattern: %s", path)
                 elif is_folder:
-                    yield from self._paths_and_group_to_analyze_in(path, group)
+                    yield from self._paths_and_group_to_analyze_in(path, group, tmp_dir)
                 else:
-                    yield path, group
+                    yield PathData(source_path=path, group=group, tmp_dir=tmp_dir)
 
-    def _paths_and_group_to_analyze(self, path_to_analyse_pattern, group=None) -> Iterator[Tuple[str, str]]:
+    def _paths_and_group_to_analyze(self, path_to_analyse_pattern, group=None, tmp_dir=None) -> Iterator[PathData]:
         for path_to_analyse in glob.glob(path_to_analyse_pattern):
             if os.path.islink(path_to_analyse):
                 _log.debug("skip link: %s", path_to_analyse)
@@ -590,15 +638,15 @@ class SourceScanner:
                             if actual_group == "":
                                 # Compensate for trailing path separator.
                                 actual_group = os.path.basename(os.path.dirname(path_to_analyse))
-                        yield from self._paths_and_group_to_analyze_in(path_to_analyse_pattern, actual_group)
+                        yield from self._paths_and_group_to_analyze_in(path_to_analyse_pattern, actual_group, tmp_dir)
                     else:
                         if actual_group is None:
                             actual_group = os.path.dirname(path_to_analyse)
                             if actual_group == "":
                                 actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
-                        yield path_to_analyse, actual_group
+                        yield PathData(source_path=path_to_analyse, group=actual_group, tmp_dir=tmp_dir)
 
-    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> List[Tuple[str, str]]:
+    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> list[PathData]:
         assert source_patterns_to_analyze is not None
         result = []
         # NOTE: We could avoid initializing `source_pattern_to_analyze` here by moving the `try` inside
@@ -612,7 +660,9 @@ class SourceScanner:
                     self._git_storages.append(git_storage)
                     git_storage.extract()
                     # TODO#113: Find a way to exclude the ugly temp folder from the source path.
-                    result.extend(self._paths_and_group_to_analyze(git_storage.temp_folder))
+                    result.extend(
+                        self._paths_and_group_to_analyze(git_storage.temp_folder, tmp_dir=git_storage.temp_folder)
+                    )
                 else:
                     git_url_match = re.match(GIT_REPO_REGEX, source_pattern_to_analyze)
                     if git_url_match is not None:
@@ -625,22 +675,22 @@ class SourceScanner:
         except OSError as error:
             assert source_pattern_to_analyze is not None
             raise OSError(f'cannot scan "{source_pattern_to_analyze}" for source files: {error}') from error
-        result = sorted(set(result))
+        result = sorted(set(result), key=lambda data: (data.source_path, data.group))
         return result
 
-    def source_paths(self) -> Iterator[str]:
+    def source_paths(self) -> Iterator[PathData]:
         """
         Paths to source code files matching all the conditions for this scanner.
         """
         source_paths_and_groups_to_analyze = self._source_paths_and_groups_to_analyze(self.source_patterns)
 
-        for source_path, group in source_paths_and_groups_to_analyze:
-            suffix = os.path.splitext(source_path)[1].lstrip(".")
+        for path_data in source_paths_and_groups_to_analyze:
+            suffix = os.path.splitext(path_data.source_path)[1].lstrip(".")
             is_suffix_to_analyze = any(suffix_regexp.match(suffix) for suffix_regexp in self.suffixes)
             if is_suffix_to_analyze:
-                yield source_path, group
+                yield path_data
             else:
-                _log.info("skip due to suffix: %s", source_path)
+                _log.info("skip due to suffix: %s", path_data.source_path)
 
 
 _LANGUAGE_TO_WHITE_WORDS_MAP = {"batchfile": {"@"}, "python": {"pass"}, "sql": {"begin", "end"}}
@@ -650,7 +700,7 @@ for _language in _LANGUAGE_TO_WHITE_WORDS_MAP:
 
 def matching_number_line_and_regex(
     source_lines: Iterator[str], generated_regexes: Sequence[Pattern], max_line_count: int = 15
-) -> Optional[Tuple[int, str, Pattern]]:
+) -> Optional[tuple[int, str, Pattern]]:
     """
     The first line and its number (starting with 0) in the source code that
     indicated that the source code is generated.
@@ -685,7 +735,7 @@ def white_characters(language_id: str) -> str:
     return "(),:;[]{}"
 
 
-def white_code_words(language_id: str) -> Set[str]:
+def white_code_words(language_id: str) -> set[str]:
     """
     Words that do not count as code if it is the only word in a line.
     """
@@ -694,7 +744,7 @@ def white_code_words(language_id: str) -> Set[str]:
     return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
 
 
-def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _delined_tokens(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenType]:
     for token_type, token_text in tokens:
         remaining_token_text = token_text
         newline_index = remaining_token_text.find("\n")
@@ -706,7 +756,7 @@ def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenTy
             yield token_type, remaining_token_text
 
 
-def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _pythonized_comments(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenType]:
     """
     Similar to tokens but converts strings after a colon (`:`) to comments.
     """
@@ -725,7 +775,7 @@ def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[To
         yield result_token_type, result_token_text
 
 
-def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool) -> Iterator[Set[str]]:
+def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool) -> Iterator[set[str]]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
     if lexer.name == "Python":
@@ -806,23 +856,11 @@ def encoding_for(
                 None,
             )
         if result is None:
-            # Look for common headings that indicate the encoding.
-            ascii_heading = heading.decode("ascii", errors="replace")
-            ascii_heading = ascii_heading.replace("\r\n", "\n")
-            ascii_heading = ascii_heading.replace("\r", "\n")
-            ascii_heading = "\n".join(ascii_heading.split("\n")[:2]) + "\n"
-            coding_magic_match = _CODING_MAGIC_REGEX.match(ascii_heading)
-            if coding_magic_match is not None:
-                result = coding_magic_match.group("encoding")
-            else:
-                first_line = ascii_heading.split("\n")[0]
-                xml_prolog_match = _XML_PROLOG_REGEX.match(first_line)
-                if xml_prolog_match is not None:
-                    result = xml_prolog_match.group("encoding")
+            result = encoding_from_header(heading)
     elif encoding == "chardet":
-        assert (
-            _detector is not None
-        ), 'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
+        assert _detector is not None, (
+            'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
+        )
         _detector.reset()
         if file_handle is None:
             with open(source_path, "rb") as source_file:
@@ -871,8 +909,35 @@ def encoding_for(
     return result
 
 
-#: BOMs to indicate that a file is a text file even if it contains zero bytes.
-_TEXT_BOMS = (codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE, codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF8)
+def encoding_from_header(header: bytes) -> Optional[str]:
+    ascii_header = header.decode("ascii", errors="replace")
+    result = encoding_from_possible_magic_comment(ascii_header)
+    if result is None:
+        result = encoding_from_possible_xml_prolog(ascii_header)
+    return result
+
+
+def encoding_from_possible_magic_comment(ascii_header: str) -> Optional[str]:
+    return next(_magic_comment_encodings(ascii_header), None)
+
+
+def _magic_comment_encodings(ascii_header: str) -> Iterator[str]:
+    header_lines = ascii_header.split("\n")[:2]
+    for header_line in header_lines:
+        for magic_line_start_regex in _MAGIC_COMMENT_LINE_START_REGEXES:
+            magic_line_start_match = re.match(magic_line_start_regex, header_line)
+            if magic_line_start_match is not None:
+                remainder = magic_line_start_match.group("remainder")
+                for magic_coding_comment_regex in _MAGIC_COMMENT_LINE_REMAINDER_REGEXES:
+                    result = magic_coding_comment_regex.match(remainder)
+                    if result is not None:
+                        yield result.group("encoding")
+
+
+def encoding_from_possible_xml_prolog(ascii_header: str) -> Optional[str]:
+    header_line = ascii_header.replace("\f\n\r\v", " ")
+    xml_prolog_match = _XML_PROLOG_REGEX.match(header_line)
+    return xml_prolog_match.group("encoding") if xml_prolog_match is not None else None
 
 
 def is_binary_file(source_path: str) -> bool:

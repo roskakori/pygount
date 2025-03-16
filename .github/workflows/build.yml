@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     env:
       MAIN_PYTHON_VERSION: "3.12" # same as Ubuntu 24 LTS
 
@@ -18,37 +18,39 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          # NOTE Using the "latest" version of uv is risky, but for the time being uv is updated
+          #  regularly, so a specific version would be outdated rather quickly. Once uv goes
+          #  version 1.0, this should be changed to something like ">=1 <2".
+          version: "latest"
       - name: Load cached venv
-        id: cached-poetry-dependencies
+        id: cached-uv-dependencies
         uses: actions/cache@v3
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
         run: |
-          poetry install --no-interaction
+          uv sync
       - name: Build pygount package
         run: |
-          poetry build
+          uv build
       - name: Run the test suite
         run: |
-          poetry run pytest --cov=pygount --cov-branch
+          uv run pytest --cov=pygount --cov-branch
       - name: Build documentation
         if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION }}
         run: |
-          poetry run sh scripts/build_documentation.sh
+          uv run sh scripts/build_documentation.sh
       - name: Update coveralls statistics
         if: ${{ matrix.python-version == env.MAIN_PYTHON_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          poetry run coveralls --service=github
+          uv run coveralls --service=github
 
   check-style:
     runs-on: ubuntu-latest

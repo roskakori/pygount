@@ -2,7 +2,7 @@
 # Update requirements files and pre-commit hooks to current versions.
 set -e
 echo "🧱 Updating project"
-poetry update
+uv lock --upgrade
 echo "🛠️ Updating pre-commit"
 pre-commit autoupdate
 echo "📖 Updating documentation"

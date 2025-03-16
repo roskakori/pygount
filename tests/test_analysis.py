@@ -8,7 +8,6 @@ import glob
 import os
 import unittest
 from io import BytesIO, StringIO
-from typing import List, Set
 
 import pytest
 from pygments import lexers, token
@@ -16,7 +15,6 @@ from pygments import lexers, token
 from pygount import Error as PygountError
 from pygount import analysis, common
 from pygount.analysis import (
-    _BOM_TO_ENCODING_MAP,
     _delined_tokens,
     _line_parts,
     _pythonized_comments,
@@ -48,8 +46,8 @@ class SourceScannerTest(TempFolderTest):
         scanner = analysis.SourceScanner([PYGOUNT_SOURCE_FOLDER], "py")
         actual_paths = list(scanner.source_paths())
         assert actual_paths != []
-        for python_path, _ in actual_paths:
-            actual_suffix = os.path.splitext(python_path)[1]
+        for path_data in actual_paths:
+            actual_suffix = os.path.splitext(path_data.source_path)[1]
             assert actual_suffix == ".py"
 
     def test_can_skip_dot_folder(self):
@@ -62,7 +60,7 @@ class SourceScannerTest(TempFolderTest):
         self.create_temp_file(relative_path_to_skip, "skip = 2", do_create_folder=True)
 
         scanner = analysis.SourceScanner([project_folder])
-        scanned_names = [os.path.basename(source_path) for source_path, _ in scanner.source_paths()]
+        scanned_names = [os.path.basename(path_data.source_path) for path_data in scanner.source_paths()]
         assert scanned_names == [name_to_include]
 
     def test_fails_on_non_repo_url(self):
@@ -75,8 +73,8 @@ class SourceScannerTest(TempFolderTest):
         scanner = analysis.SourceScanner(["."], "py")
         actual_paths = list(scanner.source_paths())
         assert actual_paths != []
-        for python_path, _ in actual_paths:
-            actual_suffix = os.path.splitext(python_path)[1]
+        for path_data in actual_paths:
+            actual_suffix = os.path.splitext(path_data.source_path)[1]
             assert actual_suffix == ".py"
 
     def test_can_find_files_from_mixed_cloned_git_remote_url_and_local(self):
@@ -84,7 +82,8 @@ class SourceScannerTest(TempFolderTest):
         with analysis.SourceScanner([git_remote_url, PYGOUNT_SOURCE_FOLDER]) as scanner:
             actual_paths = list(scanner.source_paths())
             assert actual_paths != []
-            assert actual_paths[0][1] != actual_paths[-1][1]
+            assert actual_paths[0].source_path != actual_paths[-1].source_path
+            assert actual_paths[-1].tmp_dir is not None
 
 
 class AnalysisTest(unittest.TestCase):
@@ -115,16 +114,14 @@ class AnalysisTest(unittest.TestCase):
         assert list(_line_parts(python_lexer, "pass", False)) == [set()]
 
     def test_can_convert_python_strings_to_comments(self):
-        source_code = (
-            "#!/bin/python\n" '"Some tool."\n' "#(C) by me\n" "def x():\n" '    "Some function"\n' "    return 1"
-        )
+        source_code = '#!/bin/python\n"Some tool."\n#(C) by me\ndef x():\n    "Some function"\n    return 1'
         python_lexer = lexers.get_lexer_by_name("python")
         python_tokens = python_lexer.get_tokens(source_code)
         for token_type, _ in list(_pythonized_comments(_delined_tokens(python_tokens))):
             assert token_type not in token.String
 
     @staticmethod
-    def _line_parts(lexer_name: str, source_lines: List[str]) -> List[Set[str]]:
+    def _line_parts(lexer_name: str, source_lines: list[str]) -> list[set[str]]:
         lexer = lexers.get_lexer_by_name(lexer_name)
         is_markup = lexer_name in ["markdown", "md", "restructuredtext", "rst", "rest", "groff"]
         source_code = "\n".join(source_lines)
@@ -196,9 +193,19 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.code_count == 1
         assert source_analysis.documentation_count == 2
 
+    def test_can_ignore_almost_magic_comment(self):
+        test_bat_path = self.create_temp_file(
+            "test_can_ignore_almost_magic_comment.json",
+            ['{"x":"coding:no_such_coding"'],
+        )
+        source_analysis = analysis.SourceAnalysis.from_file(test_bat_path, "test")
+        assert source_analysis.language.lower() == "json"
+        assert source_analysis.code_count == 1
+        assert source_analysis.documentation_count == 0
+
     def test_fails_on_unknown_magic_encoding_comment(self):
         test_path = self.create_temp_file(
-            "unknown_magic_encoding_comment.py", ["# -*- coding: no_such_encoding -*-", 'print("hello")']
+            "test_fails_on_unknown_magic_encoding_comment.py", ["# -*- coding: no_such_encoding -*-", 'print("hello")']
         )
         no_such_encoding = analysis.encoding_for(test_path)
         assert no_such_encoding == "no_such_encoding"
@@ -209,7 +216,7 @@ class FileAnalysisTest(TempFolderTest):
 
     def test_can_analyze_oracle_sql(self):
         test_oracle_sql_path = self.create_temp_file(
-            "some_oracle_sql.pls",
+            "test_can_analyze_oracle_sql.pls",
             ["-- Oracle SQL example using an obscure suffix.", "select *", "from some_table;"],
         )
         source_analysis = analysis.SourceAnalysis.from_file(test_oracle_sql_path, "test", encoding="utf-8")
@@ -278,6 +285,12 @@ class FileAnalysisTest(TempFolderTest):
         )
         assert source_analysis.language.lower() == "html"
         assert source_analysis.code_count == 3
+
+    def test_can_analyze_unknown_magic_comment_encoding(self):
+        test_python_path = self.create_temp_file("some.py", ["# -*- coding: no_such_encoding -*-", "print('hello')"])
+        source_analysis = analysis.SourceAnalysis.from_file(test_python_path, "test")
+        assert source_analysis.language.lower() == "__error__"
+        assert source_analysis.state_info == "unknown encoding: no_such_encoding"
 
     def test_fails_on_non_seekable_file_handle_with_encoding_automatic(self):
         file_handle = _NonSeekableEmptyBytesIO()
@@ -365,87 +378,14 @@ def test_can_guess_lexer_for_cmakelists():
     assert lexer.name == "CMake"
 
 
-class EncodingTest(TempFolderTest):
-    _ENCODING_TO_BOM_MAP = {encoding: bom for bom, encoding in _BOM_TO_ENCODING_MAP.items()}
-    _TEST_CODE = "x = '\u00fd \u20ac'"
-
-    def _test_can_detect_bom_encoding(self, encoding):
-        test_path = os.path.join(self.tests_temp_folder, encoding)
-        with open(test_path, "wb") as test_file:
-            if encoding != "utf-8-sig":
-                bom = EncodingTest._ENCODING_TO_BOM_MAP[encoding]
-                test_file.write(bom)
-            test_file.write(EncodingTest._TEST_CODE.encode(encoding))
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_bom_encodings(self):
-        for encoding in _BOM_TO_ENCODING_MAP.values():
-            self._test_can_detect_bom_encoding(encoding)
-
-    def test_can_detect_plain_encoding(self):
-        for encoding in ("cp1252", "utf-8"):
-            test_path = self.create_temp_file(encoding, EncodingTest._TEST_CODE, encoding)
-            actual_encoding = analysis.encoding_for(test_path)
-            assert actual_encoding == encoding
-
-    def test_can_detect_xml_prolog(self):
-        encoding = "iso-8859-15"
-        xml_code = f'<?xml encoding="{encoding}" standalone="yes"?><some>{EncodingTest._TEST_CODE}</some>'
-        test_path = self.create_temp_file(encoding + ".xml", xml_code, encoding)
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_magic_comment(self):
-        encoding = "iso-8859-15"
-        lines = ["#!/usr/bin/python", f"# -*- coding: {encoding} -*-", EncodingTest._TEST_CODE]
-        test_path = self.create_temp_file("magic-" + encoding, lines, encoding)
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_automatic_encoding_for_empty_source(self):
-        test_path = self.create_temp_binary_file("empty", b"")
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == "utf-8"
-
-    def test_can_detect_chardet_encoding(self):
-        test_path = __file__
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == "utf-8"
-
-    def test_can_detect_utf8_when_cp1252_would_fail(self):
-        # Write closing double quote in UTF-8, which contains 0x9d,
-        # which fails when read as CP1252.
-        content = b"\xe2\x80\x9d"
-        test_path = self.create_temp_binary_file("utf-8_ok_cp1252_broken", content)
-        actual_encoding = analysis.encoding_for(test_path, encoding="automatic", fallback_encoding=None)
-        assert actual_encoding == "utf-8"
-        actual_encoding = analysis.encoding_for(test_path, encoding="automatic", fallback_encoding="cp1252")
-        assert actual_encoding == "cp1252"
-
-    def test_can_use_hardcoded_ending(self):
-        test_path = self.create_temp_file("hardcoded_cp1252", "\N{EURO SIGN}", "cp1252")
-        actual_encoding = analysis.encoding_for(test_path, "utf-8")
-        assert actual_encoding == "utf-8"
-        # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
-        with open(test_path, encoding=actual_encoding) as broken_test_file, pytest.raises(UnicodeDecodeError):
-            broken_test_file.read()
-
-    def test_can_detect_binary_with_zero_byte(self):
-        test_path = self.create_temp_binary_file("binary", b"hello\0world")
-        assert analysis.is_binary_file(test_path)
-
-    def test_can_detect_utf16_as_non_binary(self):
-        test_path = self.create_temp_file("utf-16", "Hello world!", "utf-16")
-        assert not analysis.is_binary_file(test_path)
-
-
 class GeneratedCodeTest(TempFolderTest):
-    _STANDARD_SOURCE_LINES = """#!/bin/python3
-    # Example code for
-    # generated source code.
-    print("I'm generated!")
-    """.split("\n")
+    _STANDARD_SOURCE_LINES = [
+        "#!/bin/python3",
+        "    # Example code for",
+        "    # generated source code.",
+        '    print("I\'m generated!")',
+        "    ",
+    ]
     _STANDARD_GENERATED_REGEXES = common.regexes_from(
         common.REGEX_PATTERN_PREFIX + ".*some,.*other,.*generated,.*print"
     )

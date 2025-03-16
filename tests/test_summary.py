@@ -88,8 +88,7 @@ def test_can_summarize_project_with_pseudo_languages():
     assert project_summary.total_string_count == 0
 
     assert repr(project_summary) == (
-        "ProjectSummary(total_file_count=3, total_line_count=0, "
-        "languages=['__binary__', '__empty__', '__generated__'])"
+        "ProjectSummary(total_file_count=3, total_line_count=0, languages=['__binary__', '__empty__', '__generated__'])"
     )
 
 
