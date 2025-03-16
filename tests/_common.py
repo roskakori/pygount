@@ -7,8 +7,10 @@ Common constants and functions used by multiple tests.
 import os
 import shutil
 import unittest
-from collections.abc import Sequence
-from typing import Union
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from tempfile import NamedTemporaryFile
+from typing import IO, TextIO, Union
 
 PYGOUNT_PROJECT_FOLDER = os.path.dirname(os.path.dirname(__file__))
 PYGOUNT_SOURCE_FOLDER = os.path.join(PYGOUNT_PROJECT_FOLDER, "pygount")
@@ -42,3 +44,21 @@ class TempFolderTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tests_temp_folder)
+
+
+@contextmanager
+def temp_binary_file(data: bytes) -> Iterator[IO]:
+    with NamedTemporaryFile(mode="wb+", suffix=".bin") as result:
+        result.write(data)
+        result.flush()
+        result.seek(0)
+        yield result
+
+
+@contextmanager
+def temp_source_file(suffix: str, lines: list[str], *, encoding: str = "utf-8") -> Iterator[TextIO]:
+    with NamedTemporaryFile(encoding=encoding, mode="w+", suffix=f".{suffix}") as result:
+        result.write("\n".join(lines))
+        result.flush()
+        result.seek(0)
+        yield result

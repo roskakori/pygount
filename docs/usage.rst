@@ -197,8 +197,10 @@ a simple algorithm where it recognizes BOM, XML declarations such as:
 
 and "magic" comments such as:
 
-.. code-block:: python
+.. code-block:: ruby
 
+    # encoding: cp1252
+    # coding: cp1252
     # -*- coding: cp1252 -*-
 
 If the file does not have an appropriate heading, pygount attempts to read it

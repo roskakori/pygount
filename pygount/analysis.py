@@ -55,6 +55,9 @@ TokenType = type(pygments.token.Token)
 
 _BASE_LANGUAGE_REGEX = re.compile(r"^(?P<base_language>[^+]+)\+[^+].*$")
 
+#: BOMs to indicate that a file is a text file even if it contains zero bytes.
+_TEXT_BOMS = (codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE, codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF8)
+
 
 class SourceState(Enum):
     """
@@ -107,7 +110,29 @@ _BOM_TO_ENCODING_MAP = collections.OrderedDict(
     )
 )
 _XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>[-_.a-zA-Z0-9]+)".*\?>')
-_CODING_MAGIC_REGEX = re.compile(r".+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b", re.DOTALL)
+_MAGIC_COMMENT_LINE_START_REGEXES = [
+    re.compile(f"^{pattern}\\s*(?P<remainder>.+)$", re.IGNORECASE)
+    for pattern in [
+        r"#+",  # Python, Ruby
+        r"//+",  # C++, Dart, Java, ...
+        r"/\*+",  # C etc
+        r"--+",  # Ada, SQL, VHDL
+        r";+",  # Assembly
+        r"%+",  # Latex, MatLab, Prolog
+        r"rem\s",  # Basic, Windows batch
+        r"\*+",  # Pascal
+        r"\{",  # Pascal
+    ]
+]
+_MAGIC_COMMENT_LINE_REMAINDER_REGEXES = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in [
+        # Covers for example "encoding: cp1252" and "encoding=cp1252".
+        r"(en)?coding\s*[:=]\s*(?P<encoding>[-_.a-z0-9]+)\b",
+        # Covers for example "-*- coding: cp1252 -*-".
+        r"-\*-\s*coding\s*[:=]\s*(?P<encoding>[-_.a-z0-9]+)\s*(;.+\s*)?-\*-\s*",
+    ]
+]
 
 _STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
     # Text files for (moribund) gnits standards.
@@ -822,19 +847,7 @@ def encoding_for(
                 None,
             )
         if result is None:
-            # Look for common headings that indicate the encoding.
-            ascii_heading = heading.decode("ascii", errors="replace")
-            ascii_heading = ascii_heading.replace("\r\n", "\n")
-            ascii_heading = ascii_heading.replace("\r", "\n")
-            ascii_heading = "\n".join(ascii_heading.split("\n")[:2]) + "\n"
-            coding_magic_match = _CODING_MAGIC_REGEX.match(ascii_heading)
-            if coding_magic_match is not None:
-                result = coding_magic_match.group("encoding")
-            else:
-                first_line = ascii_heading.split("\n")[0]
-                xml_prolog_match = _XML_PROLOG_REGEX.match(first_line)
-                if xml_prolog_match is not None:
-                    result = xml_prolog_match.group("encoding")
+            result = encoding_from_header(heading)
     elif encoding == "chardet":
         assert _detector is not None, (
             'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
@@ -887,8 +900,35 @@ def encoding_for(
     return result
 
 
-#: BOMs to indicate that a file is a text file even if it contains zero bytes.
-_TEXT_BOMS = (codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE, codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF8)
+def encoding_from_header(header: bytes) -> Optional[str]:
+    ascii_header = header.decode("ascii", errors="replace")
+    result = encoding_from_possible_magic_comment(ascii_header)
+    if result is None:
+        result = encoding_from_possible_xml_prolog(ascii_header)
+    return result
+
+
+def encoding_from_possible_magic_comment(ascii_header: str) -> Optional[str]:
+    return next(_magic_comment_encodings(ascii_header), None)
+
+
+def _magic_comment_encodings(ascii_header: str) -> Iterator[str]:
+    header_lines = ascii_header.split("\n")[:2]
+    for header_line in header_lines:
+        for magic_line_start_regex in _MAGIC_COMMENT_LINE_START_REGEXES:
+            magic_line_start_match = re.match(magic_line_start_regex, header_line)
+            if magic_line_start_match is not None:
+                remainder = magic_line_start_match.group("remainder")
+                for magic_coding_comment_regex in _MAGIC_COMMENT_LINE_REMAINDER_REGEXES:
+                    result = magic_coding_comment_regex.match(remainder)
+                    if result is not None:
+                        yield result.group("encoding")
+
+
+def encoding_from_possible_xml_prolog(ascii_header: str) -> Optional[str]:
+    header_line = ascii_header.replace("\f\n\r\v", " ")
+    xml_prolog_match = _XML_PROLOG_REGEX.match(header_line)
+    return xml_prolog_match.group("encoding") if xml_prolog_match is not None else None
 
 
 def is_binary_file(source_path: str) -> bool:
