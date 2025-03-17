@@ -10,6 +10,10 @@ Version 3.0.0, 2025-03-xx
 
 * Count pure markup files as documentation: (contributed by Tytus Bucholc, issue
   `#6 <https://github.com/roskakori/pygount/issues/6>`_).
+* Fix silent error on git failing: (contributed by Tom De Bièvre, issue
+  `#162 <https://github.com/roskakori/pygount/issues/162>`_)
+* Transform common project URLs to repository: (contributed by Tom De Bièvre, issue
+  `#164 <https://github.com/roskakori/pygount/issues/164>`_)
 
 Version 2.0.0, 2025-03-16
 
@@ -34,6 +38,8 @@ Version 2.0.0, 2025-03-16
   `#157 <https://github.com/roskakori/pygount/issues/157>`_).
 * Development: Change default branch to main (issue
   `#160 <https://github.com/roskakori/pygount/issues/160>`_).
+* Removed deprecated code: (contributed by Marco Gambone and Niels Vanden Bussche, issue
+  `#47 <https://github.com/roskakori/pygount/issues/47>`_).
 
 Version 1.8.0, 2024-05-13
 
