@@ -20,9 +20,10 @@ from pygount.analysis import (
     _pythonized_comments,
     base_language,
     guess_lexer,
+    is_markup_file,
 )
 
-from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
+from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest, temp_source_file
 from .test_xmldialect import EXAMPLE_ANT_CODE
 
 
@@ -119,12 +120,6 @@ class AnalysisTest(unittest.TestCase):
         for token_type, _ in list(_pythonized_comments(_delined_tokens(python_tokens))):
             assert token_type not in token.String
 
-    @staticmethod
-    def _line_parts(lexer_name: str, source_lines: list[str]) -> list[set[str]]:
-        lexer = lexers.get_lexer_by_name(lexer_name)
-        source_code = "\n".join(source_lines)
-        return list(_line_parts(lexer, source_code))
-
     def test_can_analyze_python(self):
         source_lines = [
             '"Some tool."',
@@ -134,7 +129,7 @@ class AnalysisTest(unittest.TestCase):
             '    "Some function"',
             '    return "abc"',
         ]
-        actual_line_parts = AnalysisTest._line_parts("python", source_lines)
+        actual_line_parts = _line_parts_with_detected_markup("python", source_lines)
         expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"d"}, {"c", "s"}]
         assert actual_line_parts == expected_line_parts
 
@@ -148,9 +143,31 @@ class AnalysisTest(unittest.TestCase):
             '   puts("Hello, World!");',
             "}",
         ]
-        actual_line_parts = AnalysisTest._line_parts("c", source_lines)
+        actual_line_parts = _line_parts_with_detected_markup("c", source_lines)
         expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"c"}, {"c", "s"}, set()]
         assert actual_line_parts == expected_line_parts
+
+
+def test_can_detect_all_lines_as_documentation_with_markup_enabled():
+    source_lines = [
+        "/*",
+        " * The classic hello world for C99.",
+        " */",
+        "#include <stdio.h>",
+        "int main(void) {",
+        '   puts("Hello, World!");',
+        "}",
+    ]
+    actual_line_parts = _line_parts_with_detected_markup("markdown", source_lines)
+    assert all(line_part == "d" for line_part in actual_line_parts[-1])
+    assert actual_line_parts[-1:] == [set()]
+
+
+def _line_parts_with_detected_markup(lexer_name: str, source_lines: list[str]) -> list[set[str]]:
+    lexer = lexers.get_lexer_by_name(lexer_name)
+    is_markup = lexer_name in ["markdown", "md", "restructuredtext", "rst", "rest", "groff"]
+    source_code = "\n".join(source_lines)
+    return list(_line_parts(lexer, source_code, is_markup=is_markup))
 
 
 class _NonSeekableEmptyBytesIO(BytesIO):
@@ -287,6 +304,29 @@ class FileAnalysisTest(TempFolderTest):
 
         with pytest.raises(PygountError, match=r".*file handle must be seekable.*"):
             analysis.SourceAnalysis.from_file("README.md", "test", file_handle=file_handle, encoding="chardet")
+
+
+@pytest.mark.parametrize(
+    "suffix, code_count, doc_count, expected_language_lower",
+    [
+        ("rst", 0, 3, "restructuredtext"),
+        ("md", 0, 3, "markdown"),
+        ("txt", 0, 3, "text only"),
+        ("4", 0, 3, "groff"),
+    ],
+)
+def test_can_analyze_markup_as_plain_documentation(
+    suffix, code_count: int, doc_count: int, expected_language_lower: str
+):
+    source_lines = ["<!DOCTYPE html>", "{% load i18n %}", "", "  ", '<html lang="{{ language_code }}" />']
+    expected_empty_count = 2
+    expected_documentation_count = len(source_lines) - expected_empty_count
+    with temp_source_file(suffix, source_lines) as test_file:
+        source_analysis = analysis.SourceAnalysis.from_file(test_file.name, "test", encoding="utf-8")
+        assert source_analysis.language.lower() == expected_language_lower
+        assert source_analysis.code_count == 0
+        assert source_analysis.documentation_count == expected_documentation_count
+        assert source_analysis.empty_count == expected_empty_count
 
 
 def test_can_repr_source_analysis_from_file():
@@ -446,3 +486,12 @@ class DuplicatePoolTest(TempFolderTest):
         duplicate_pool = analysis.DuplicatePool()
         assert duplicate_pool.duplicate_path(original_path) is None
         assert original_path == duplicate_pool.duplicate_path(duplicate_path)
+
+
+@pytest.mark.parametrize(
+    "suffix, expected_result",
+    [("md", True), ("MD", True), ("mD", True), ("rst", True), ("py", False), ("4", True), ("c", False)],
+)
+def test_can_detect_markup_file(suffix, expected_result):
+    source_path = f"some_file_name.{suffix}"
+    assert is_markup_file(source_path) == expected_result

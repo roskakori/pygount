@@ -3,6 +3,14 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
+Version 3.0.0, 2025-03-xx
+
+.. warning :: This release changes some ways how lines are counted, which
+  might effect comparisons with previous counts.
+
+* Count pure markup files as documentation: (contributed by Tytus Bucholc, issue
+  `#6 <https://github.com/roskakori/pygount/issues/6>`_).
+
 Version 2.0.0, 2025-03-16
 
 .. warning :: Remove deprecated code (contributed by Marco Gambone and Niels
