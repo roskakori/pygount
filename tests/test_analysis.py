@@ -120,13 +120,6 @@ class AnalysisTest(unittest.TestCase):
         for token_type, _ in list(_pythonized_comments(_delined_tokens(python_tokens))):
             assert token_type not in token.String
 
-    @staticmethod
-    def _line_parts(lexer_name: str, source_lines: list[str]) -> list[set[str]]:
-        lexer = lexers.get_lexer_by_name(lexer_name)
-        is_markup = lexer_name in ["markdown", "md", "restructuredtext", "rst", "rest", "groff"]
-        source_code = "\n".join(source_lines)
-        return list(_line_parts(lexer, source_code, is_markup=is_markup))
-
     def test_can_analyze_python(self):
         source_lines = [
             '"Some tool."',
@@ -136,7 +129,7 @@ class AnalysisTest(unittest.TestCase):
             '    "Some function"',
             '    return "abc"',
         ]
-        actual_line_parts = AnalysisTest._line_parts("python", source_lines)
+        actual_line_parts = _line_parts_with_detected_markup("python", source_lines)
         expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"d"}, {"c", "s"}]
         assert actual_line_parts == expected_line_parts
 
@@ -150,23 +143,31 @@ class AnalysisTest(unittest.TestCase):
             '   puts("Hello, World!");',
             "}",
         ]
-        actual_line_parts = AnalysisTest._line_parts("c", source_lines)
+        actual_line_parts = _line_parts_with_detected_markup("c", source_lines)
         expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"c"}, {"c", "s"}, set()]
         assert actual_line_parts == expected_line_parts
 
-    def test_all_lines_are_d_when_markup_flag_is_true(self):
-        source_lines = [
-            "/*",
-            " * The classic hello world for C99.",
-            " */",
-            "#include <stdio.h>",
-            "int main(void) {",
-            '   puts("Hello, World!");',
-            "}",
-        ]
-        actual_line_parts = AnalysisTest._line_parts("markdown", source_lines)
-        assert all(line_part == "d" for line_part in actual_line_parts[-1])
-        assert actual_line_parts[-1:] == [set()]
+
+def test_can_detect_all_lines_as_documentation_with_markup_enabled():
+    source_lines = [
+        "/*",
+        " * The classic hello world for C99.",
+        " */",
+        "#include <stdio.h>",
+        "int main(void) {",
+        '   puts("Hello, World!");',
+        "}",
+    ]
+    actual_line_parts = _line_parts_with_detected_markup("markdown", source_lines)
+    assert all(line_part == "d" for line_part in actual_line_parts[-1])
+    assert actual_line_parts[-1:] == [set()]
+
+
+def _line_parts_with_detected_markup(lexer_name: str, source_lines: list[str]) -> list[set[str]]:
+    lexer = lexers.get_lexer_by_name(lexer_name)
+    is_markup = lexer_name in ["markdown", "md", "restructuredtext", "rst", "rest", "groff"]
+    source_code = "\n".join(source_lines)
+    return list(_line_parts(lexer, source_code, is_markup=is_markup))
 
 
 class _NonSeekableEmptyBytesIO(BytesIO):
