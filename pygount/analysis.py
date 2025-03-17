@@ -163,8 +163,8 @@ _PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAME_PATTERNS) + 
 #: Regular expression to detect plain text files by name.
 _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
 
-_MARK_UP_PATTERN = ".*\.(md|rst|txt|\d+)$"
-_MARK_UP_NAME_REGEX = re.compile(_MARK_UP_PATTERN)
+_MARK_UP_NAME_PATTERN = r"^.*\.(md|rst|txt|\d+)$"
+_MARK_UP_NAME_REGEX = re.compile(_MARK_UP_NAME_PATTERN, re.IGNORECASE)
 
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
@@ -186,8 +186,8 @@ class PathData:
     tmp_dir: Optional[str] = None
 
 
-def is_markup_file(source_path: str):
-    return _MARK_UP_NAME_REGEX.match(os.path.basename(source_path))
+def is_markup_file(source_path: str) -> bool:
+    return _MARK_UP_NAME_REGEX.match(os.path.basename(source_path)) is not None
 
 
 class DuplicatePool:
@@ -775,7 +775,7 @@ def _pythonized_comments(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[To
         yield result_token_type, result_token_text
 
 
-def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool) -> Iterator[set[str]]:
+def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool = False) -> Iterator[set[str]]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
     if lexer.name == "Python":

@@ -23,7 +23,7 @@ from pygount.analysis import (
     is_markup_file,
 )
 
-from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
+from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest, temp_source_file
 from .test_xmldialect import EXAMPLE_ANT_CODE
 
 
@@ -105,13 +105,13 @@ class AnalysisTest(unittest.TestCase):
 
     def test_can_compute_python_line_parts(self):
         python_lexer = lexers.get_lexer_by_name("python")
-        assert list(_line_parts(python_lexer, "#", False)) == [set("d")]
-        assert list(_line_parts(python_lexer, "s = 'x'  # x", False)) == [set("cds")]
+        assert list(_line_parts(python_lexer, "#")) == [set("d")]
+        assert list(_line_parts(python_lexer, "s = 'x'  # x")) == [set("cds")]
 
     def test_can_detect_white_text(self):
         python_lexer = lexers.get_lexer_by_name("python")
-        assert list(_line_parts(python_lexer, "{[()]};", False)) == [set()]
-        assert list(_line_parts(python_lexer, "pass", False)) == [set()]
+        assert list(_line_parts(python_lexer, "{[()]};")) == [set()]
+        assert list(_line_parts(python_lexer, "pass")) == [set()]
 
     def test_can_convert_python_strings_to_comments(self):
         source_code = '#!/bin/python\n"Some tool."\n#(C) by me\ndef x():\n    "Some function"\n    return 1'
@@ -304,23 +304,28 @@ class FileAnalysisTest(TempFolderTest):
         with pytest.raises(PygountError, match=r".*file handle must be seekable.*"):
             analysis.SourceAnalysis.from_file("README.md", "test", file_handle=file_handle, encoding="chardet")
 
-    def test_analyzer_treats_textual_files_as_docs_only(self):
-        test_params = [
-            ("test.rst", 0, 3, "restructuredtext"),
-            ("test.md", 0, 3, "markdown"),
-            ("test.txt", 0, 3, "text only"),
-            ("test.4", 0, 3, "groff"),
-        ]
-        for filename, code_count, doc_count, lang_lower in test_params:
-            with self.subTest(filename):
-                test_html_django_path = self.create_temp_file(
-                    filename,
-                    ["<!DOCTYPE html>", "{% load i18n %}", '<html lang="{{ language_code }}" />'],
-                )
-                source_analysis = analysis.SourceAnalysis.from_file(test_html_django_path, "test", encoding="utf-8")
-                assert source_analysis.language.lower() == lang_lower
-                assert source_analysis.code_count == code_count
-                assert source_analysis.documentation_count == doc_count
+
+@pytest.mark.parametrize(
+    "suffix, code_count, doc_count, expected_language_lower",
+    [
+        ("rst", 0, 3, "restructuredtext"),
+        ("md", 0, 3, "markdown"),
+        ("txt", 0, 3, "text only"),
+        ("4", 0, 3, "groff"),
+    ],
+)
+def test_can_analyze_markup_as_plain_documentation(
+    suffix, code_count: int, doc_count: int, expected_language_lower: str
+):
+    source_lines = ["<!DOCTYPE html>", "{% load i18n %}", "", "  ", '<html lang="{{ language_code }}" />']
+    expected_empty_count = 2
+    expected_documentation_count = len(source_lines) - expected_empty_count
+    with temp_source_file(suffix, source_lines) as test_file:
+        source_analysis = analysis.SourceAnalysis.from_file(test_file.name, "test", encoding="utf-8")
+        assert source_analysis.language.lower() == expected_language_lower
+        assert source_analysis.code_count == 0
+        assert source_analysis.documentation_count == expected_documentation_count
+        assert source_analysis.empty_count == expected_empty_count
 
 
 def test_can_repr_source_analysis_from_file():
@@ -483,8 +488,9 @@ class DuplicatePoolTest(TempFolderTest):
 
 
 @pytest.mark.parametrize(
-    "file_extension, expected_result", [(".md", True), (".rst", True), (".py", False), (".4", True), (".c", False)]
+    "suffix, expected_result",
+    [("md", True), ("MD", True), ("mD", True), ("rst", True), ("py", False), ("4", True), ("c", False)],
 )
-def test_is_markup_file(file_extension, expected_result):
-    source_path = f"some_file_name{file_extension}"
-    assert any([is_markup_file(source_path)]) is expected_result
+def test_can_detect_markup_file(suffix, expected_result):
+    source_path = f"some_file_name.{suffix}"
+    assert is_markup_file(source_path) == expected_result
