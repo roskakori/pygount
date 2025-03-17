@@ -3,16 +3,37 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 1.8.1, 2024-07-xx
+Version 3.0.0, 2025-03-xx
 
+.. warning :: This release changes some ways how lines are counted, which
+  might effect comparisons with previous counts.
+
+* Count pure markup files as documentation: (contributed by Tytus Bucholc, issue
+  `#6 <https://github.com/roskakori/pygount/issues/6>`_).
+
+Version 2.0.0, 2025-03-16
+
+.. warning :: Remove deprecated code (contributed by Marco Gambone and Niels
+    Vanden Bussche, issue
+    `#47 <https://github.com/roskakori/pygount/issues/47>`_).
+
+* Fix ``TypeError`` when processing files with a magic encoding comment
+  specifying an unknown encoding and using ``--format=json`` (contributed by
+  PyHedgehog, issue `#176 <https://github.com/roskakori/pygount/issues/176>`_)
+* Fix false positives when extracting the encoding from magic coding comments,
+  issue `#184 <https://github.com/roskakori/pygount/issues/184>`_)
+* Add support for Python 3.13 and later, issue
+  `#174 <https://github.com/roskakori/pygount/issues/174>`_)
+* Remove temporary directory in the output of a git analysis (contributed by
+  Isabel Beckenbach, issue `#113 <https://github.com/roskakori/pygount/issues/113>`_)
+* Remove support for Python 3.8, issue
+  `#158 <https://github.com/roskakori/pygount/issues/158>`_)
+* Development: Change packaging to uv (issue
+  `#180 <https://github.com/roskakori/pygount/issues/180>`_).
 * Development: Change linter to ruff and in turn clean up code (issue
   `#157 <https://github.com/roskakori/pygount/issues/157>`_).
 * Development: Change default branch to main (issue
   `#160 <https://github.com/roskakori/pygount/issues/160>`_).
-* Remove temporary directory in the output of a git analysis (contributed by
-  Isabel Beckenbach, issue `#113 <https://github.com/roskakori/pygount/issues/113>`_)
-* Remove deprecated code: (contributed by Marco Gambone and Niels Vanden Bussche, issue
-  `#47 <https://github.com/roskakori/pygount/issues/47>`_).
 
 Version 1.8.0, 2024-05-13
 

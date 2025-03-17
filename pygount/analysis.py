@@ -12,10 +12,12 @@ import itertools
 import logging
 import os
 import re
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
-from typing import Iterator, List, Optional, Pattern, Sequence, Set, Tuple, Union
+from re import Pattern
+from typing import Optional, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -52,6 +54,9 @@ DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
 TokenType = type(pygments.token.Token)
 
 _BASE_LANGUAGE_REGEX = re.compile(r"^(?P<base_language>[^+]+)\+[^+].*$")
+
+#: BOMs to indicate that a file is a text file even if it contains zero bytes.
+_TEXT_BOMS = (codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE, codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF8)
 
 
 class SourceState(Enum):
@@ -105,7 +110,29 @@ _BOM_TO_ENCODING_MAP = collections.OrderedDict(
     )
 )
 _XML_PROLOG_REGEX = re.compile(r'<\?xml\s+.*encoding="(?P<encoding>[-_.a-zA-Z0-9]+)".*\?>')
-_CODING_MAGIC_REGEX = re.compile(r".+coding[:=][ \t]*(?P<encoding>[-_.a-zA-Z0-9]+)\b", re.DOTALL)
+_MAGIC_COMMENT_LINE_START_REGEXES = [
+    re.compile(f"^{pattern}\\s*(?P<remainder>.+)$", re.IGNORECASE)
+    for pattern in [
+        r"#+",  # Python, Ruby
+        r"//+",  # C++, Dart, Java, ...
+        r"/\*+",  # C etc
+        r"--+",  # Ada, SQL, VHDL
+        r";+",  # Assembly
+        r"%+",  # Latex, MatLab, Prolog
+        r"rem\s",  # Basic, Windows batch
+        r"\*+",  # Pascal
+        r"\{",  # Pascal
+    ]
+]
+_MAGIC_COMMENT_LINE_REMAINDER_REGEXES = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in [
+        # Covers for example "encoding: cp1252" and "encoding=cp1252".
+        r"(en)?coding\s*[:=]\s*(?P<encoding>[-_.a-z0-9]+)\b",
+        # Covers for example "-*- coding: cp1252 -*-".
+        r"-\*-\s*coding\s*[:=]\s*(?P<encoding>[-_.a-z0-9]+)\s*(;.+\s*)?-\*-\s*",
+    ]
+]
 
 _STANDARD_PLAIN_TEXT_NAME_PATTERNS = (
     # Text files for (moribund) gnits standards.
@@ -136,6 +163,9 @@ _PLAIN_TEXT_PATTERN = "(^" + "$)|(^".join(_STANDARD_PLAIN_TEXT_NAME_PATTERNS) + 
 #: Regular expression to detect plain text files by name.
 _PLAIN_TEXT_NAME_REGEX = re.compile(_PLAIN_TEXT_PATTERN, re.IGNORECASE)
 
+_MARK_UP_NAME_PATTERN = r"^.*\.(md|rst|txt|\d+)$"
+_MARK_UP_NAME_REGEX = re.compile(_MARK_UP_NAME_PATTERN, re.IGNORECASE)
+
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
     "fex": pygount.lexers.MinimalisticWebFocusLexer(),
@@ -155,6 +185,10 @@ class PathData:
     source_path: str
     group: str
     tmp_dir: Optional[str] = None
+
+
+def is_markup_file(source_path: str) -> bool:
+    return _MARK_UP_NAME_REGEX.match(os.path.basename(source_path)) is not None
 
 
 class DuplicatePool:
@@ -263,6 +297,10 @@ class SourceAnalysis:
 
     @staticmethod
     def _check_state_info(state: SourceState, state_info: Optional[str]):
+        assert state_info is None or isinstance(state_info, str), (
+            f"state_info must be be None or str but is: {state_info!r}"
+        )
+
         states_that_require_state_info = [SourceState.duplicate, SourceState.error, SourceState.generated]
         assert (state in states_that_require_state_info) == (state_info is not None), (
             f"state={state} and state_info={state_info} "
@@ -275,7 +313,7 @@ class SourceAnalysis:
         group: str,
         encoding: str = "automatic",
         fallback_encoding: str = "cp1252",
-        generated_regexes: Optional[List[Pattern]] = None,
+        generated_regexes: Optional[list[Pattern]] = None,
         duplicate_pool: Optional[DuplicatePool] = None,
         file_handle: Optional[IOBase] = None,
         merge_embedded_language: bool = False,
@@ -340,7 +378,7 @@ class SourceAnalysis:
                     source_code = file_handle.read()
             except (LookupError, OSError, UnicodeError) as error:
                 _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
-                result = SourceAnalysis.from_state(source_path, group, SourceState.error, error)
+                result = SourceAnalysis.from_state(source_path, group, SourceState.error, str(error))
             if result is None:
                 lexer = guess_lexer(source_path, source_code)
                 assert lexer is not None
@@ -372,7 +410,8 @@ class SourceAnalysis:
             _log.info("%s: analyze as %s using encoding %s", source_path, language, encoding)
             # code, docs, empty, string
             mark_to_count_map = {"c": 0, "d": 0, "e": 0, "s": 0}
-            for line_parts in _line_parts(lexer, source_code):
+            is_markup = is_markup_file(source_path)
+            for line_parts in _line_parts(lexer, source_code, is_markup=is_markup):
                 mark_to_increment = "e"
                 for mark_to_check in ("d", "s", "c"):
                     if mark_to_check in line_parts:
@@ -547,11 +586,11 @@ class SourceScanner:
         return self._source_patterns
 
     @property
-    def suffixes(self) -> List[Pattern]:
+    def suffixes(self) -> list[Pattern]:
         return self._suffixes
 
     @property
-    def folder_regexps_to_skip(self) -> List[Pattern]:
+    def folder_regexps_to_skip(self) -> list[Pattern]:
         return self._folder_regexps_to_skip
 
     @folder_regexps_to_skip.setter
@@ -561,7 +600,7 @@ class SourceScanner:
         )
 
     @property
-    def name_regexps_to_skip(self) -> List[Pattern]:
+    def name_regexps_to_skip(self) -> list[Pattern]:
         return self._name_regexps_to_skip
 
     @name_regexps_to_skip.setter
@@ -612,7 +651,7 @@ class SourceScanner:
                                 actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
                         yield PathData(source_path=path_to_analyse, group=actual_group, tmp_dir=tmp_dir)
 
-    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> List[PathData]:
+    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> list[PathData]:
         assert source_patterns_to_analyze is not None
         result = []
         # NOTE: We could avoid initializing `source_pattern_to_analyze` here by moving the `try` inside
@@ -666,7 +705,7 @@ for _language in _LANGUAGE_TO_WHITE_WORDS_MAP:
 
 def matching_number_line_and_regex(
     source_lines: Iterator[str], generated_regexes: Sequence[Pattern], max_line_count: int = 15
-) -> Optional[Tuple[int, str, Pattern]]:
+) -> Optional[tuple[int, str, Pattern]]:
     """
     The first line and its number (starting with 0) in the source code that
     indicated that the source code is generated.
@@ -701,7 +740,7 @@ def white_characters(language_id: str) -> str:
     return "(),:;[]{}"
 
 
-def white_code_words(language_id: str) -> Set[str]:
+def white_code_words(language_id: str) -> set[str]:
     """
     Words that do not count as code if it is the only word in a line.
     """
@@ -741,7 +780,7 @@ def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[Tu
         yield result_token_type, result_token_text
 
 
-def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[Set[str]]:
+def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool = False) -> Iterator[set[str]]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
     language_id = lexer.name.lower()
@@ -762,7 +801,8 @@ def _line_parts(lexer: pygments.lexer.Lexer, text: str) -> Iterator[Set[str]]:
         else:
             is_white_text = (token_text.strip() in white_words) or (token_text.rstrip(white_text) == "")
             if not is_white_text:
-                line_marks.add("c")  # 'code'
+                line_mark = "d" if is_markup else "c"
+                line_marks.add(line_mark)
         if token_text.endswith("\n"):
             yield line_marks
             line_marks = set()
@@ -821,23 +861,11 @@ def encoding_for(
                 None,
             )
         if result is None:
-            # Look for common headings that indicate the encoding.
-            ascii_heading = heading.decode("ascii", errors="replace")
-            ascii_heading = ascii_heading.replace("\r\n", "\n")
-            ascii_heading = ascii_heading.replace("\r", "\n")
-            ascii_heading = "\n".join(ascii_heading.split("\n")[:2]) + "\n"
-            coding_magic_match = _CODING_MAGIC_REGEX.match(ascii_heading)
-            if coding_magic_match is not None:
-                result = coding_magic_match.group("encoding")
-            else:
-                first_line = ascii_heading.split("\n")[0]
-                xml_prolog_match = _XML_PROLOG_REGEX.match(first_line)
-                if xml_prolog_match is not None:
-                    result = xml_prolog_match.group("encoding")
+            result = encoding_from_header(heading)
     elif encoding == "chardet":
-        assert (
-            _detector is not None
-        ), 'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
+        assert _detector is not None, (
+            'without chardet installed, encoding="chardet" must be rejected before calling encoding_for()'
+        )
         _detector.reset()
         if file_handle is None:
             with open(source_path, "rb") as source_file:
@@ -886,8 +914,35 @@ def encoding_for(
     return result
 
 
-#: BOMs to indicate that a file is a text file even if it contains zero bytes.
-_TEXT_BOMS = (codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE, codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE, codecs.BOM_UTF8)
+def encoding_from_header(header: bytes) -> Optional[str]:
+    ascii_header = header.decode("ascii", errors="replace")
+    result = encoding_from_possible_magic_comment(ascii_header)
+    if result is None:
+        result = encoding_from_possible_xml_prolog(ascii_header)
+    return result
+
+
+def encoding_from_possible_magic_comment(ascii_header: str) -> Optional[str]:
+    return next(_magic_comment_encodings(ascii_header), None)
+
+
+def _magic_comment_encodings(ascii_header: str) -> Iterator[str]:
+    header_lines = ascii_header.split("\n")[:2]
+    for header_line in header_lines:
+        for magic_line_start_regex in _MAGIC_COMMENT_LINE_START_REGEXES:
+            magic_line_start_match = re.match(magic_line_start_regex, header_line)
+            if magic_line_start_match is not None:
+                remainder = magic_line_start_match.group("remainder")
+                for magic_coding_comment_regex in _MAGIC_COMMENT_LINE_REMAINDER_REGEXES:
+                    result = magic_coding_comment_regex.match(remainder)
+                    if result is not None:
+                        yield result.group("encoding")
+
+
+def encoding_from_possible_xml_prolog(ascii_header: str) -> Optional[str]:
+    header_line = ascii_header.replace("\f\n\r\v", " ")
+    xml_prolog_match = _XML_PROLOG_REGEX.match(header_line)
+    return xml_prolog_match.group("encoding") if xml_prolog_match is not None else None
 
 
 def is_binary_file(source_path: str) -> bool:

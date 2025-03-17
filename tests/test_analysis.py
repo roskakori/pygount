@@ -8,7 +8,6 @@ import glob
 import os
 import unittest
 from io import BytesIO, StringIO
-from typing import List, Set
 
 import pytest
 from pygments import lexers, token
@@ -16,15 +15,15 @@ from pygments import lexers, token
 from pygount import Error as PygountError
 from pygount import analysis, common
 from pygount.analysis import (
-    _BOM_TO_ENCODING_MAP,
     _delined_tokens,
     _line_parts,
     _pythonized_comments,
     base_language,
     guess_lexer,
+    is_markup_file,
 )
 
-from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest
+from ._common import PYGOUNT_PROJECT_FOLDER, PYGOUNT_SOURCE_FOLDER, TempFolderTest, temp_source_file
 from .test_xmldialect import EXAMPLE_ANT_CODE
 
 
@@ -115,19 +114,11 @@ class AnalysisTest(unittest.TestCase):
         assert list(_line_parts(python_lexer, "pass")) == [set()]
 
     def test_can_convert_python_strings_to_comments(self):
-        source_code = (
-            "#!/bin/python\n" '"Some tool."\n' "#(C) by me\n" "def x():\n" '    "Some function"\n' "    return 1"
-        )
+        source_code = '#!/bin/python\n"Some tool."\n#(C) by me\ndef x():\n    "Some function"\n    return 1'
         python_lexer = lexers.get_lexer_by_name("python")
         python_tokens = python_lexer.get_tokens(source_code)
         for token_type, _ in list(_pythonized_comments(_delined_tokens(python_tokens))):
             assert token_type not in token.String
-
-    @staticmethod
-    def _line_parts(lexer_name: str, source_lines: List[str]) -> List[Set[str]]:
-        lexer = lexers.get_lexer_by_name(lexer_name)
-        source_code = "\n".join(source_lines)
-        return list(_line_parts(lexer, source_code))
 
     def test_can_analyze_python(self):
         source_lines = [
@@ -138,7 +129,7 @@ class AnalysisTest(unittest.TestCase):
             '    "Some function"',
             '    return "abc"',
         ]
-        actual_line_parts = AnalysisTest._line_parts("python", source_lines)
+        actual_line_parts = _line_parts_with_detected_markup("python", source_lines)
         expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"d"}, {"c", "s"}]
         assert actual_line_parts == expected_line_parts
 
@@ -152,9 +143,31 @@ class AnalysisTest(unittest.TestCase):
             '   puts("Hello, World!");',
             "}",
         ]
-        actual_line_parts = AnalysisTest._line_parts("c", source_lines)
+        actual_line_parts = _line_parts_with_detected_markup("c", source_lines)
         expected_line_parts = [{"d"}, {"d"}, {"d"}, {"c"}, {"c"}, {"c", "s"}, set()]
         assert actual_line_parts == expected_line_parts
+
+
+def test_can_detect_all_lines_as_documentation_with_markup_enabled():
+    source_lines = [
+        "/*",
+        " * The classic hello world for C99.",
+        " */",
+        "#include <stdio.h>",
+        "int main(void) {",
+        '   puts("Hello, World!");',
+        "}",
+    ]
+    actual_line_parts = _line_parts_with_detected_markup("markdown", source_lines)
+    assert all(line_part == "d" for line_part in actual_line_parts[-1])
+    assert actual_line_parts[-1:] == [set()]
+
+
+def _line_parts_with_detected_markup(lexer_name: str, source_lines: list[str]) -> list[set[str]]:
+    lexer = lexers.get_lexer_by_name(lexer_name)
+    is_markup = lexer_name in ["markdown", "md", "restructuredtext", "rst", "rest", "groff"]
+    source_code = "\n".join(source_lines)
+    return list(_line_parts(lexer, source_code, is_markup=is_markup))
 
 
 class _NonSeekableEmptyBytesIO(BytesIO):
@@ -181,9 +194,19 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.code_count == 1
         assert source_analysis.documentation_count == 2
 
+    def test_can_ignore_almost_magic_comment(self):
+        test_bat_path = self.create_temp_file(
+            "test_can_ignore_almost_magic_comment.json",
+            ['{"x":"coding:no_such_coding"'],
+        )
+        source_analysis = analysis.SourceAnalysis.from_file(test_bat_path, "test")
+        assert source_analysis.language.lower() == "json"
+        assert source_analysis.code_count == 1
+        assert source_analysis.documentation_count == 0
+
     def test_fails_on_unknown_magic_encoding_comment(self):
         test_path = self.create_temp_file(
-            "unknown_magic_encoding_comment.py", ["# -*- coding: no_such_encoding -*-", 'print("hello")']
+            "test_fails_on_unknown_magic_encoding_comment.py", ["# -*- coding: no_such_encoding -*-", 'print("hello")']
         )
         no_such_encoding = analysis.encoding_for(test_path)
         assert no_such_encoding == "no_such_encoding"
@@ -194,7 +217,7 @@ class FileAnalysisTest(TempFolderTest):
 
     def test_can_analyze_oracle_sql(self):
         test_oracle_sql_path = self.create_temp_file(
-            "some_oracle_sql.pls",
+            "test_can_analyze_oracle_sql.pls",
             ["-- Oracle SQL example using an obscure suffix.", "select *", "from some_table;"],
         )
         source_analysis = analysis.SourceAnalysis.from_file(test_oracle_sql_path, "test", encoding="utf-8")
@@ -263,6 +286,12 @@ class FileAnalysisTest(TempFolderTest):
         )
         assert source_analysis.language.lower() == "html"
         assert source_analysis.code_count == 3
+
+    def test_can_analyze_unknown_magic_comment_encoding(self):
+        test_python_path = self.create_temp_file("some.py", ["# -*- coding: no_such_encoding -*-", "print('hello')"])
+        source_analysis = analysis.SourceAnalysis.from_file(test_python_path, "test")
+        assert source_analysis.language.lower() == "__error__"
+        assert source_analysis.state_info == "unknown encoding: no_such_encoding"
 
     def test_fails_on_non_seekable_file_handle_with_encoding_automatic(self):
         file_handle = _NonSeekableEmptyBytesIO()
@@ -358,6 +387,29 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.string_count == 0
 
 
+@pytest.mark.parametrize(
+    "suffix, code_count, doc_count, expected_language_lower",
+    [
+        ("rst", 0, 3, "restructuredtext"),
+        ("md", 0, 3, "markdown"),
+        ("txt", 0, 3, "text only"),
+        ("4", 0, 3, "groff"),
+    ],
+)
+def test_can_analyze_markup_as_plain_documentation(
+    suffix, code_count: int, doc_count: int, expected_language_lower: str
+):
+    source_lines = ["<!DOCTYPE html>", "{% load i18n %}", "", "  ", '<html lang="{{ language_code }}" />']
+    expected_empty_count = 2
+    expected_documentation_count = len(source_lines) - expected_empty_count
+    with temp_source_file(suffix, source_lines) as test_file:
+        source_analysis = analysis.SourceAnalysis.from_file(test_file.name, "test", encoding="utf-8")
+        assert source_analysis.language.lower() == expected_language_lower
+        assert source_analysis.code_count == 0
+        assert source_analysis.documentation_count == expected_documentation_count
+        assert source_analysis.empty_count == expected_empty_count
+
+
 def test_can_repr_source_analysis_from_file():
     source_analysis = analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed)
     expected_source_analysis_repr = (
@@ -413,87 +465,14 @@ def test_can_guess_lexer_for_cmakelists():
     assert lexer.name == "CMake"
 
 
-class EncodingTest(TempFolderTest):
-    _ENCODING_TO_BOM_MAP = {encoding: bom for bom, encoding in _BOM_TO_ENCODING_MAP.items()}
-    _TEST_CODE = "x = '\u00fd \u20ac'"
-
-    def _test_can_detect_bom_encoding(self, encoding):
-        test_path = os.path.join(self.tests_temp_folder, encoding)
-        with open(test_path, "wb") as test_file:
-            if encoding != "utf-8-sig":
-                bom = EncodingTest._ENCODING_TO_BOM_MAP[encoding]
-                test_file.write(bom)
-            test_file.write(EncodingTest._TEST_CODE.encode(encoding))
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_bom_encodings(self):
-        for encoding in _BOM_TO_ENCODING_MAP.values():
-            self._test_can_detect_bom_encoding(encoding)
-
-    def test_can_detect_plain_encoding(self):
-        for encoding in ("cp1252", "utf-8"):
-            test_path = self.create_temp_file(encoding, EncodingTest._TEST_CODE, encoding)
-            actual_encoding = analysis.encoding_for(test_path)
-            assert actual_encoding == encoding
-
-    def test_can_detect_xml_prolog(self):
-        encoding = "iso-8859-15"
-        xml_code = f'<?xml encoding="{encoding}" standalone="yes"?><some>{EncodingTest._TEST_CODE}</some>'
-        test_path = self.create_temp_file(encoding + ".xml", xml_code, encoding)
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_magic_comment(self):
-        encoding = "iso-8859-15"
-        lines = ["#!/usr/bin/python", f"# -*- coding: {encoding} -*-", EncodingTest._TEST_CODE]
-        test_path = self.create_temp_file("magic-" + encoding, lines, encoding)
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == encoding
-
-    def test_can_detect_automatic_encoding_for_empty_source(self):
-        test_path = self.create_temp_binary_file("empty", b"")
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == "utf-8"
-
-    def test_can_detect_chardet_encoding(self):
-        test_path = __file__
-        actual_encoding = analysis.encoding_for(test_path)
-        assert actual_encoding == "utf-8"
-
-    def test_can_detect_utf8_when_cp1252_would_fail(self):
-        # Write closing double quote in UTF-8, which contains 0x9d,
-        # which fails when read as CP1252.
-        content = b"\xe2\x80\x9d"
-        test_path = self.create_temp_binary_file("utf-8_ok_cp1252_broken", content)
-        actual_encoding = analysis.encoding_for(test_path, encoding="automatic", fallback_encoding=None)
-        assert actual_encoding == "utf-8"
-        actual_encoding = analysis.encoding_for(test_path, encoding="automatic", fallback_encoding="cp1252")
-        assert actual_encoding == "cp1252"
-
-    def test_can_use_hardcoded_ending(self):
-        test_path = self.create_temp_file("hardcoded_cp1252", "\N{EURO SIGN}", "cp1252")
-        actual_encoding = analysis.encoding_for(test_path, "utf-8")
-        assert actual_encoding == "utf-8"
-        # Make sure that we cannot actually read the file using the hardcoded but wrong encoding.
-        with open(test_path, encoding=actual_encoding) as broken_test_file, pytest.raises(UnicodeDecodeError):
-            broken_test_file.read()
-
-    def test_can_detect_binary_with_zero_byte(self):
-        test_path = self.create_temp_binary_file("binary", b"hello\0world")
-        assert analysis.is_binary_file(test_path)
-
-    def test_can_detect_utf16_as_non_binary(self):
-        test_path = self.create_temp_file("utf-16", "Hello world!", "utf-16")
-        assert not analysis.is_binary_file(test_path)
-
-
 class GeneratedCodeTest(TempFolderTest):
-    _STANDARD_SOURCE_LINES = """#!/bin/python3
-    # Example code for
-    # generated source code.
-    print("I'm generated!")
-    """.split("\n")
+    _STANDARD_SOURCE_LINES = [
+        "#!/bin/python3",
+        "    # Example code for",
+        "    # generated source code.",
+        '    print("I\'m generated!")',
+        "    ",
+    ]
     _STANDARD_GENERATED_REGEXES = common.regexes_from(
         common.REGEX_PATTERN_PREFIX + ".*some,.*other,.*generated,.*print"
     )
@@ -588,3 +567,12 @@ class DuplicatePoolTest(TempFolderTest):
         duplicate_pool = analysis.DuplicatePool()
         assert duplicate_pool.duplicate_path(original_path) is None
         assert original_path == duplicate_pool.duplicate_path(duplicate_path)
+
+
+@pytest.mark.parametrize(
+    "suffix, expected_result",
+    [("md", True), ("MD", True), ("mD", True), ("rst", True), ("py", False), ("4", True), ("c", False)],
+)
+def test_can_detect_markup_file(suffix, expected_result):
+    source_path = f"some_file_name.{suffix}"
+    assert is_markup_file(source_path) == expected_result

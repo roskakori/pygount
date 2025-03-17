@@ -252,6 +252,7 @@ cython_debug/
 
 # Various
 .pytest_cache
+/.idea/ruff.xml
 /build/
 /dist/
 /docs/_build/
