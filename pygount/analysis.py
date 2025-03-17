@@ -30,7 +30,11 @@ import pygount.xmldialect
 from pygount.common import mapped_repr
 from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
-GIT_REPO_REGEX = re.compile(r"^(https?://|git@)")
+HAS_URL_PREFIX = re.compile(r"^(https?://)")
+_ALLOWED_GIT_PLATFORMS = ["github.com", "bitbucket.org", "gitlab.com"]
+GIT_REPO_REGEX = re.compile(
+    r"^(https?://|git@)({})/[\w-]+/[\w-]+".format("|".join(map(re.escape, _ALLOWED_GIT_PLATFORMS)))
+)
 
 # Attempt to import chardet.
 try:
@@ -48,7 +52,6 @@ DEFAULT_FALLBACK_ENCODING = "cp1252"
 DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT = ", ".join(
     [".?*", "_svn", "__pycache__"]  # Subversion hack for Windows  # Python byte code
 )
-
 
 #: Pygments token type; we need to define our own type because pygments' ``_TokenType`` is internal.
 TokenType = type(pygments.token.Token)
@@ -648,30 +651,40 @@ class SourceScanner:
 
     def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> list[PathData]:
         assert source_patterns_to_analyze is not None
+
         result = []
+
+        def _process_source_pattern(source_pattern: str):
+            remote_url, revision = git_remote_url_and_revision_if_any(source_pattern)
+            if remote_url is not None:
+                git_storage = GitStorage(remote_url, revision)
+                self._git_storages.append(git_storage)
+                git_storage.extract()
+                result.extend(
+                    self._paths_and_group_to_analyze(git_storage.temp_folder, tmp_dir=git_storage.temp_folder)
+                )
+            else:
+                has_url_prefix = re.match(HAS_URL_PREFIX, source_pattern)
+                if has_url_prefix:
+                    is_git_url = re.match(GIT_REPO_REGEX, source_pattern_to_analyze) is not None
+                    if not is_git_url:
+                        raise pygount.Error(
+                            f'URL to git repository {source_pattern} must end with ".git" or must match the pattern '
+                            f"http(s)://({'|'.join(_ALLOWED_GIT_PLATFORMS)})/<...>/<...>.git. "
+                            f"For example: git@github.com:roskakori/pygount.git or "
+                            f"https://github.com/roskakori/pygount.git."
+                        )
+                    source_pattern = source_pattern.rstrip("/")
+                    _process_source_pattern(source_pattern + ".git")
+                else:
+                    result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
+
         # NOTE: We could avoid initializing `source_pattern_to_analyze` here by moving the `try` inside
         #  the loop, but this would incor a performance overhead (ruff's PERF203).
         source_pattern_to_analyze = None
         try:
             for source_pattern_to_analyze in source_patterns_to_analyze:
-                remote_url, revision = git_remote_url_and_revision_if_any(source_pattern_to_analyze)
-                if remote_url is not None:
-                    git_storage = GitStorage(remote_url, revision)
-                    self._git_storages.append(git_storage)
-                    git_storage.extract()
-                    # TODO#113: Find a way to exclude the ugly temp folder from the source path.
-                    result.extend(
-                        self._paths_and_group_to_analyze(git_storage.temp_folder, tmp_dir=git_storage.temp_folder)
-                    )
-                else:
-                    git_url_match = re.match(GIT_REPO_REGEX, source_pattern_to_analyze)
-                    if git_url_match is not None:
-                        raise pygount.Error(
-                            'URL to git repository must end with ".git", for example '
-                            "git@github.com:roskakori/pygount.git or "
-                            "https://github.com/roskakori/pygount.git."
-                        )
-                    result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
+                _process_source_pattern(source_pattern_to_analyze)
         except OSError as error:
             assert source_pattern_to_analyze is not None
             raise OSError(f'cannot scan "{source_pattern_to_analyze}" for source files: {error}') from error
