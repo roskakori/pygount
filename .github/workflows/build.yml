@@ -13,13 +13,13 @@ jobs:
       MAIN_PYTHON_VERSION: "3.12" # same as Ubuntu 24 LTS
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           # NOTE Using the "latest" version of uv is risky, but for the time being uv is updated
           #  regularly, so a specific version would be outdated rather quickly. Once uv goes
@@ -27,10 +27,10 @@ jobs:
           version: "latest"
       - name: Load cached venv
         id: cached-uv-dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
       - name: Install dependencies
         if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
         run: |
@@ -58,14 +58,17 @@ jobs:
     # pull request merges to fail with don't commit to branch".
     if: github.ref != 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.MAIN_PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.MAIN_PYTHON_VERSION }}
       - name: Install pre-commit
         run: |
-          sudo apt-get install python3 python3-pip
           pip install pre-commit
       - name: Load cached pre-commit
         id: cached-pre-commit
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}

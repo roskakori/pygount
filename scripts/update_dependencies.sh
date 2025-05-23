@@ -2,6 +2,7 @@
 # Update requirements files and pre-commit hooks to current versions.
 set -e
 echo "🧱 Updating project"
+uv sync
 uv lock --upgrade
 echo "🛠️ Updating pre-commit"
 pre-commit autoupdate

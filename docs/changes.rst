@@ -3,7 +3,7 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 3.0.0, 2025-03-xx
+Version 3.0.0, 2025-05-23
 
 .. warning :: This release changes some ways how lines are counted, which
   might effect comparisons with previous counts.
@@ -14,6 +14,8 @@ Version 3.0.0, 2025-03-xx
   `#162 <https://github.com/roskakori/pygount/issues/162>`_)
 * Transform common project URLs to repository: (contributed by Tom De Bièvre, issue
   `#164 <https://github.com/roskakori/pygount/issues/164>`_)
+* Change dependency rules for rich to be more lenient (suggested by Brian McGillion, issue
+  `#193 <https://github.com/roskakori/pygount/issues/193>`_)
 
 Version 2.0.0, 2025-03-16
 
