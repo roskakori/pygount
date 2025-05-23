@@ -58,7 +58,7 @@ class MinimalisticWebFocusLexer(pygments.lexer.RegexLexer):
 
 class PlainTextLexer(pygments.lexer.RegexLexer):
     """
-    Simple lexer for plain text that treats every line with non white space
+    Simple lexer for plain text that treats every line with non-white space
     characters as :py:data:`pygments.Token.Comment.Single` and only lines
     that are empty or contain only white space as
     :py:data:`pygments.Token.Text`.

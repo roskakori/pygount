@@ -251,6 +251,7 @@ cython_debug/
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm
 
 # Various
+.DS_Store
 .pytest_cache
 /.idea/ruff.xml
 /build/
