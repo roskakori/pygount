@@ -10,6 +10,8 @@ Version 3.0.0, 2025-05-23
 
 * Count pure markup files as documentation: (contributed by Tytus Bucholc, issue
   `#6 <https://github.com/roskakori/pygount/issues/6>`_).
+* Change dependency rules for rich to be more lenient (suggested by Brian McGillion, issue
+  `#193 <https://github.com/roskakori/pygount/issues/193>`_)
 
 Version 2.0.0, 2025-03-16
 
