@@ -3,6 +3,7 @@
 set -e
 echo "🧱 Updating project"
 uv sync
+uv lock --upgrade
 echo "🛠️ Updating pre-commit"
 pre-commit autoupdate
 echo "📖 Updating documentation"
