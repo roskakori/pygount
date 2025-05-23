@@ -3,7 +3,7 @@ Changes
 
 This chapter describes the changes coming with each new version of pygount.
 
-Version 3.0.0, 2025-03-xx
+Version 3.0.0, 2025-05-23
 
 .. warning :: This release changes some ways how lines are counted, which
   might effect comparisons with previous counts.
