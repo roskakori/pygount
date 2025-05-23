@@ -30,11 +30,10 @@ import pygount.xmldialect
 from pygount.common import mapped_repr
 from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
-HAS_URL_PREFIX = re.compile(r"^(https?://)")
+HTTP_URL_REGEX = re.compile(r"^(https?://)")
 _ALLOWED_GIT_PLATFORMS = ["github.com", "bitbucket.org", "gitlab.com"]
-GIT_REPO_REGEX = re.compile(
-    r"^(https?://|git@)({})/[\w-]+/[\w-]+".format("|".join(map(re.escape, _ALLOWED_GIT_PLATFORMS)))
-)
+_ALLOWED_GIT_PLATFORM_CHOICES_PATTERN = "|".join(map(re.escape, _ALLOWED_GIT_PLATFORMS))
+GIT_REPO_REGEX = re.compile(rf"^(https?://|git@)({_ALLOWED_GIT_PLATFORM_CHOICES_PATTERN})/[^/]+/[^/]+")
 
 # Attempt to import chardet.
 try:
@@ -664,7 +663,7 @@ class SourceScanner:
                     self._paths_and_group_to_analyze(git_storage.temp_folder, tmp_dir=git_storage.temp_folder)
                 )
             else:
-                has_url_prefix = re.match(HAS_URL_PREFIX, source_pattern)
+                has_url_prefix = re.match(HTTP_URL_REGEX, source_pattern)
                 if has_url_prefix:
                     is_git_url = re.match(GIT_REPO_REGEX, source_pattern_to_analyze) is not None
                     if not is_git_url:

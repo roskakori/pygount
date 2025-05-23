@@ -73,7 +73,10 @@ class SourceScannerTest(TempFolderTest):
     def test_fails_on_non_git_urls(self):
         non_repo_urls = [["https://no/git/url"], ["https://google.com/nogit"]]
         for non_repo_url in non_repo_urls:
-            with analysis.SourceScanner(non_repo_url) as scanner, pytest.raises(pygount.Error):
+            with (
+                analysis.SourceScanner(non_repo_url) as scanner,
+                pytest.raises(pygount.Error, match="URL to git repository"),
+            ):
                 _ = list(scanner.source_paths())
 
     def test_can_find_python_files_in_dot(self):
