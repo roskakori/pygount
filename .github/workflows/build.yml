@@ -59,10 +59,10 @@ jobs:
     if: github.ref != 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ MAIN_PYTHON_VERSION }}
+      - name: Set up Python ${{ env.MAIN_PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ MAIN_PYTHON_VERSION }}
+          python-version: ${{ env.MAIN_PYTHON_VERSION }}
       - name: Install pre-commit
         run: |
           pip install pre-commit
