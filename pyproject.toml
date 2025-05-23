@@ -29,7 +29,7 @@ classifiers = [
 dependencies = [
     "pygments>=2,<3",
     "chardet>=5,<6",
-    "rich>=9, <14",
+    "rich>=9",
     "gitpython~=3.1",
 ]
 
