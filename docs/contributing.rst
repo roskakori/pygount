@@ -14,7 +14,7 @@ follows:
        $ git clone https://github.com/roskakori/pygount.git
        $ cd pygount
 
-2. Install `uv <https://python-poetry.org/>`_.
+2. Install `uv <https://docs.astral.sh/uv/>`_.
 
 3. Create the virtual environment and install the required packages:
 
@@ -85,20 +85,20 @@ To add a new release, first update the :file:`pyproject.toml`:
 .. code-block:: toml
 
     [project]
-    version = "2.x.x"
+    version = "3.x.x"
 
 Next build the project and run the tests to ensure everything works:
 
 .. code-block:: sh
 
-    $ poetry build
+    $ uv build
     $ uv run pytest
 
 Then create a tag in the repository:
 
 .. code-block:: sh
 
-    $ git tag -a -m "Tag version 2.x.x" v2.x.x
+    $ git tag -a -m "Tag version 3.x.x" v3.x.x
     $ git push --tags
 
 Publish the new version on PyPI:
