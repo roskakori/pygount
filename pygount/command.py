@@ -40,7 +40,9 @@ _HELP_EPILOG = """SHELL-PATTERN is a pattern using *, ? and ranges like [a-z]
 
 _HELP_FORMAT = (
     f"output format, one of: "
-    f"{', '.join(['"' + output_format + '"' for output_format in VALID_OUTPUT_FORMATS])};"
+    # HACK The chr(34) is necessary because ruff does not preserve the
+    #  backslash in '\"'.
+    f"{', '.join([chr(34) + output_format + chr(34) for output_format in VALID_OUTPUT_FORMATS])};"
     f' default: "%(default)s"'
 )
 
