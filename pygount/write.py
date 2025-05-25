@@ -76,8 +76,9 @@ class LineWriter(BaseWriter):
         self.has_to_track_progress = False
 
     def add(self, source_analysis):
+        source_line_count = source_analysis.code_count + source_analysis.string_count
         line_to_write = (
-            f"{source_analysis.code_count}\t{source_analysis.language}\t{source_analysis.group}\t{source_analysis.path}"
+            f"{source_line_count}\t{source_analysis.language}\t{source_analysis.group}\t{source_analysis.path}"
         )
         self._target_stream.write(line_to_write + os.linesep)
 
