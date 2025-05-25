@@ -102,7 +102,7 @@ $ pygount --help
 ```
 
 For more information and examples read the documentation chapter on
-[Usage](https://pygount.readthedocs.io/en/latest/usage.html).
+[Usage](https://pygount.readthedocs.io/en/latest/usage/).
 
 ## Contributions
 
@@ -110,8 +110,8 @@ To report bugs, visit the
 [issue tracker](https://github.com/roskakori/pygount/issues).
 
 In case you want to play with the source code or contribute improvements, see
-[CONTRIBUTING](https://pygount.readthedocs.io/en/latest/contributing.html).
+[CONTRIBUTING](https://pygount.readthedocs.io/en/latest/contributing/).
 
 ## Version history
 
-See [CHANGES](https://pygount.readthedocs.io/en/latest/changes.html).
+See [CHANGES](https://pygount.readthedocs.io/en/latest/changes/).
