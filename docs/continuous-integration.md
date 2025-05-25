@@ -10,5 +10,4 @@ An example "Execute shell" build step for Jenkins is:
 $ pygount --format=cloc-xml --out cloc.xml --suffix=py --verbose
 ```
 
-Then add a post-build action "Publish SLOCCount analysis results" and
-set "SLOCCount report" to "cloc.xml".
+Then add a post-build action "Publish SLOCCount analysis results" and set "SLOCCount report" to "cloc.xml".

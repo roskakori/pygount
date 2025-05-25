@@ -2,7 +2,7 @@
 
 ## Overview
 
-Pygount provides a simple API to integrate in other tools. This, however, is currently still a work in progress and subject to change.
+Pygount provides a simple API to integrate with other tools. This, however, is currently still a work in progress and subject to change.
 
 Here's an example on how to analyze one of pygount's own source codes:
 
