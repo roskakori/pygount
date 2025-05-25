@@ -124,8 +124,6 @@ def deprecated(reason: Optional[str]):  # pragma: no cover
     Decorator to mark functions as deprecated and log a warning in case it is called.
 
     Source: https://stackoverflow.com/questions/2536307/decorators-in-the-python-standard-lib-deprecated-specifically
-
-    Updated replace .format() with f-string
     """
 
     if isinstance(reason, str):

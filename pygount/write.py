@@ -77,8 +77,7 @@ class LineWriter(BaseWriter):
 
     def add(self, source_analysis):
         line_to_write = (
-            f"{source_analysis.code_count}\t{source_analysis.language}\t"
-            f"{source_analysis.group}\t{source_analysis.path}"
+            f"{source_analysis.code_count}\t{source_analysis.language}\t{source_analysis.group}\t{source_analysis.path}"
         )
         self._target_stream.write(line_to_write + os.linesep)
 
