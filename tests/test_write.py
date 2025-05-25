@@ -22,9 +22,10 @@ def test_can_collect_totals():
         analysis.SourceAnalysis("some.py", "Python", "some", 1, 2, 3, 4, analysis.SourceState.analyzed, None),
         analysis.SourceAnalysis("other.py", "Python", "some", 10, 20, 30, 40, analysis.SourceState.analyzed, None),
     )
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", prefix="pygount_", suffix=".tmp"
-    ) as target_stream, write.BaseWriter(target_stream) as writer:
+    with (
+        tempfile.NamedTemporaryFile("w", encoding="utf-8", prefix="pygount_", suffix=".tmp") as target_stream,
+        write.BaseWriter(target_stream) as writer,
+    ):
         for source_analysis in source_analyses:
             writer.add(source_analysis)
     assert writer.project_summary.total_file_count == 2

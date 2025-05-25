@@ -29,8 +29,13 @@ For installation run
 $ pip install pygount
 ```
 
-To get a list of line counts for a projects stored in a certain folder run for
-example:
+or use [uv](https://docs.astral.sh/uv/) to run it directly, for example:
+
+```bash
+$ uvx pygount --version
+```
+
+To get a list of line counts for a projects stored in a certain folder:
 
 ```bash
 $ pygount ~/projects/example
@@ -68,14 +73,14 @@ This example results in the following summary output:
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━┩
 │ Python           │    18 │  47.4 │ 2132 │ 63.6 │     418 │ 12.5 │
 │ TOML             │     2 │   5.3 │ 1204 │ 82.7 │       1 │  0.1 │
-│ reStructuredText │     9 │  23.7 │  566 │ 64.8 │       1 │  0.1 │
-│ Markdown         │     3 │   7.9 │   53 │ 49.1 │       0 │  0.0 │
 │ Batchfile        │     1 │   2.6 │   24 │ 68.6 │       1 │  2.9 │
-│ Text only        │     2 │   5.3 │   24 │ 82.8 │       0 │  0.0 │
 │ Bash             │     2 │   5.3 │   12 │ 80.0 │       3 │ 20.0 │
 │ Makefile         │     1 │   2.6 │    9 │ 45.0 │       7 │ 35.0 │
+│ reStructuredText │     9 │  23.7 │    0 │  0.0 │     438 │ 50.2 │
+│ Markdown         │     3 │   7.9 │    0 │  0.0 │      53 │ 49.1 │
+│ Text only        │     2 │   5.3 │    0 │  0.0 │      24 │ 82.8 │
 ├──────────────────┼───────┼───────┼──────┼──────┼─────────┼──────┤
-│ Sum              │    38 │ 100.0 │ 4024 │ 68.4 │     431 │  7.3 │
+│ Sum              │    38 │ 100.0 │ 3381 │ 57.4 │     945 │ 16.1 │
 └──────────────────┴───────┴───────┴──────┴──────┴─────────┴──────┘
 ```
 
@@ -97,7 +102,7 @@ $ pygount --help
 ```
 
 For more information and examples read the documentation chapter on
-[Usage](https://pygount.readthedocs.io/en/latest/usage.html).
+[Usage](https://pygount.readthedocs.io/en/latest/usage/).
 
 ## Contributions
 
@@ -105,8 +110,8 @@ To report bugs, visit the
 [issue tracker](https://github.com/roskakori/pygount/issues).
 
 In case you want to play with the source code or contribute improvements, see
-[CONTRIBUTING](https://pygount.readthedocs.io/en/latest/contributing.html).
+[CONTRIBUTING](https://pygount.readthedocs.io/en/latest/contributing/).
 
 ## Version history
 
-See [CHANGES](https://pygount.readthedocs.io/en/latest/changes.html).
+See [CHANGES](https://pygount.readthedocs.io/en/latest/changes/).

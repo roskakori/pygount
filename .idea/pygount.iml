@@ -2,16 +2,16 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <excludeFolder url="file://$MODULE_DIR$/docs/_build" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
       <excludeFolder url="file://$MODULE_DIR$/.pytest_cache" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/libraries" />
       <excludeFolder url="file://$MODULE_DIR$/pygount.egg-info" />
       <excludeFolder url="file://$MODULE_DIR$/htmlcov" />
-      <excludeFolder url="file://$MODULE_DIR$/docs/_static" />
-      <excludeFolder url="file://$MODULE_DIR$/docs/_templates" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/build" />
+      <excludeFolder url="file://$MODULE_DIR$/site" />
     </content>
-    <orderEntry type="jdk" jdkName="Poetry (pygount)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="uv (pygount)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="R User Library" level="project" />
     <orderEntry type="library" name="R Skeletons" level="application" />

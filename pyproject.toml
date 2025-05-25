@@ -1,3 +1,48 @@
+[project]
+name = "pygount"
+version = "3.1.0"
+description = "count source lines of code (SLOC) using pygments"
+authors = [{ name = "Thomas Aglassinger", email = "roskakori@users.sourceforge.net" }]
+requires-python = ">=3.9, <4"
+readme = "README.md"
+license = "BSD-3-Clause"
+keywords = [
+    "code analysis",
+    "count",
+    "SLOC",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+]
+dependencies = [
+    "chardet>=5,<6",
+    "gitpython~=3.1",
+    "pygments>=2,<3",
+    "rich>=9",
+]
+
+[project.urls]
+Homepage = "https://github.com/roskakori/pygount"
+Repository = "https://github.com/roskakori/pygount.git"
+Documentation = "https://pygount.readthedocs.io"
+"Issue Tracker" = "https://github.com/roskakori/pygount/issues"
+Changes = "https://pygount.readthedocs.io/en/latest/changes.html"
+
+[project.scripts]
+pygount = "pygount.command:main"
+
 [tool.pytest.ini_options]
 minversion = "7.2"
 addopts = [
@@ -7,65 +52,33 @@ testpaths = [
     "tests",
 ]
 
-[tool.poetry]
-name = "pygount"
-version = "1.8.1"
-description = "count source lines of code (SLOC) using pygments"
-readme = "README.md"
-authors = ["Thomas Aglassinger <roskakori@users.sourceforge.net>"]
-license = "BSD"
-homepage = "https://github.com/roskakori/pygount"
-repository = "https://github.com/roskakori/pygount.git"
-documentation = "https://pygount.readthedocs.io"
-keywords = ["code analysis", "count", "SLOC"]
-classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "Environment :: Console",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
-        "Natural Language :: English",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Topic :: Software Development",
-]
-packages = [
-    { include = "pygount" },
+[dependency-groups]
+dev = [
+    "coveralls>=4,<5",
+    "coverage>=7,<8",
+    "mkdocs>=1,<2",
+    "mkdocs-material>=9,<10",
+    "pytest>=8,<9",
+    "pytest-cov>=6,<7",
+    "pre-commit>=4,<5",
+    "pur>=7,<8",
+    "ruff~=0.11.11",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.8, <3.13"  # NOTE We cannot use <4 because of coveralls.
-pygments = "^2"
-chardet = "^5"
-rich = ">=9, <14"
-gitpython = "^3"
+[tool.uv]
+default-groups = [
+    "dev",
+]
 
-[tool.poetry.dev-dependencies]
-coveralls = "^4"
-coverage = "^7"
-pytest = "^8"
-pytest-cov = "^5"
-pre-commit = "^3.5"  # TODO#158: Change to "^3".
-pur = "^7"
-ruff = "^0.5.1"
-twine = "^5"
+[tool.hatch.build.targets.sdist]
+include = ["pygount"]
 
-[tool.poetry.group.docs]
-optional = true
+[tool.hatch.build.targets.wheel]
+packages = ["pygount"]
 
-[tool.poetry.group.docs.dependencies]
-Sphinx = "^7"
-
-[tool.poetry.scripts]
-pygount = "pygount.command:main"
-
-[tool.poetry.urls]
-"Issue Tracker" = "https://github.com/roskakori/pygount/issues"
-"Changes" = "https://pygount.readthedocs.io/en/latest/changes.html"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
 exclude = [
@@ -82,7 +95,7 @@ exclude = [
     "htmlcov",
 ]
 line-length = 120
-target-version = "py38"
+target-version = "py39"
 
 [tool.ruff.lint]
 ignore = [
@@ -111,6 +124,7 @@ ignore = [
     "PTH123",
     "PTH202",
     "PTH207",
+    "PTH208",
     # Unneccesarry assign → We regularly use `result = ...; return result` to examine the result in the debugger.
     "RET504",
     # TODO#506 Enable RUF012 check for mutable class attributes.
@@ -183,7 +197,3 @@ known-first-party = ["pygount", "scripts", "tests"]
 
 [tool.ruff.lint.per-file-ignores]
 "docs/conf.py" = ["INP001"]
-
-[build-system]
-requires = ["poetry-core>=1.8.1"]
-build-backend = "poetry.core.masonry.api"
