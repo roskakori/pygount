@@ -5,22 +5,16 @@
 In case you want to play with the source code or contribute changes, proceed as follows:
 
 1.  Check out the project from GitHub:
-
     ```bash
     $ git clone https://github.com/roskakori/pygount.git
     $ cd pygount
     ```
-
 2.  Install [uv](https://docs.astral.sh/uv/).
-
 3.  Create the virtual environment and install the required packages:
-
     ```bash
     $ uv sync --all-groups
     ```
-
 4.  Install the pre-commit hook:
-
     ```bash
     $ uv run pre-commit install
     ```
@@ -61,7 +55,7 @@ $ uv run pre-commit run --all-files
 
 In particular, this applies checks from [black](https://black.readthedocs.io/en/stable/), [flake8](https://flake8.pycqa.org/) and [isort](https://pypi.org/project/isort/).
 
-## Release cheatsheet
+## Publish a new version
 
 This section is only relevant for developers with access to the PyPI project.
 

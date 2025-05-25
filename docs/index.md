@@ -4,5 +4,4 @@ Pygount is a command line tool to scan folders for source code files and count t
 
 The name is a combination of "pygments" and "count".
 
-Pygount is open source and distributed under the [BSD
-license](https://opensource.org/licenses/BSD-3-Clause). The source code is available from <https://github.com/roskakori/pygount>.
+Pygount is open source and distributed under the [BSD license](https://opensource.org/licenses/BSD-3-Clause). The source code is available from <https://github.com/roskakori/pygount>.

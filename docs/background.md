@@ -29,7 +29,7 @@ Because of that, pygount tends to report about 5 to 15 percent fewer SLOC for C-
 
 For some languages, "no operations" are detected and treated as white space. For example, Python's `pass` or Transact-SQL's `begin` and `end`.
 
-As example, consider this Python code:
+As an example, consider this Python code:
 
 ```python
 class SomeError(Exception):
@@ -49,7 +49,7 @@ Pygount currently takes an opinionated approach on how to count pure string line
 
 - With `--format=summary`, pure string lines are ignored similar to empty lines
 - With `--format` set to `sloccount` or `cloc-xml` string lines are counted as code, resulting in somewhat similar counts as the original tools.
-- With `format=json` all variants are available as attributes and you can choose which one you prefer.
+- With `--format=json` all variants are available as attributes, and you can choose which one you prefer.
 
 In hindsight, this is an inconsistency that might warrant a cleanup. See issue [#122](https://github.com/roskakori/pygount/issues/122) for a discussion and issue [#152](https://github.com/roskakori/pygount/issues/152) for a plan on how to clean this up.
 
@@ -65,9 +65,7 @@ In this case, pygount assigns it the pseudo language `__binary__` and performs n
 
 ## Comparison with other tools
 
-Pygount can analyze more languages than other common tools such as
-sloccount or cloc because it builds on `pygments`, which provides lexers for hundreds of languages. This also makes enables supporting another language: [Write your own
-lexer](http://pygments.org/docs/lexerdevelopment/).
+Pygount can analyze more languages than other common tools such as sloccount or cloc because it builds on `pygments`, which provides lexers for hundreds of languages. This also makes enables supporting another language: [Write your own lexer](http://pygments.org/docs/lexerdevelopment/).
 
 For certain corner cases, pygount gives more accurate results because it actually lexes the code unlike other tools that mostly look for comment markers and can get confused when they show up inside strings. In practice, though, this should not make much of a difference.
 

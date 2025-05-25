@@ -1,15 +1,12 @@
 # JSON
 
-The JavaScript objects notation (JSON) is widely used to interchange
-data. Running pygount with `--format`
-"json" is a simple way to provide the results of an analysis for
-further processing.
+The JavaScript objects notation (JSON) is widely used to interchange data. Running pygount with `--format=json` is a simple way to provide the results of an analysis for further processing.
 
 ## General format
 
 The general structure of the resulting JSON is:
 
-```JavaScript
+```JSON
 {
   "formatVersion": "1.1.0",
   "pygountVersion": "1.8.0",
@@ -49,8 +46,8 @@ With `files` you can access a list of files analyzed, for example:
 
 The `*Count` fields have the following meaning:
 
-- `codeCount`: The number of lines that contains code, excluding
-  :ref:?\`Pure string lines\`
+- `codeCount`: The number of lines that contains code excluding
+  [Pure string lines](background.md#pure-string-lines)
 - `documentationCount`: The number of lines containing comments
 - `emptyCount`: The number of empty lines, which includes
   "`No operations`" lines
@@ -60,26 +57,23 @@ The `*Count` fields have the following meaning:
   SLOC
 - `stringCount`: The number of `Pure string lines`
 
-Here, `sourceCount` is the number of source lines of code (SLOC),
-`documentationCount` the number of lines containing comments and
+Here, `sourceCount` is the number of source lines of code (SLOC), `documentationCount` the number of lines containing comments and
 
 The `state` can have one of the following values:
 
 - analyzed: successfully analyzed
-- binary: the file is a `binary file <binary>`
-- duplicate: the file is a `duplicate <duplicates>` of another
+- binary: the file is a [binary file](background.md#binary-files)
+- duplicate: the file is a [duplicate](usage.md#-duplicates) of another
 - empty: the file is empty (file size = 0)
-- error: the source could not be parsed; in this case, `stateInfo`
-  contains a message with more details
-- generated: the file has been generated as specified with
-  `--generated`
+- error: the source could not be parsed; in this case, `stateInfo` contains a message with more details
+- generated: the file has been generated as specified with `--generated`
 - unknown: pygments does not offer any lexer to analyze the file
 
 ### Languages
 
 In `languages` the summary for each language is available, for example:
 
-```JavaScript
+```JSON
 {
   "documentationCount": 429,
   "documentationPercentage": 11.776008783969257,
@@ -100,11 +94,10 @@ In `languages` the summary for each language is available, for example:
 
 ### Summary
 
-In `summary` the total counts across the whole project can be accessed,
-for example:
+In `summary` the total counts across the whole project can be accessed, for example:
 
-```JavaScript
-"summary": {
+```JSON
+{
   "totalCodeCount": 4366,
   "totalCodePercentage": 68.38972431077694,
   "totalDocumentationCount": 463,
@@ -121,11 +114,10 @@ for example:
 
 ### Runtime
 
-The `runtime` entry collects general information about how well pygount
-performed in collecting the information, for example:
+The `runtime` entry collects general information about how well pygount performed in collecting the information, for example:
 
-```JavaScript
-"runtime": {
+```JSON
+{
   "durationInSeconds": 0.6333059999999999,
   "filesPerSecond": 64.73963613166464,
   "finishedAt": "2024-05-13T16:14:31.977070+00:00",
@@ -136,9 +128,7 @@ performed in collecting the information, for example:
 
 ## Pretty printing
 
-Because the output is concise and consequently mostly illegible for a
-human reader, you might want to pipe it through a pretty printer. As you
-already have python installed, the easiest way is:
+Because the output is concise and consequently mostly illegible for a human reader, you might want to pipe it through a pretty printer. As you already have python installed, the easiest way is:
 
 ```sh
 pygount --format json | python -m json.tool
