@@ -5,7 +5,9 @@ echo "🧱 Updating project"
 uv sync
 uv lock --upgrade
 echo "🛠️ Updating pre-commit"
-pre-commit autoupdate
+uv run pre-commit autoupdate
 echo "📖 Updating documentation"
-pur -r docs/requirements.txt
+# HACK This is only needed because ReadTheDocs cannot extract the
+#  dependencies from pyproject.toml.
+uv export --no-hashes --format requirements-txt > docs/requirements.txt
 echo "🎉 Successfully updated dependencies"
