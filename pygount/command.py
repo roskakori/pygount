@@ -38,8 +38,10 @@ _HELP_EPILOG = """SHELL-PATTERN is a pattern using *, ? and ranges like [a-z]
  default values are available, [...] indicates that the PATTERNS extend the
  existing default values."""
 
-_HELP_FORMAT = 'output format, one of: {}; default: "%(default)s"'.format(
-    ", ".join(['"' + output_format + '"' for output_format in VALID_OUTPUT_FORMATS])
+_HELP_FORMAT = (
+    f"output format, one of: "
+    f"{', '.join(['"' + output_format + '"' for output_format in VALID_OUTPUT_FORMATS])};"
+    f' default: "%(default)s"'
 )
 
 _HELP_GENERATED = """comma separated list of regular expressions to detect

@@ -5,7 +5,11 @@ pygount.
 
 ## Version 3.1.0, 2025-xx-xx
 
-- Change documentation from Sphinx to MkDocs in the hope to avoid regular breakage (issue [#191](https://github.com/roskakori/pygount/issues/191)).
+- Change documentation from Sphinx to MkDocs in the hope to avoid it breaking regularly (issue [#191](https://github.com/roskakori/pygount/issues/191)).
+
+Development:
+
+- Replace `format()` with f-strings (contributed by Ben Allen, issue [#166](https://github.com/roskakori/pygount/issues/166)).
 
 ## Version 3.0.0, 2025-05-23
 
