@@ -1,6 +1,6 @@
 [project]
 name = "pygount"
-version = "3.0.0"
+version = "3.1.0"
 description = "count source lines of code (SLOC) using pygments"
 authors = [{ name = "Thomas Aglassinger", email = "roskakori@users.sourceforge.net" }]
 requires-python = ">=3.9, <4"
@@ -27,10 +27,10 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dependencies = [
-    "pygments>=2,<3",
     "chardet>=5,<6",
-    "rich>=9",
     "gitpython~=3.1",
+    "pygments>=2,<3",
+    "rich>=9",
 ]
 
 [project.urls]
@@ -56,25 +56,25 @@ testpaths = [
 dev = [
     "coveralls>=4,<5",
     "coverage>=7,<8",
+    "mkdocs>=1,<2",
+    "mkdocs-material>=9,<10",
     "pytest>=8,<9",
     "pytest-cov>=6,<7",
-    "pre-commit~=4.1",
+    "pre-commit>=4,<5",
     "pur>=7,<8",
     "ruff~=0.11.11",
 ]
-docs = ["Sphinx>=7,<8"]
 
 [tool.uv]
 default-groups = [
     "dev",
-    "docs",
 ]
 
 [tool.hatch.build.targets.sdist]
 include = ["pygount"]
 
 [tool.hatch.build.targets.wheel]
-include = ["pygount"]
+packages = ["pygount"]
 
 [build-system]
 requires = ["hatchling"]

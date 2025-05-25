@@ -1,0 +1,33 @@
+site_name: "pygount"
+site_url: "https://pygount.readthedocs.io/"
+site_author: "Thomas Aglassinger <roskakori@users.sourceforge.net>"
+site_description: "Documentation of pygount, a tool to count lines of code for hundreds of languages using pygments"
+
+repo_url: "https://github.com/roskakori/pygount"
+
+theme:
+  name: material
+  features:
+    - navigation.footer
+
+markdown_extensions:
+  - attr_list
+  - codehilite
+  - toc:
+      permalink: true
+
+nav:
+  - "Overview": "index.md"
+  - "Installation": "installation.md"
+  - "Usage":
+      - "Usage": "usage.md"
+      - "JSON format": "json.md"
+      - "Continuous integration": "continuous-integration.md"
+      - "Background": "background.md"
+  - "API": "api.md"
+  - "Changes": "changes.md"
+  - "Contributing": "contributing.md"
+
+validation:
+  nav:
+    omitted_files: warn

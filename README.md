@@ -29,8 +29,13 @@ For installation run
 $ pip install pygount
 ```
 
-To get a list of line counts for a projects stored in a certain folder run for
-example:
+or use [uv](https://docs.astral.sh/uv/) to run it directly, for example:
+
+```bash
+$ uvx pygount --version
+```
+
+To get a list of line counts for a projects stored in a certain folder:
 
 ```bash
 $ pygount ~/projects/example
@@ -66,17 +71,16 @@ This example results in the following summary output:
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━┓
 ┃ Language         ┃ Files ┃     % ┃ Code ┃    % ┃ Comment ┃    % ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━┩
-│ Python           │    21 │  48.8 │ 2414 │ 63.4 │     436 │ 11.4 │
-│ TOML             │     1 │   2.3 │   46 │ 23.1 │      38 │ 19.1 │
-│ Batchfile        │     1 │   2.3 │   24 │ 68.6 │       1 │  2.9 │
-│ Bash             │     4 │   9.3 │   20 │ 60.6 │      13 │ 39.4 │
-│ Makefile         │     1 │   2.3 │    9 │ 45.0 │       7 │ 35.0 │
-│ reStructuredText │     9 │  20.9 │    0 │  0.0 │     538 │ 49.6 │
-│ Markdown         │     3 │   7.0 │    0 │  0.0 │      57 │ 47.1 │
-│ Text only        │     2 │   4.7 │    0 │  0.0 │      23 │ 82.1 │
-│ __unknown__      │     1 │   2.3 │    0 │  0.0 │       0 │  0.0 │
+│ Python           │    18 │  47.4 │ 2132 │ 63.6 │     418 │ 12.5 │
+│ TOML             │     2 │   5.3 │ 1204 │ 82.7 │       1 │  0.1 │
+│ Batchfile        │     1 │   2.6 │   24 │ 68.6 │       1 │  2.9 │
+│ Bash             │     2 │   5.3 │   12 │ 80.0 │       3 │ 20.0 │
+│ Makefile         │     1 │   2.6 │    9 │ 45.0 │       7 │ 35.0 │
+│ reStructuredText │     9 │  23.7 │    0 │  0.0 │     438 │ 50.2 │
+│ Markdown         │     3 │   7.9 │    0 │  0.0 │      53 │ 49.1 │
+│ Text only        │     2 │   5.3 │    0 │  0.0 │      24 │ 82.8 │
 ├──────────────────┼───────┼───────┼──────┼──────┼─────────┼──────┤
-│ Sum              │    43 │ 100.0 │ 2513 │ 47.1 │    1113 │ 20.9 │
+│ Sum              │    38 │ 100.0 │ 3381 │ 57.4 │     945 │ 16.1 │
 └──────────────────┴───────┴───────┴──────┴──────┴─────────┴──────┘
 ```
 
