@@ -10,6 +10,7 @@ pygount.
 Development:
 
 - Replace `format()` with f-strings (contributed by Ben Allen, issue [#166](https://github.com/roskakori/pygount/issues/166)).
+- Change sdist archive to include more than just the Python source code.
 
 ## Version 3.0.0, 2025-05-23
 
