@@ -59,9 +59,22 @@ When a file is considered to be binary when all the following
 conditions match:
 
 1. The file does not start with a BOM for UTF-8, UTF-16 or UTF-32 (which indicates text files).
-2. The initial 8192 bytes contain at least one 0 byte.
+2. The initial 8192 bytes contain at least one 0-byte.
 
 In this case, pygount assigns it the pseudo language `__binary__` and performs no further analysis.
+
+## Generated files
+
+Generated files are recognized either by their content (`--generated`) or name (`--generated-names`). Use `--help` to see the current default patterns.
+
+In case you think the standard patterns should be extended, modify `pygount.analysis.DEFAULT_GENERATED_LINE|NAME_PATTERNS_TEXT` and [contribute a pull request](contributing.md).
+
+For source code repositories, committing generated files should generally be avoided. Instead, make the generation part of the build process. However, there are valid reasons to include generated files:
+
+1. Package managers generate "lock" files from the package specification to ensure builds use the exact same versions and hashes. For example, "pyproject.toml" and "uv.lock".
+2. Generation takes too long, for example, in Flutter projects with many nested sub-packages.
+3. Generated files cannot be bootstrapped from scratch because of interdependencies.
+4. Cloud tools require certain generated files to be present in the repository. An example would be [ReadTheDocs.org](https://readthedocs.org), which as of May 2025 in combination with [MkDocs](https://www.mkdocs.org/) needs additional dependencies to be specified in a `requirements.txt`. Many Python projects specify their dependencies in `pyproject.toml`, which can be used to generate the `requirements.txt`. However, the ReadTheDocs build does not allow easily including such a step, so the path of least resistance is to just include the generated `requirements.txt` file in the repository.
 
 ## Comparison with other tools
 

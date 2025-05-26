@@ -49,6 +49,10 @@ _HELP_FORMAT = (
 _HELP_GENERATED = """comma separated list of regular expressions to detect
  generated code; default: %(default)s"""
 
+_HELP_GENERATED_NAMES = """comma separated list of glob patterns for file names
+ not to treat as generated. Use "..." as first entry to append patterns to the default
+ patterns; default: %(default)s"""
+
 _HELP_MERGE_EMBEDDED_LANGUAGES = """merge counts for embedded languages into
  their base language; for example, HTML+Jinja2 counts as HTML"""
 
@@ -104,7 +108,10 @@ class Command:
     def __init__(self):
         self.set_encodings(_DEFAULT_ENCODING)
         self._folders_to_skip = pygount.common.regexes_from(pygount.analysis.DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
-        self._generated_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
+        self._generated_line_regexs = pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_LINE_PATTERNS_TEXT)
+        self._generated_name_regexps = pygount.common.regexes_from(
+            pygount.analysis.DEFAULT_GENERATED_NAME_PATTERNS_TEXT
+        )
         self._has_duplicates = False
         self._has_summary = False
         self._has_to_merge_embedded_languages = False
@@ -159,11 +166,20 @@ class Command:
 
     @property
     def generated_regexps(self):
-        return self._generated_regexs
+        return self._generated_line_regexs
 
     def set_generated_regexps(self, regexes_or_patterns_text, source=None):
-        self._generated_regexs = pygount.common.regexes_from(
-            regexes_or_patterns_text, pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT, source
+        self._generated_line_regexs = pygount.common.regexes_from(
+            regexes_or_patterns_text, pygount.analysis.DEFAULT_GENERATED_LINE_PATTERNS_TEXT, source
+        )
+
+    @property
+    def generated_name_regexps(self):
+        return self._generated_name_regexps
+
+    def set_generated_name_regexps(self, regexes_or_pattern_text, source=None):
+        self._generated_name_regexps = pygount.common.regexes_from(
+            regexes_or_pattern_text, pygount.analysis.DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT, source
         )
 
     @property
@@ -256,8 +272,15 @@ class Command:
             "--generated",
             "-g",
             metavar="PATTERNS",
-            default=pygount.analysis.DEFAULT_GENERATED_PATTERNS_TEXT,
+            default=pygount.analysis.DEFAULT_GENERATED_LINE_PATTERNS_TEXT,
             help=_HELP_GENERATED,
+        )
+        parser.add_argument(
+            "--generated-names",
+            "-G",
+            metavar="PATTERNS",
+            default=pygount.analysis.DEFAULT_GENERATED_NAME_PATTERNS_TEXT,
+            help=_HELP_GENERATED_NAMES,
         )
         parser.add_argument(
             "--merge-embedded-languages",
@@ -330,10 +353,11 @@ class Command:
         self.set_fallback_encoding(fallback_encoding, "option --encoding")
         self.set_folders_to_skip(args.folders_to_skip, "option --folders-to-skip")
         self.set_generated_regexps(args.generated, "option --generated")
+        self.set_generated_name_regexps(args.generated_names, "option --generated-names")
         self.set_has_duplicates(args.duplicates, "option --duplicates")
         self.set_has_to_merge_embedded_languages(args.merge_embedded_languages, "option --merge-embedded-languages")
         self.set_is_verbose(args.verbose, "option --verbose")
-        self.set_names_to_skip(args.names_to_skip, "option --folders-to-skip")
+        self.set_names_to_skip(args.names_to_skip, "option --names-to-skip")
         self.set_output(args.out, "option --out")
         self.set_output_format(args.format, "option --format")
         self.set_source_patterns(args.source_patterns, "option PATTERNS")
@@ -366,7 +390,8 @@ class Command:
                                 path_data.group,
                                 self.default_encoding,
                                 self.fallback_encoding,
-                                generated_regexes=self._generated_regexs,
+                                generated_regexes=self._generated_line_regexs,
+                                generated_name_regexes=self._generated_name_regexps,
                                 duplicate_pool=duplicate_pool,
                                 merge_embedded_language=self.has_to_merge_embedded_languages,
                                 tmp_dir=path_data.tmp_dir,

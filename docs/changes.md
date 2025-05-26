@@ -3,8 +3,9 @@
 This chapter describes the changes coming with each new version of
 pygount.
 
-## Version 3.1.0, 2025-xx-xx
+## Version 3.1.0, 2025-05-27
 
+- Add command line option [`--generated-names`](usage.md#-generated-names) to specify which file names should be considered to be generated. The current patterns recognized are somewhat limited, so contributions are welcome. See the section on "[Generated files](background.md#generated-files)" for hints on how to do that (issue [#190](https://github.com/roskakori/pygount/issues/190)).
 - Change documentation from Sphinx to MkDocs in the hope to avoid it breaking regularly (issue [#191](https://github.com/roskakori/pygount/issues/191)).
 
 Development:

@@ -8,6 +8,7 @@ import fnmatch
 import functools
 import inspect
 import re
+import typing
 import warnings
 from collections.abc import Iterator, Sequence
 from re import Pattern
@@ -98,6 +99,10 @@ def regexes_from(
         raise OptionError(f"cannot parse pattern for regular repression: {error}", source) from None
     result.extend(default_regexes)
     return result
+
+
+def matching_regex(text: str, regexes: list[typing.Pattern]) -> Optional[typing.Pattern]:
+    return next((regex for regex in regexes if regex.match(text)), None)
 
 
 def lines(text: str) -> Iterator[str]:
