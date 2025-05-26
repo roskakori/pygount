@@ -286,6 +286,15 @@ class FileAnalysisTest(TempFolderTest):
         assert source_analysis.language.lower() == "html+django/jinja"
         assert source_analysis.code_count == 3
 
+    def test_can_analyze_generated_name(self):
+        test_uv_lock_path = self.create_temp_file("uv.lock", [])
+        source_analysis = analysis.SourceAnalysis.from_file(
+            test_uv_lock_path,
+            "test",
+            generated_name_regexes=pygount.common.regexes_from(pygount.analysis.DEFAULT_GENERATED_NAME_PATTERNS_TEXT),
+        )
+        assert source_analysis.state == analysis.SourceState.generated
+
     def test_can_merge_embedded_language(self):
         test_html_django_path = self.create_temp_file(
             "some.html",
@@ -407,7 +416,7 @@ class GeneratedCodeTest(TempFolderTest):
     )
 
     def test_can_detect_non_generated_code(self):
-        default_generated_regexes = common.regexes_from(analysis.DEFAULT_GENERATED_PATTERNS_TEXT)
+        default_generated_regexes = common.regexes_from(analysis.DEFAULT_GENERATED_LINE_PATTERNS_TEXT)
         with open(__file__, encoding="utf-8") as source_file:
             matching_line_number_and_regex = analysis.matching_number_line_and_regex(
                 source_file, default_generated_regexes

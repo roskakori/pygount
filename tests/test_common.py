@@ -6,7 +6,10 @@ Tests for :py:mod:`pygount.common` module.
 # All rights reserved. Distributed under the BSD License.
 import re
 
+import pytest
+
 import pygount.common
+from pygount.common import matching_regex
 
 
 def test_can_build_str():
@@ -80,6 +83,24 @@ def test_can_represent_iterable_as_list():
     assert pygount.common.as_list(["a", 1, None]) == ["a", 1, None]
     assert pygount.common.as_list(()) == []
     assert pygount.common.as_list(range(3)) == [0, 1, 2]
+
+
+@pytest.mark.parametrize(
+    "text,patterns,expected_regex_index",
+    [
+        ("some", [], -1),
+        ("some", ["some"], 0),
+        ("some", ["other"], -1),
+        ("some", ["other", "some"], 1),
+        ("some", ["s.+"], 0),
+        ("some", [".*T.*"], -1),
+    ],
+)
+def test_can_compute_matching_regex(text: str, patterns: list[str], expected_regex_index: int):
+    regexes = [re.compile(pattern) for pattern in patterns]
+    regex = matching_regex(text, regexes)
+    regex_index = regexes.index(regex) if regex is not None else -1
+    assert regex_index == expected_regex_index
 
 
 def test_can_convert_empty_text_to_lines():

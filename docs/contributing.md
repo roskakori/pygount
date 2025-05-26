@@ -69,7 +69,7 @@ version = "3.x.x"
 Next, build the project and run the tests to ensure everything works:
 
 ```sh
-$ rm -rf build  # Remove any files from previous builds.
+$ rm -rf dist  # Remove any files from previous builds.
 $ uv build
 $ uv run pytest
 ```

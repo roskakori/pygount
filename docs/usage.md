@@ -120,6 +120,12 @@ If the first actual pattern is `[...]`, default patterns are included. Without i
 
 So for example, to specify that generated code can also contain the German word "generiert" in a case-insensitive way use `--generated="[regex][...](?i).*generiert"`.
 
+### `--generated-names`
+
+In addition to the source code, the file name can indicate that a source code is generated. For example, `--generated-names="*.lock,*.g.dart"`.
+
+The default already recognizes several standard generated names.
+
 ## Counting duplicates
 
 ### `--duplicates`
