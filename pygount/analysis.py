@@ -190,6 +190,7 @@ _MARK_UP_NAME_REGEX = re.compile(_MARK_UP_NAME_PATTERN, re.IGNORECASE)
 _SUFFIX_TO_FALLBACK_LEXER_MAP = {
     "fex": pygount.lexers.MinimalisticWebFocusLexer(),
     "idl": pygount.lexers.IdlLexer(),
+    "ipynb": pygount.lexers.JupyterLexer(),
     "m4": pygount.lexers.MinimalisticM4Lexer(),
     "txt": pygount.lexers.PlainTextLexer(),
     "vbe": pygount.lexers.MinimalisticVBScriptLexer(),
@@ -428,12 +429,16 @@ class SourceAnalysis:
         if result is None:
             assert lexer is not None
             assert source_code is not None
+            if isinstance(lexer, pygount.lexers.DynamicLexerMixin):
+                lexer.peek(source_code)
+
             language = base_language(lexer.name) if merge_embedded_language else lexer.name
             if ("xml" in language.lower()) or (language == "Genshi"):
                 dialect = pygount.xmldialect.xml_dialect(source_path, source_code)
                 if dialect is not None:
                     language = dialect
             _log.info("%s: analyze as %s using encoding %s", source_path, language, encoding)
+            # code, docs, empty, string
             mark_to_count_map = {"c": 0, "d": 0, "e": 0, "s": 0}
             is_markup = is_markup_file(source_path)
             for line_parts in _line_parts(lexer, source_code, is_markup=is_markup):
@@ -784,7 +789,7 @@ def white_code_words(language_id: str) -> set[str]:
     return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
 
 
-def _delined_tokens(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _delined_tokens(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[Tuple[TokenType, str]]:
     for token_type, token_text in tokens:
         remaining_token_text = token_text
         newline_index = remaining_token_text.find("\n")
@@ -796,7 +801,7 @@ def _delined_tokens(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenTy
             yield token_type, remaining_token_text
 
 
-def _pythonized_comments(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _pythonized_comments(tokens: Iterator[Tuple[TokenType, str]]) -> Iterator[Tuple[TokenType, str]]:
     """
     Similar to tokens but converts strings after a colon (`:`) to comments.
     """
@@ -818,9 +823,9 @@ def _pythonized_comments(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[To
 def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool = False) -> Iterator[set[str]]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
-    if lexer.name == "Python":
-        tokens = _pythonized_comments(tokens)
     language_id = lexer.name.lower()
+    if language_id == "python":
+        tokens = _pythonized_comments(tokens)
     white_text = " \f\n\r\t" + white_characters(language_id)
     white_words = white_code_words(language_id)
     for token_type, token_text in tokens:
