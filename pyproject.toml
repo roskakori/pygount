@@ -1,9 +1,9 @@
 [project]
 name = "pygount"
-version = "3.1.0"
+version = "3.1.1"
 description = "count source lines of code (SLOC) using pygments"
 authors = [{ name = "Thomas Aglassinger", email = "roskakori@users.sourceforge.net" }]
-requires-python = ">=3.9, <4"
+requires-python = ">=3.10, <4"
 readme = "README.md"
 license = "BSD-3-Clause"
 keywords = [
@@ -19,18 +19,18 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development",
 ]
 dependencies = [
     "chardet>=5,<6",
     "gitpython~=3.1",
     "pygments>=2,<3",
-    "rich>=9",
+    "rich>=14",
 ]
 
 [project.urls]
@@ -59,11 +59,11 @@ dev = [
     "hatchling>=1.27.0",
     "mkdocs>=1,<2",
     "mkdocs-material>=9,<10",
-    "pytest>=8,<9",
-    "pytest-cov>=6,<7",
+    "pytest>=9.0.2,<10",
+    "pytest-cov>=7,<8",
     "pre-commit>=4,<5",
     "pur>=7,<8",
-    "ruff~=0.11.11",
+    "ruff~=0.15.1",
 ]
 
 [tool.uv]
@@ -195,6 +195,3 @@ select = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["pygount", "scripts", "tests"]
-
-[tool.ruff.lint.per-file-ignores]
-"docs/conf.py" = ["INP001"]

@@ -301,7 +301,7 @@ class SourceAnalysis:
         assert group is not None
         assert state != SourceState.analyzed, "use from() for analyzable sources"
         SourceAnalysis._check_state_info(state, state_info)
-        reduced_path = source_path.split(tmp_dir)[-1].lstrip(os.sep) if tmp_dir else source_path
+        reduced_path = source_path.rsplit(tmp_dir, maxsplit=1)[-1].lstrip(os.sep) if tmp_dir else source_path
         return SourceAnalysis(
             path=reduced_path,
             language=f"__{state.name}__",
@@ -442,7 +442,7 @@ class SourceAnalysis:
                     if mark_to_check in line_parts:
                         mark_to_increment = mark_to_check
                 mark_to_count_map[mark_to_increment] += 1
-            reduced_path = source_path.split(tmp_dir)[-1].lstrip(os.sep) if tmp_dir else source_path
+            reduced_path = source_path.rsplit(tmp_dir, maxsplit=1)[-1].lstrip(os.sep) if tmp_dir else source_path
             result = SourceAnalysis(
                 path=reduced_path,
                 language=language,
