@@ -102,7 +102,7 @@ class LanguageSummary:
 
     @property
     def source_percentage(self) -> float:
-        """percentage of source lines for code for this language across entire project"""
+        """percentage of source lines for code for this language across the entire project"""
         return _percentage_or_0(self.source_count, self.line_count)
 
     @property
@@ -113,6 +113,9 @@ class LanguageSummary:
     def sort_key(self) -> Hashable:
         """sort key to sort multiple languages by importance"""
         return self.code_count, self.documentation_count, self.string_count, self.empty_count, self.language
+
+    def __hash__(self):
+        return hash(self.language)
 
     def __eq__(self, other):
         return self.sort_key() == other.sort_key()

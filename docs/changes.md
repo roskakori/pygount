@@ -3,6 +3,10 @@
 This chapter describes the changes coming with each new version of
 pygount.
 
+## Version 3.1.1, 2025-02-17
+
+- Update dependencies and drop support for Python 3.9 (issue [#205](https://github.com/roskakori/pygount/issues/205)).
+
 ## Version 3.1.0, 2025-05-27
 
 - Add command line option [`--generated-names`](usage.md#-generated-names) to specify which file names should be considered to be generated. The current patterns recognized are somewhat limited, so contributions are welcome. See the section on "[Generated files](background.md#generated-files)" for hints on how to do that (issue [#190](https://github.com/roskakori/pygount/issues/190)).
