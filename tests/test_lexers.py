@@ -27,9 +27,9 @@ def test_can_lex_idl():
     assert text_tokens == [
         (token.Token.Comment.Multiline, "/* some\n * comment */"),
         (token.Token.Text.Whitespace, "\n"),
-        (token.Token.Name, "module"),
-        (token.Token.Text.Whitespace, " "),
-        (token.Token.Name, "HelloApp"),
+        (token.Token.Keyword.Declaration, "module"),
+        (token.Token.Text, " "),
+        (token.Token.Name.Class, "HelloApp"),
         (token.Token.Text.Whitespace, " "),
         (token.Token.Punctuation, "{"),
         (token.Token.Text.Whitespace, "\n"),
