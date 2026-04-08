@@ -1,6 +1,6 @@
 [project]
 name = "pygount"
-version = "3.1.1"
+version = "3.2.0"
 description = "count source lines of code (SLOC) using pygments"
 authors = [{ name = "Thomas Aglassinger", email = "roskakori@users.sourceforge.net" }]
 requires-python = ">=3.10, <4"
