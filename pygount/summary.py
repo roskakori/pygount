@@ -157,9 +157,6 @@ class LanguageSummary:
                 }
             )
         return mapped_repr(self, name_to_value_map)
-        result = ", ".join(f"{name}={value}" for name, value in name_to_value_map.items())
-        result = f"{self.__class__.__name__}({result})"
-        return result
 
 
 def _percentage_or_0(partial_count: int, total_count: int) -> float:

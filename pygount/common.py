@@ -14,6 +14,8 @@ from collections.abc import Iterator, Sequence
 from re import Pattern
 from typing import Optional, Union
 
+WHITE_SPACE_CHARACTERS = " \f\n\r\t"
+
 #: Pseudo pattern to indicate that the remaining pattern are an addition to the default patterns.
 ADDITIONAL_PATTERN = "[...]"
 

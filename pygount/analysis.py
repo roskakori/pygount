@@ -22,13 +22,14 @@ from typing import Optional, Union
 
 import pygments.lexer
 import pygments.lexers
+import pygments.lexers.html
 import pygments.token
 import pygments.util
 
 import pygount.common
 import pygount.lexers
 import pygount.xmldialect
-from pygount.common import mapped_repr, matching_regex
+from pygount.common import WHITE_SPACE_CHARACTERS, mapped_repr, matching_regex
 from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
 HTTP_URL_REGEX = re.compile(r"^(https?://)")
@@ -191,6 +192,7 @@ _SUFFIX_TO_FALLBACK_LEXER_MAP = {
     "fex": pygount.lexers.MinimalisticWebFocusLexer(),
     "idl": pygount.lexers.IdlLexer(),
     "m4": pygount.lexers.MinimalisticM4Lexer(),
+    "svg": pygments.lexers.html.XmlLexer(),  # TODO#213 Remove SVG hack.
     "txt": pygount.lexers.PlainTextLexer(),
     "vbe": pygount.lexers.MinimalisticVBScriptLexer(),
     "vbs": pygount.lexers.MinimalisticVBScriptLexer(),
@@ -809,7 +811,7 @@ def _pythonized_comments(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[To
             if result_token_text == ":":
                 is_after_colon = True
             elif token_type not in pygments.token.Comment:
-                is_whitespace = len(result_token_text.rstrip(" \f\n\r\t")) == 0
+                is_whitespace = len(result_token_text.rstrip(WHITE_SPACE_CHARACTERS)) == 0
                 if not is_whitespace:
                     is_after_colon = False
         yield result_token_type, result_token_text

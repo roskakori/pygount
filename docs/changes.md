@@ -3,6 +3,11 @@
 This chapter describes the changes coming with each new version of
 pygount.
 
+## Version 3.2.0, 2026-04-08
+
+- Add detection of SVG as XML dialect (issue [#209](https://github.com/roskakori/pygount/issues/209)).
+- Fix detecttion of XML dialect when a `<?xml>` header was present.
+
 ## Version 3.1.1, 2025-02-17
 
 - Update dependencies and drop support for Python 3.9 (issue [#205](https://github.com/roskakori/pygount/issues/205)).
