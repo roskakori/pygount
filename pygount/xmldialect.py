@@ -8,10 +8,15 @@ import logging
 import re
 import xml.sax
 
+from pygount.common import WHITE_SPACE_CHARACTERS
+
 # TODO #10: Replace regex for DTD by working DTD handler.
 #: Regular expression to obtain DTD.
 _DTD_REGEX = re.compile(r'<!DOCTYPE\s+(?P<name>[a-zA-Z][a-zA-Z-]*)\s+PUBLIC\s+"(?P<public_id>.+)"')
-_REGEX_PATTERNS_AND_DIALECTS = ((".*DocBook.*", "DocBook XML"),)
+_REGEX_PATTERNS_AND_DIALECTS = (
+    (".*DocBook.*", "DocBook XML"),
+    (".+ SVG .+", "SVG XML"),
+)
 _REGEXES_AND_DIALECTS = [(re.compile(pattern), dialect) for pattern, dialect in _REGEX_PATTERNS_AND_DIALECTS]
 for public_id_regex, dialect in _REGEX_PATTERNS_AND_DIALECTS:
     assert public_id_regex is not None
@@ -64,7 +69,8 @@ class XmlDialectHandler(xml.sax.ContentHandler, xml.sax.handler.DTDHandler):
 
 def xml_dialect(xml_path, xml_code):
     # TODO #10: Remove hack to obtain DTD using a regex instead of a DTDHandler.
-    dtd_match = _DTD_REGEX.match(xml_code)
+    xml_code_witout_header = without_xml_header(xml_code)
+    dtd_match = _DTD_REGEX.match(xml_code_witout_header)
     if dtd_match is not None:
         public_id = dtd_match.group("public_id")
         for public_id_regex, dialect in _REGEXES_AND_DIALECTS:
@@ -96,3 +102,12 @@ def xml_dialect(xml_path, xml_code):
     except OSError as error:
         _log.warning("%s: cannot analyze XML dialect: %s", xml_path, error)
     return xml_dialect_handler.dialect
+
+
+def without_xml_header(xml_code: str) -> str:
+    result = xml_code.lstrip(WHITE_SPACE_CHARACTERS)
+    if result.startswith("<?xml"):
+        end_if_xml_declaration = result.find("?>")
+        if end_if_xml_declaration != -1:
+            result = result[end_if_xml_declaration + 2 :].lstrip(WHITE_SPACE_CHARACTERS)
+    return result
