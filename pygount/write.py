@@ -332,30 +332,27 @@ class GraphWriter(BaseWriter):
         )
 
         num_tags = len(self._tag_names)
-        x_step = chart_width / (num_tags - 1) if num_tags > 1 else chart_width
+        x_step = chart_width / num_tags
+        bar_width = x_step * 0.8
+        bar_offset = (x_step - bar_width) / 2
 
-        # Draw stacked areas.
-        prev_y = [self._height - margin_bottom] * num_tags
+        # Draw stacked bars.
+        for j, tag in enumerate(self._tag_names):
+            x = margin_left + j * x_step + bar_offset
+            current_y = self._height - margin_bottom
+            for i, lang in enumerate(sorted_langs):
+                color = self._colors[i % len(self._colors)]
+                sloc = self._tag_to_language_sloc[tag].get(lang, 0)
+                if sloc > 0:
+                    h = sloc / max_sloc * chart_height
+                    svg.append(
+                        f'<rect x="{x}" y="{current_y - h}" width="{bar_width}" height="{h}" fill="{color}" opacity="0.8"/>'
+                    )
+                    current_y -= h
+
+        # Legend.
         for i, lang in enumerate(sorted_langs):
             color = self._colors[i % len(self._colors)]
-            points = []
-            new_prev_y = []
-            for j, tag in enumerate(self._tag_names):
-                x = margin_left + j * x_step
-                sloc = self._tag_to_language_sloc[tag].get(lang, 0)
-                y = prev_y[j] - (sloc / max_sloc * chart_height)
-                points.append(f"{x},{y}")
-                new_prev_y.append(y)
-
-            # Area path.
-            path_points = points + [
-                f"{margin_left + (num_tags - 1) * x_step},{prev_y[-1]}",
-                f"{margin_left},{prev_y[0]}",
-            ]
-            svg.append(f'<polygon points="{" ".join(path_points)}" fill="{color}" opacity="0.8"/>')
-            prev_y = new_prev_y
-
-            # Legend.
             legend_x = self._width - margin_right + 10
             legend_y = margin_top + i * 20
             svg.append(f'<rect x="{legend_x}" y="{legend_y}" width="15" height="15" fill="{color}"/>')
@@ -365,7 +362,7 @@ class GraphWriter(BaseWriter):
 
         # Draw tag labels.
         for j, tag in enumerate(self._tag_names):
-            x = margin_left + j * x_step
+            x = margin_left + (j + 0.5) * x_step
             svg.append(
                 f'<text x="{x}" y="{self._height - margin_bottom + 20}" font-family="sans-serif" font-size="10" text-anchor="middle" transform="rotate(45 {x},{self._height - margin_bottom + 20})">{tag}</text>'
             )
