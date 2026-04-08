@@ -209,6 +209,8 @@ class PygountCommandTest(TempFolderTest):
 
     def test_can_write_all_output_formats(self):
         for output_format in VALID_OUTPUT_FORMATS:
+            if output_format == "graph":
+                continue
             exit_code = command.pygount_command(["--format", output_format, PYGOUNT_SOURCE_FOLDER])
             self.assertEqual(exit_code, 0)
 
@@ -227,3 +229,25 @@ class PygountCommandTest(TempFolderTest):
         file_elements = cloc_xml_root.findall("files/file[@language='HTML']")
         assert file_elements is not None
         assert len(file_elements) == 1
+
+
+class GraphCommandTest(TempFolderTest):
+    def test_fails_on_graph_without_git_url(self):
+        with pytest.raises(SystemExit) as error_info:
+            command.pygount_command(["--format", "graph", self.tests_temp_folder])
+        assert error_info.value.code == 2
+
+    def test_fails_on_invalid_width(self):
+        with pytest.raises(SystemExit) as error_info:
+            command.pygount_command(["--width", "100", self.tests_temp_folder])
+        assert error_info.value.code == 2
+
+    def test_fails_on_invalid_height(self):
+        with pytest.raises(SystemExit) as error_info:
+            command.pygount_command(["--height", "100", self.tests_temp_folder])
+        assert error_info.value.code == 2
+
+    def test_fails_on_too_few_colors(self):
+        with pytest.raises(SystemExit) as error_info:
+            command.pygount_command(["--colors", "#123456", self.tests_temp_folder])
+        assert error_info.value.code == 2

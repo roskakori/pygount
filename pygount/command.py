@@ -9,20 +9,26 @@ import contextlib
 import logging
 import os
 import sys
+import tempfile
 
+import git
 from rich.progress import Progress
 
 import pygount
 import pygount.analysis
 import pygount.common
+import pygount.git_storage
 import pygount.write
 
 #: Valid formats for option --format.
-VALID_OUTPUT_FORMATS = ("cloc-xml", "json", "sloccount", "summary")
+VALID_OUTPUT_FORMATS = ("cloc-xml", "graph", "json", "sloccount", "summary")
 
 _DEFAULT_ENCODING = "automatic"
 _DEFAULT_OUTPUT_FORMAT = "sloccount"
 _DEFAULT_OUTPUT = "STDOUT"
+_DEFAULT_COLORS = "#0747A6, #00B8D9, #172B4D, #FF8B00, #006644, #FFC400"
+_DEFAULT_WIDTH = 1024
+_DEFAULT_HEIGHT = 768
 _DEFAULT_SOURCE_PATTERNS = os.curdir
 _DEFAULT_SUFFIXES = "*"
 
@@ -70,6 +76,7 @@ _HELP_SUFFIX = '''limit analysis on files matching any suffix in comma
 
 _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP = {
     "cloc-xml": pygount.write.ClocXmlWriter,
+    "graph": pygount.write.GraphWriter,
     "json": pygount.write.JsonWriter,
     "sloccount": pygount.write.LineWriter,
     "summary": pygount.write.SummaryWriter,
@@ -121,6 +128,9 @@ class Command:
         self._output_format = _DEFAULT_OUTPUT_FORMAT
         self._source_patterns = _DEFAULT_SOURCE_PATTERNS
         self._suffixes = pygount.common.regexes_from(_DEFAULT_SUFFIXES)
+        self._colors = _DEFAULT_COLORS
+        self._width = _DEFAULT_WIDTH
+        self._height = _DEFAULT_HEIGHT
 
     def set_encodings(self, encoding, source=None):
         encoding_is_chardet = (encoding == "chardet") or (encoding.startswith("chardet;"))
@@ -154,6 +164,14 @@ class Command:
     def set_fallback_encoding(self, fallback_encoding, source=None):
         _check_encoding("fallback encoding", fallback_encoding, "automatic", source)
         self._fallback_encoding = fallback_encoding
+
+    @property
+    def colors(self):
+        return self._colors
+
+    def set_colors(self, colors, source=None):
+        assert colors is not None
+        self._colors = colors
 
     @property
     def folders_to_skip(self):
@@ -195,6 +213,13 @@ class Command:
 
     def set_has_to_merge_embedded_languages(self, has_to_merge_embedded_languages, source=None):
         self._has_to_merge_embedded_languages = bool(has_to_merge_embedded_languages)
+
+    @property
+    def height(self):
+        return self._height
+
+    def set_height(self, height, source=None):
+        self._height = height
 
     @property
     def is_verbose(self):
@@ -249,8 +274,21 @@ class Command:
         assert regexes_or_patterns_text is not None
         self._suffixes = pygount.common.regexes_from(regexes_or_patterns_text, _DEFAULT_SUFFIXES, source)
 
+    @property
+    def width(self):
+        return self._width
+
+    def set_width(self, width, source=None):
+        self._width = width
+
     def argument_parser(self):
         parser = argparse.ArgumentParser(description="count source lines of code", epilog=_HELP_EPILOG)
+        parser.add_argument(
+            "--colors",
+            metavar="COLORS",
+            default=_DEFAULT_COLORS,
+            help='comma separated list of hex codes for the most popular languages; default: "%(default)s"',
+        )
         parser.add_argument("--duplicates", "-d", action="store_true", help="analyze duplicate files")
         parser.add_argument("--encoding", "-e", default=_DEFAULT_ENCODING, help=_HELP_ENCODING)
         parser.add_argument(
@@ -283,6 +321,13 @@ class Command:
             help=_HELP_GENERATED_NAMES,
         )
         parser.add_argument(
+            "--height",
+            metavar="HEIGHT",
+            type=int,
+            default=_DEFAULT_HEIGHT,
+            help='height of the chart in pixels; default: "%(default)s"',
+        )
+        parser.add_argument(
             "--merge-embedded-languages",
             "-m",
             action="store_true",
@@ -312,6 +357,13 @@ class Command:
         )
         parser.add_argument("--verbose", "-v", action="store_true", help="explain what is being done")
         parser.add_argument("--version", action="version", version="%(prog)s " + pygount.__version__)
+        parser.add_argument(
+            "--width",
+            metavar="WIDTH",
+            type=int,
+            default=_DEFAULT_WIDTH,
+            help='width of the chart in pixels; default: "%(default)s"',
+        )
         return parser
 
     def parsed_args(self, arguments):
@@ -343,6 +395,19 @@ class Command:
                     "".encode(encoding)
                 except LookupError:
                     parser.error(f"{name} specified with --encoding must be a known Python encoding: {encoding}")
+        if args.format == "graph":
+            if (
+                len(args.source_patterns) != 1
+                or pygount.git_storage.git_remote_url_and_revision_if_any(args.source_patterns[0])[0] is None
+            ):
+                parser.error("--graph requires a single git URL as source")
+        if args.width < 600 or args.width > 32767:
+            parser.error("Value for option --width must be between 600 and 32767.")
+        if args.height < 400 or args.height > 32767:
+            parser.error("Value for option --height must be between 400 and 32767.")
+        colors = [color.strip().lstrip("#") for color in args.colors.split(",") if color.strip().lstrip("#") != ""]
+        if len(colors) < 2:
+            parser.error("At least two colors must be specified.")
         return args, default_encoding, fallback_encoding
 
     def apply_arguments(self, arguments=None):
@@ -362,9 +427,15 @@ class Command:
         self.set_output_format(args.format, "option --format")
         self.set_source_patterns(args.source_patterns, "option PATTERNS")
         self.set_suffixes(args.suffix, "option --suffix")
+        self.set_colors(args.colors, "option --colors")
+        self.set_width(args.width, "option --width")
+        self.set_height(args.height, "option --height")
 
     def execute(self):
         _log.setLevel(logging.INFO if self.is_verbose else logging.WARNING)
+        if self.output_format == "graph":
+            self._execute_graph()
+            return
         with pygount.analysis.SourceScanner(
             self.source_patterns, self.suffixes, self.folders_to_skip, self.names_to_skip
         ) as source_scanner:
@@ -399,6 +470,52 @@ class Command:
                         )
                 finally:
                     progress.stop()
+
+    def _execute_graph(self):
+        remote_url, _ = pygount.git_storage.git_remote_url_and_revision_if_any(self.source_patterns[0])
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            _log.info("cloning %s to %s", remote_url, tmp_dir)
+            repo = git.Repo.clone_from(remote_url, tmp_dir)
+            tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
+            if not tags:
+                _log.warning("no tags found in %s", remote_url)
+
+            writer_class = _OUTPUT_FORMAT_TO_WRITER_CLASS_MAP[self.output_format]
+            is_stdout = self.output == "STDOUT"
+            target_context_manager = (
+                contextlib.nullcontext(sys.stdout)
+                if is_stdout
+                else open(self.output, "w", encoding="utf-8", newline="")  # noqa: SIM115
+            )
+
+            with (
+                target_context_manager as target_file,
+                writer_class(target_file, colors=self.colors, width=self.width, height=self.height) as writer,
+                Progress(disable=not writer.has_to_track_progress, transient=True) as progress,
+            ):
+                tag_progress = progress.add_task("Analyzing tags", total=len(tags))
+                for tag in tags:
+                    _log.info("analyzing tag %s", tag.name)
+                    repo.git.checkout(tag.name)
+                    duplicate_pool = pygount.analysis.DuplicatePool() if not self.has_duplicates else None
+                    with pygount.analysis.SourceScanner(
+                        [tmp_dir], self.suffixes, self.folders_to_skip, self.names_to_skip
+                    ) as source_scanner:
+                        source_paths_and_groups_to_analyze = list(source_scanner.source_paths())
+                        for path_data in source_paths_and_groups_to_analyze:
+                            writer.add(
+                                pygount.analysis.SourceAnalysis.from_file(
+                                    path_data.source_path,
+                                    tag.name,
+                                    self.default_encoding,
+                                    self.fallback_encoding,
+                                    generated_regexes=self._generated_line_regexs,
+                                    generated_name_regexes=self._generated_name_regexps,
+                                    duplicate_pool=duplicate_pool,
+                                    merge_embedded_language=self.has_to_merge_embedded_languages,
+                                )
+                            )
+                    progress.advance(tag_progress)
 
 
 def pygount_command(arguments=None):

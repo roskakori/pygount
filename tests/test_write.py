@@ -60,6 +60,28 @@ def test_can_compute_digit_width():
     assert write.digit_width(1000) == 4
 
 
+def test_can_write_graph():
+    source_analyses = (
+        analysis.SourceAnalysis("v1.py", "Python", "v1.0", 100, 0, 0, 0, analysis.SourceState.analyzed, None),
+        analysis.SourceAnalysis("v1.sh", "Bash", "v1.0", 50, 0, 0, 0, analysis.SourceState.analyzed, None),
+        analysis.SourceAnalysis("v2.py", "Python", "v2.0", 200, 0, 0, 0, analysis.SourceState.analyzed, None),
+    )
+    with io.StringIO() as target_stream:
+        with write.GraphWriter(target_stream, colors="#123456, #abcdef", width=800, height=600) as writer:
+            for source_analysis in source_analyses:
+                writer.add(source_analysis)
+        svg_data = target_stream.getvalue()
+        assert "<svg" in svg_data
+        assert 'width="800"' in svg_data
+        assert 'height="600"' in svg_data
+        assert "Python" in svg_data
+        assert "Bash" in svg_data
+        assert "v1.0" in svg_data
+        assert "v2.0" in svg_data
+        assert "#123456" in svg_data
+        assert "#abcdef" in svg_data
+
+
 _LINE_WORD_REGEX = re.compile(r"[\w\\.]+")  # HACK: For test assume all language names are "\w+".
 
 

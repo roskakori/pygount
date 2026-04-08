@@ -25,7 +25,7 @@ JSON_FORMAT_VERSION = "1.1.0"
 
 
 class BaseWriter:
-    def __init__(self, target_stream):
+    def __init__(self, target_stream, **kwargs):
         self._target_stream = target_stream
         try:
             self.target_name = self._target_stream.name
@@ -71,8 +71,8 @@ class LineWriter(BaseWriter):
     Writer that simply writes a line of text for each source code.
     """
 
-    def __init__(self, target_stream):
-        super().__init__(target_stream)
+    def __init__(self, target_stream, **kwargs):
+        super().__init__(target_stream, **kwargs)
         self.has_to_track_progress = False
 
     def add(self, source_analysis):
@@ -90,8 +90,8 @@ class ClocXmlWriter(BaseWriter):
     plug-in.
     """
 
-    def __init__(self, target_stream):
-        super().__init__(target_stream)
+    def __init__(self, target_stream, **kwargs):
+        super().__init__(target_stream, **kwargs)
         self._results_element = ElementTree.Element("results")
         self._header_element = ElementTree.SubElement(self._results_element, "header")
         ElementTree.SubElement(self._header_element, "cloc_url", text="https://github.com/roskakori/pygount")
@@ -192,8 +192,8 @@ class JsonWriter(BaseWriter):
     Writer JSON output, ideal for further automatic processing.
     """
 
-    def __init__(self, target_stream):
-        super().__init__(target_stream)
+    def __init__(self, target_stream, **kwargs):
+        super().__init__(target_stream, **kwargs)
         self.source_analyses = []
 
     def add(self, source_analysis: SourceAnalysis):
@@ -262,6 +262,124 @@ class JsonWriter(BaseWriter):
             },
         }
         json.dump(json_map, self._target_stream)
+
+
+class GraphWriter(BaseWriter):
+    """
+    Writer that generates an SVG chart showing SLOC per language over git tags.
+    """
+
+    def __init__(self, target_stream, **kwargs):
+        super().__init__(target_stream, **kwargs)
+        colors_text = kwargs.get("colors", "")
+        self._colors = ["#" + c.strip().lstrip("#") for c in colors_text.split(",") if c.strip().lstrip("#")]
+        self._width = kwargs.get("width", 1024)
+        self._height = kwargs.get("height", 768)
+        self._tag_names = []
+        self._tag_to_language_sloc = {}
+        self._languages = set()
+
+    def add(self, source_analysis: SourceAnalysis):
+        super().add(source_analysis)
+        tag = source_analysis.group
+        if tag not in self._tag_to_language_sloc:
+            self._tag_to_language_sloc[tag] = {}
+            self._tag_names.append(tag)
+        lang = source_analysis.language
+        self._languages.add(lang)
+        sloc = source_analysis.code_count + source_analysis.string_count
+        self._tag_to_language_sloc[tag][lang] = self._tag_to_language_sloc[tag].get(lang, 0) + sloc
+
+    def close(self):
+        super().close()
+        if not self._tag_names:
+            return
+
+        # Sort languages by total SLOC across all tags.
+        lang_totals = {
+            lang: sum(self._tag_to_language_sloc[tag].get(lang, 0) for tag in self._tag_names)
+            for lang in self._languages
+        }
+        sorted_langs = sorted(self._languages, key=lambda l: lang_totals[l], reverse=True)
+
+        # Parameters for the chart.
+        margin_left = 80
+        margin_right = 150
+        margin_top = 50
+        margin_bottom = 80
+        chart_width = self._width - margin_left - margin_right
+        chart_height = self._height - margin_top - margin_bottom
+
+        max_sloc = 0
+        for tag in self._tag_names:
+            total = sum(self._tag_to_language_sloc[tag].values())
+            max_sloc = max(max_sloc, total)
+        if max_sloc == 0:
+            max_sloc = 1
+
+        # Start SVG.
+        svg = [
+            f'<svg width="{self._width}" height="{self._height}" xmlns="http://www.w3.org/2000/svg">',
+            '<rect width="100%" height="100%" fill="white"/>',
+        ]
+
+        # Draw axes.
+        svg.append(
+            f'<line x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{self._height - margin_bottom}" stroke="black"/>'
+        )
+        svg.append(
+            f'<line x1="{margin_left}" y1="{self._height - margin_bottom}" x2="{self._width - margin_right}" y2="{self._height - margin_bottom}" stroke="black"/>'
+        )
+
+        num_tags = len(self._tag_names)
+        x_step = chart_width / (num_tags - 1) if num_tags > 1 else chart_width
+
+        # Draw stacked areas.
+        prev_y = [self._height - margin_bottom] * num_tags
+        for i, lang in enumerate(sorted_langs):
+            color = self._colors[i % len(self._colors)]
+            points = []
+            new_prev_y = []
+            for j, tag in enumerate(self._tag_names):
+                x = margin_left + j * x_step
+                sloc = self._tag_to_language_sloc[tag].get(lang, 0)
+                y = prev_y[j] - (sloc / max_sloc * chart_height)
+                points.append(f"{x},{y}")
+                new_prev_y.append(y)
+
+            # Area path.
+            path_points = points + [
+                f"{margin_left + (num_tags - 1) * x_step},{prev_y[-1]}",
+                f"{margin_left},{prev_y[0]}",
+            ]
+            svg.append(f'<polygon points="{" ".join(path_points)}" fill="{color}" opacity="0.8"/>')
+            prev_y = new_prev_y
+
+            # Legend.
+            legend_x = self._width - margin_right + 10
+            legend_y = margin_top + i * 20
+            svg.append(f'<rect x="{legend_x}" y="{legend_y}" width="15" height="15" fill="{color}"/>')
+            svg.append(
+                f'<text x="{legend_x + 20}" y="{legend_y + 12}" font-family="sans-serif" font-size="12">{lang}</text>'
+            )
+
+        # Draw tag labels.
+        for j, tag in enumerate(self._tag_names):
+            x = margin_left + j * x_step
+            svg.append(
+                f'<text x="{x}" y="{self._height - margin_bottom + 20}" font-family="sans-serif" font-size="10" text-anchor="middle" transform="rotate(45 {x},{self._height - margin_bottom + 20})">{tag}</text>'
+            )
+
+        # Y axis labels.
+        for i in range(6):
+            val = int(max_sloc * i / 5)
+            y = self._height - margin_bottom - (i / 5 * chart_height)
+            svg.append(
+                f'<text x="{margin_left - 5}" y="{y + 4}" font-family="sans-serif" font-size="10" text-anchor="end">{val}</text>'
+            )
+
+        svg.append("</svg>")
+        self._target_stream.write("\n".join(svg))
 
 
 def digit_width(line_count: int) -> int:
