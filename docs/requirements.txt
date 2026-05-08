@@ -43,7 +43,7 @@ ghp-import==2.1.0
     # via mkdocs
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.46
+gitpython==3.1.49
     # via pygount
 hatchling==1.29.0
 identify==2.6.18
