@@ -703,15 +703,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pur"
-version = "7.4.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/cc/d32e3ece45c42163a3fb8381df5711823bf7a75a89e08f31274d9247116f/pur-7.4.0.tar.gz", hash = "sha256:f8bf2ae9a5be10b152cb5e7107000467a95f64435ba30d0e9a6f3c31a3af8568", size = 1521802, upload-time = "2026-04-26T18:06:22.495Z" }
-
-[[package]]
 name = "pygments"
 version = "2.20.0"
 source = { registry = "https://pypi.org/simple" }
@@ -722,7 +713,7 @@ wheels = [
 
 [[package]]
 name = "pygount"
-version = "3.2.0"
+version = "3.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "chardet" },
@@ -739,7 +730,6 @@ dev = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "pre-commit" },
-    { name = "pur" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
@@ -759,10 +749,9 @@ dev = [
     { name = "coveralls", specifier = ">=4,<5" },
     { name = "hatchling", specifier = ">=1.27.0" },
     { name = "mkdocs", specifier = ">=1.6,<2" },
-    { name = "mkdocs-material", specifier = ">=9,<10" },
+    { name = "mkdocs-material", specifier = ">=9" },
     { name = "pre-commit", specifier = ">=4,<5" },
-    { name = "pur", specifier = ">=7,<8" },
-    { name = "pytest", specifier = ">=9.0.2,<10" },
+    { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-cov", specifier = ">=7,<8" },
     { name = "ruff", specifier = ">=0.15" },
 ]

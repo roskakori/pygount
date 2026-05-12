@@ -3,6 +3,12 @@
 This chapter describes the changes coming with each new version of
 pygount.
 
+## Version 3.3.0, 2026-xx-xx
+
+Development:
+
+- Migrate ReadTheDocs documentation to uv (issue [#221](https://github.com/roskakori/pygount/issues/221)).
+
 ## Version 3.2.0, 2026-04-08
 
 - Add detection of SVG as XML dialect (issue [#209](https://github.com/roskakori/pygount/issues/209)).
