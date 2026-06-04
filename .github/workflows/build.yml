@@ -77,6 +77,6 @@ jobs:
         if: steps.cached-pre-commit.outputs.cache-hit != 'true'
         run: |
           uv sync --group=dev
-          prek install --install-hooks
+          uv run prek install --install-hooks
       - name: Check coding style
-        run: prek run --all-files
+        run: uv run prek run --all-files
