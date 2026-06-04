@@ -8,6 +8,7 @@ import datetime
 import json
 import math
 import os
+from typing import Literal
 from xml.etree import ElementTree
 
 from rich.console import Console
@@ -140,13 +141,16 @@ class ClocXmlWriter(BaseWriter):
         xml_root.write(self._target_stream, encoding="unicode", xml_declaration=False)
 
 
+Justify = Literal["default", "left", "center", "right", "full"]
+
+
 class SummaryWriter(BaseWriter):
     """
     Writer to summarize the analysis per language in a format that can easily
     be read by humans.
     """
 
-    _COLUMNS_WITH_JUSTIFY = (
+    _COLUMNS_WITH_JUSTIFY: tuple[tuple[str, Justify], ...] = (
         ("Language", "left"),
         ("Files", "right"),
         ("%", "right"),
@@ -243,7 +247,7 @@ class JsonWriter(BaseWriter):
             "runtime": {
                 "durationInSeconds": self.duration_in_seconds,
                 "filesPerSecond": self.files_per_second,
-                "finishedAt": self.finished_at.isoformat(),
+                "finishedAt": self.finished_at.isoformat() if self.finished_at is not None else None,
                 "linesPerSecond": self.lines_per_second,
                 "startedAt": self.started_at.isoformat(),
             },

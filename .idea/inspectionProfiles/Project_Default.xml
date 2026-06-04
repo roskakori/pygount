@@ -14,14 +14,12 @@
         </value>
       </option>
     </inspection_tool>
-    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
-      <option name="ignoredPackages">
-        <value>
-          <list size="2">
-            <item index="0" class="java.lang.String" itemvalue="coverage" />
-            <item index="1" class="java.lang.String" itemvalue="setuptools" />
-          </list>
-        </value>
+    <inspection_tool class="PyStringConversionWithoutDunderMethodInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="reportedTypes">
+        <list>
+          <option value="object" />
+          <option value="types.FunctionType" />
+        </list>
       </option>
     </inspection_tool>
   </profile>

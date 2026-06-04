@@ -10,7 +10,7 @@ import pygments.token
 import pygments.util
 
 
-class IdlLexer(pygments.lexers.JavaLexer):
+class IdlLexer(pygments.lexers.JavaLexer):  # ty:ignore[unresolved-attribute]
     """
     Lexer for OMG Interface Definition Language (IDL) that simply uses the
     existing Java lexer to find comments. While this is useless for syntax
