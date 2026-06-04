@@ -28,6 +28,15 @@ repos:
       - id: check-yaml
       - id: debug-statements
 
+  - repo: local
+    hooks:
+      - id: ty
+        name: check typing
+        entry: uvx ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
