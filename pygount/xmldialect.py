@@ -84,10 +84,10 @@ def xml_dialect(xml_path, xml_code):
     parser.setFeature(xml.sax.handler.feature_external_pes, False)
     parser.setFeature(xml.sax.handler.feature_validation, False)
     try:
-        parser.feed(xml_code)
+        parser.feed(xml_code)  # ty:ignore[unresolved-attribute]
         # NOTE: We can only call close() when the parser has finished,
         # otherwise close() raises a SAXException('parser finished').
-        parser.close()
+        parser.close()  # ty:ignore[unresolved-attribute]
     except SaxParserDone:
         # Language has been determined or the parser has given up.
         pass

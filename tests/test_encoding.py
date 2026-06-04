@@ -70,7 +70,7 @@ def _test_can_detect_bom_encoding(encoding: str):
 
 @pytest.mark.parametrize("encoding", ["cp1252", "utf-8"])
 def test_can_detect_plain_encoding(encoding: str):
-    with temp_source_file("txt", _TEST_CODE, encoding=encoding) as test_file:
+    with temp_source_file("txt", [_TEST_CODE], encoding=encoding) as test_file:
         actual_encoding = encoding_for(test_file.name)
         assert actual_encoding == encoding
 
@@ -115,7 +115,7 @@ def test_can_detect_utf8_when_cp1252_would_fail():
 
 
 def test_can_use_hardcoded_encoding():
-    with temp_source_file("txt", "\N{EURO SIGN}", encoding="cp1252") as test_file:
+    with temp_source_file("txt", ["\N{EURO SIGN}"], encoding="cp1252") as test_file:
         test_path = test_file.name
         actual_encoding = encoding_for(test_path, "utf-8")
         assert actual_encoding == "utf-8"

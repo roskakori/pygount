@@ -4,15 +4,18 @@ Common classes and functions for pygount.
 
 # Copyright (c) 2016-2024, Thomas Aglassinger.
 # All rights reserved. Distributed under the BSD License.
+
 import fnmatch
 import functools
 import inspect
 import re
 import typing
 import warnings
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator
 from re import Pattern
-from typing import Optional, Union
+from typing import Any, Optional, Union
+
+from pygments.lexer import Lexer
 
 WHITE_SPACE_CHARACTERS = " \f\n\r\t"
 
@@ -46,7 +49,7 @@ class OptionError(Error):
         return self.option_error_message
 
 
-def as_list(items_or_text: Union[str, Sequence[str]]) -> list[str]:
+def as_list(items_or_text: Union[Any, Iterable[Any]]) -> list[Any]:
     if isinstance(items_or_text, str):
         # TODO: Allow to specify comma (,) in text using '[,]'.
         result = [item.strip() for item in items_or_text.split(",") if item.strip() != ""]
@@ -65,13 +68,13 @@ def regex_from(pattern: Union[str, Pattern], is_shell_pattern=False) -> Pattern:
 
 
 def regexes_from(
-    patterns_text: Union[str, Sequence[str], Sequence[Pattern]],
-    default_patterns_text: Optional[Union[str, Sequence[Pattern], Sequence[str]]] = None,
+    patterns_text: Union[str, Iterable[str], Iterable[Pattern]],
+    default_patterns_text: Optional[Union[str, Iterable[Pattern], Iterable[str]]] = None,
     source: Optional[str] = None,
 ) -> list[Pattern]:
     assert patterns_text is not None
 
-    result = []
+    result: list[Pattern] = []
     default_regexes = []
     try:
         if isinstance(patterns_text, str):
@@ -96,7 +99,7 @@ def regexes_from(
                 assert isinstance(supposed_regex, _REGEX_TYPE), (
                     f"patterns_text must a text or sequence or regular expressions but contains: {supposed_regex}"
                 )
-            result.extend(regexes)
+            result.extend(regexes)  # ty:ignore[invalid-argument-type]
     except re.error as error:
         raise OptionError(f"cannot parse pattern for regular repression: {error}", source) from None
     result.extend(default_regexes)
@@ -191,3 +194,10 @@ def mapped_repr(type_, name_to_value_map) -> str:
     result = ", ".join(f"{name}={value}" for name, value in name_to_value_map.items())
     result = f"{type_.__class__.__name__}({result})"
     return result
+
+
+def checked_lexer_name(lexer: Lexer) -> str:
+    assert lexer is not None
+    if lexer.name is None:
+        raise AssertionError(f"Lexer must have a name: {type(lexer).__name__}.")
+    return lexer.name

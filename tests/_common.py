@@ -22,13 +22,13 @@ class TempFolderTest(unittest.TestCase):
         os.makedirs(self.tests_temp_folder, exist_ok=True)
 
     def create_temp_file(
-        self, relative_target_path, content: Union[str, bytes, Sequence[str]], encoding="utf-8", do_create_folder=False
+        self, relative_target_path, content: Union[str, Sequence[str]], encoding="utf-8", do_create_folder=False
     ):
         result = os.path.join(self.tests_temp_folder, relative_target_path)
         if do_create_folder:
             os.makedirs(os.path.dirname(result), exist_ok=True)
         with open(result, "w", encoding=encoding) as target_file:
-            if isinstance(content, (str, bytes)):
+            if isinstance(content, str):
                 target_file.write(content)
             else:
                 for line in content:
@@ -61,4 +61,4 @@ def temp_source_file(suffix: str, lines: list[str], *, encoding: str = "utf-8") 
         result.write("\n".join(lines))
         result.flush()
         result.seek(0)
-        yield result
+        yield result  # ty:ignore[invalid-yield]
