@@ -8,18 +8,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     env:
       MAIN_PYTHON_VERSION: "3.12" # same as Ubuntu 24 LTS
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           # NOTE Using the "latest" version of uv is risky, but for the time being uv is updated
           #  regularly, so a specific version would be outdated rather quickly. Once uv goes
@@ -27,7 +27,7 @@ jobs:
           version: "latest"
       - name: Load cached venv
         id: cached-uv-dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
@@ -58,22 +58,25 @@ jobs:
     # pull request merges to fail with don't commit to branch".
     if: github.ref != 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ env.MAIN_PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.MAIN_PYTHON_VERSION }}
-      - name: Install pre-commit
-        run: |
-          pip install pre-commit
-      - name: Load cached pre-commit
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "latest"
+      - name: Load cached pre-commit environment
         id: cached-pre-commit
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml', 'uv.lock') }}
       - name: Install pre-commit hooks
         if: steps.cached-pre-commit.outputs.cache-hit != 'true'
-        run: pre-commit install --install-hooks
+        run: |
+          uv sync --group=dev
+          uv run prek install --install-hooks
       - name: Check coding style
-        run: pre-commit run --all-files
+        run: uv run prek run --all-files

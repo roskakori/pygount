@@ -388,6 +388,11 @@ def test_can_guess_lexer_for_plain_text():
     assert lexer.name == "Text"
 
 
+def test_can_guess_no_lexer_for_unknown_file_type():
+    lexer = guess_lexer("some.unknown_suffix", "")
+    assert lexer is None
+
+
 def test_can_guess_lexer_for_cmakelists():
     source_code = "\n".join(
         [

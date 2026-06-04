@@ -12,13 +12,13 @@ import itertools
 import logging
 import os
 import re
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from io import SEEK_CUR, BufferedIOBase, IOBase, RawIOBase, TextIOBase
+from io import SEEK_CUR, IOBase, TextIOBase
 from pathlib import Path
 from re import Pattern
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import pygments.lexer
 import pygments.lexers
@@ -29,7 +29,7 @@ import pygments.util
 import pygount.common
 import pygount.lexers
 import pygount.xmldialect
-from pygount.common import WHITE_SPACE_CHARACTERS, mapped_repr, matching_regex
+from pygount.common import WHITE_SPACE_CHARACTERS, checked_lexer_name, mapped_repr, matching_regex
 from pygount.git_storage import GitStorage, git_remote_url_and_revision_if_any
 
 HTTP_URL_REGEX = re.compile(r"^(https?://)")
@@ -188,7 +188,7 @@ _MARK_UP_NAME_PATTERN = r"^.*\.(md|rst|txt|\d+)$"
 _MARK_UP_NAME_REGEX = re.compile(_MARK_UP_NAME_PATTERN, re.IGNORECASE)
 
 #: Mapping for file suffixes to lexers for which pygments offers no official one.
-_SUFFIX_TO_FALLBACK_LEXER_MAP = {
+_SUFFIX_TO_FALLBACK_LEXER_MAP: dict[str, pygments.lexer.Lexer] = {
     "fex": pygount.lexers.MinimalisticWebFocusLexer(),
     "idl": pygount.lexers.IdlLexer(),
     "m4": pygount.lexers.MinimalisticM4Lexer(),
@@ -371,7 +371,7 @@ class SourceAnalysis:
 
         result = None
         lexer = None
-        source_code = None
+        source_code: str | None = None
         if generated_name_regexes is not None:
             generated_name_regex = matching_regex(Path(source_path).name, generated_name_regexes)
             if generated_name_regex is not None:
@@ -411,6 +411,7 @@ class SourceAnalysis:
                 _log.warning("cannot read %s using encoding %s: %s", source_path, encoding, error)
                 result = SourceAnalysis.from_state(source_path, group, SourceState.error, str(error))
             if result is None:
+                assert source_code is not None
                 lexer = guess_lexer(source_path, source_code)
                 assert lexer is not None
         actual_generated_regexes = (
@@ -419,6 +420,7 @@ class SourceAnalysis:
             else pygount.common.regexes_from(DEFAULT_GENERATED_LINE_PATTERNS_TEXT)
         )
         if (result is None) and (len(actual_generated_regexes) != 0):
+            assert source_code is not None
             number_line_and_regex = matching_number_line_and_regex(
                 pygount.common.lines(source_code), actual_generated_regexes
             )
@@ -430,7 +432,8 @@ class SourceAnalysis:
         if result is None:
             assert lexer is not None
             assert source_code is not None
-            language = base_language(lexer.name) if merge_embedded_language else lexer.name
+            lexer_name = checked_lexer_name(lexer)
+            language = base_language(lexer_name) if merge_embedded_language else lexer_name
             if ("xml" in language.lower()) or (language == "Genshi"):
                 dialect = pygount.xmldialect.xml_dialect(source_path, source_code)
                 if dialect is not None:
@@ -546,12 +549,12 @@ class SourceAnalysis:
     @property
     def is_countable(self) -> bool:
         """
-        ``True`` if source counts can be counted towards a total.
+        `True` if source counts can be counted towards a total.
         """
         return self.state in (SourceState.analyzed, SourceState.duplicate)
 
     def __repr__(self):
-        name_to_value_map = {
+        name_to_value_map: dict[str, Any] = {
             "path": repr(self.path),
             "language": repr(self.language),
             "group": repr(self.group),
@@ -578,21 +581,21 @@ class SourceScanner:
 
     def __init__(
         self,
-        source_patterns,
+        source_patterns: list[str],
         suffixes="*",
-        folders_to_skip=None,
-        name_to_skip=None,
+        folders_to_skip: Optional[list[Pattern]] = None,
+        names_to_skip: Optional[list[Pattern]] = None,
     ):
-        self._source_patterns = source_patterns
-        self._suffixes = pygount.common.regexes_from(suffixes)
-        self._folder_regexps_to_skip = (
+        self._source_patterns: list[str] = source_patterns
+        self._suffixes: list[Pattern] = pygount.common.regexes_from(suffixes)
+        self._folder_regexps_to_skip: list[Pattern] = (
             folders_to_skip
             if folders_to_skip is not None
             else pygount.common.regexes_from(DEFAULT_FOLDER_PATTERNS_TO_SKIP_TEXT)
         )
-        self._name_regexps_to_skip = (
-            name_to_skip
-            if folders_to_skip is not None
+        self._name_regexps_to_skip: list[Pattern] = (
+            names_to_skip
+            if names_to_skip is not None
             else pygount.common.regexes_from(DEFAULT_NAME_PATTERNS_TO_SKIP_TEXT)
         )
         self._git_storages = []
@@ -622,9 +625,7 @@ class SourceScanner:
 
     @folder_regexps_to_skip.setter
     def folder_regexps_to_skip(self, regexps_or_pattern_text):
-        self._folder_regexps_to_skip.append = pygount.common.regexes_from(
-            regexps_or_pattern_text, self.folder_regexps_to_skip
-        )
+        self._folder_regexps_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.folder_regexps_to_skip)
 
     @property
     def name_regexps_to_skip(self) -> list[Pattern]:
@@ -634,12 +635,12 @@ class SourceScanner:
     def name_regexps_to_skip(self, regexps_or_pattern_text):
         self._name_regexps_to_skip = pygount.common.regexes_from(regexps_or_pattern_text, self.name_regexps_to_skip)
 
-    def _is_path_to_skip(self, name, is_folder) -> bool:
+    def _is_path_to_skip(self, name: str, is_folder: bool) -> bool:
         assert os.sep not in name, f"name={name!r}"
         regexps_to_skip = self._folder_regexps_to_skip if is_folder else self._name_regexps_to_skip
         return any(path_name_to_skip_regex.match(name) is not None for path_name_to_skip_regex in regexps_to_skip)
 
-    def _paths_and_group_to_analyze_in(self, folder, group, tmp_dir) -> PathData:
+    def _paths_and_group_to_analyze_in(self, folder: str, group: str, tmp_dir: Optional[str]) -> Iterator[PathData]:
         assert folder is not None
         assert group is not None
 
@@ -654,7 +655,9 @@ class SourceScanner:
                 else:
                     yield PathData(source_path=path, group=group, tmp_dir=tmp_dir)
 
-    def _paths_and_group_to_analyze(self, path_to_analyse_pattern, group=None, tmp_dir=None) -> Iterator[PathData]:
+    def _paths_and_group_to_analyze(
+        self, path_to_analyse_pattern: str, group: Optional[str] = None, tmp_dir: Optional[str] = None
+    ) -> Iterator[PathData]:
         for path_to_analyse in glob.glob(path_to_analyse_pattern):
             if os.path.islink(path_to_analyse):
                 _log.debug("skip link: %s", path_to_analyse)
@@ -678,10 +681,10 @@ class SourceScanner:
                                 actual_group = os.path.basename(os.path.dirname(os.path.abspath(path_to_analyse)))
                         yield PathData(source_path=path_to_analyse, group=actual_group, tmp_dir=tmp_dir)
 
-    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze) -> list[PathData]:
+    def _source_paths_and_groups_to_analyze(self, source_patterns_to_analyze: Iterable[str]) -> list[PathData]:
         assert source_patterns_to_analyze is not None
 
-        result = []
+        result: list[PathData] = []
 
         def _process_source_pattern(source_pattern: str):
             remote_url, revision = git_remote_url_and_revision_if_any(source_pattern)
@@ -695,7 +698,7 @@ class SourceScanner:
             else:
                 has_url_prefix = re.match(HTTP_URL_REGEX, source_pattern)
                 if has_url_prefix:
-                    is_git_url = re.match(GIT_REPO_REGEX, source_pattern_to_analyze) is not None
+                    is_git_url = re.match(GIT_REPO_REGEX, source_pattern) is not None
                     if not is_git_url:
                         raise pygount.Error(
                             f'URL to git repository {source_pattern} must end with ".git" or must match the pattern '
@@ -706,7 +709,7 @@ class SourceScanner:
                     source_pattern = source_pattern.rstrip("/")
                     _process_source_pattern(source_pattern + ".git")
                 else:
-                    result.extend(self._paths_and_group_to_analyze(source_pattern_to_analyze))
+                    result.extend(self._paths_and_group_to_analyze(source_pattern))
 
         # NOTE: We could avoid initializing `source_pattern_to_analyze` here by moving the `try` inside
         #  the loop, but this would incor a performance overhead (ruff's PERF203).
@@ -741,7 +744,7 @@ for _language in _LANGUAGE_TO_WHITE_WORDS_MAP:
 
 
 def matching_number_line_and_regex(
-    source_lines: Iterator[str], generated_regexes: Sequence[Pattern], max_line_count: int = 15
+    source_lines: Iterable[str], generated_regexes: Sequence[Pattern], max_line_count: int = 15
 ) -> Optional[tuple[int, str, Pattern]]:
     """
     The first line and its number (starting with 0) in the source code that
@@ -786,7 +789,9 @@ def white_code_words(language_id: str) -> set[str]:
     return _LANGUAGE_TO_WHITE_WORDS_MAP.get(language_id, set())
 
 
-def _delined_tokens(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _delined_tokens(
+    tokens: Iterable[tuple[TokenType, str]],  # ty:ignore[invalid-type-form]
+) -> Iterator[TokenType]:  # ty:ignore[invalid-type-form]
     for token_type, token_text in tokens:
         remaining_token_text = token_text
         newline_index = remaining_token_text.find("\n")
@@ -798,7 +803,9 @@ def _delined_tokens(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenTy
             yield token_type, remaining_token_text
 
 
-def _pythonized_comments(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[TokenType]:
+def _pythonized_comments(
+    tokens: Iterable[tuple[TokenType, str]],  # ty:ignore[invalid-type-form]
+) -> Iterator[TokenType]:  # ty:ignore[invalid-type-form]
     """
     Similar to tokens but converts strings after a colon (`:`) to comments.
     """
@@ -820,9 +827,10 @@ def _pythonized_comments(tokens: Iterator[tuple[TokenType, str]]) -> Iterator[To
 def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool = False) -> Iterator[set[str]]:
     line_marks = set()
     tokens = _delined_tokens(lexer.get_tokens(text))
-    if lexer.name == "Python":
+    lexer_name = checked_lexer_name(lexer)
+    if lexer_name == "Python":
         tokens = _pythonized_comments(tokens)
-    language_id = lexer.name.lower()
+    language_id: str = lexer_name.lower()
     white_text = " \f\n\r\t" + white_characters(language_id)
     white_words = white_code_words(language_id)
     for token_type, token_text in tokens:
@@ -847,7 +855,7 @@ def _line_parts(lexer: pygments.lexer.Lexer, text: str, is_markup: bool = False)
         yield line_marks
 
 
-def check_file_handle_is_seekable(file_handle: Optional[Union[BufferedIOBase, RawIOBase]], source_path: str):
+def check_file_handle_is_seekable(file_handle: IOBase, source_path: str):
     if not file_handle.seekable():
         raise pygount.Error(f"cannot determine encoding: file handle must be seekable: {source_path}")
 
@@ -856,7 +864,7 @@ def encoding_for(
     source_path: str,
     encoding: str = "automatic",
     fallback_encoding: Optional[str] = None,
-    file_handle: Optional[Union[BufferedIOBase, RawIOBase]] = None,
+    file_handle: Optional[IOBase] = None,
 ) -> str:
     """
     The encoding used by the text file stored in ``source_path``.
@@ -994,8 +1002,8 @@ def is_plain_text(source_path):
 
 def has_lexer(source_path: str) -> bool:
     """
-    Initial quick check if there is a lexer for ``source_path``. This removes
-    the need for calling :py:func:`pygments.lexers.guess_lexer_for_filename()`
+    Initial quick check if there is a lexer for `source_path`. This removes
+    the need for calling `pygments.lexers.guess_lexer_for_filename()`
     which fully reads the source file.
     """
     result = bool(pygments.lexers.find_lexer_class_for_filename(source_path))
@@ -1005,15 +1013,16 @@ def has_lexer(source_path: str) -> bool:
     return result
 
 
-def guess_lexer(source_path: str, text: str) -> pygments.lexer.Lexer:
+def guess_lexer(source_path: str, text: str) -> Union[pygments.lexer.Lexer, None]:
+    result: Union[pygments.lexer.Lexer, None] = None
     if is_plain_text(source_path):
         result = pygount.lexers.PlainTextLexer()
     else:
         try:
-            result = pygments.lexers.guess_lexer_for_filename(source_path, text)
+            result: pygments.lexer.Lexer = pygments.lexers.guess_lexer_for_filename(source_path, text)
         except pygments.util.ClassNotFound:
             suffix = os.path.splitext(os.path.basename(source_path))[1].lstrip(".")
-            result = _SUFFIX_TO_FALLBACK_LEXER_MAP.get(suffix)
+            result = _SUFFIX_TO_FALLBACK_LEXER_MAP.get(suffix)  # ty:ignore[conflicting-declarations]
     return result
 
 
