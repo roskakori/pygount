@@ -1,0 +1,13 @@
+{
+  "version": "0.10.2",
+  "integration_state_schema": 1,
+  "installed_integrations": ["goose"],
+  "integration_settings": {
+    "goose": {
+      "script": "sh",
+      "invoke_separator": "."
+    }
+  },
+  "integration": "goose",
+  "default_integration": "goose"
+}

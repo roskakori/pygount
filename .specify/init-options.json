@@ -1,0 +1,8 @@
+{
+  "ai": "goose",
+  "feature_numbering": "sequential",
+  "here": false,
+  "integration": "goose",
+  "script": "sh",
+  "speckit_version": "0.10.2"
+}
