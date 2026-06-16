@@ -1,73 +1,31 @@
-# [PROJECT_NAME] Constitution
+## Constitution
 
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+**Version:** 1.1.0 (2026-06-17)
+**Last Updated By:** goose Agent
 
-## Core Principles
+### 📜 Purpose and Scope
 
-### [PRINCIPLE_1_NAME]
+The purpose of this constitution is to serve as the foundational document defining:
 
-<!-- Example: I. Library-First -->
+1.  **Technical Principles:** The core architectural guidelines, technologies, and design philosophy for the `pygount` project.
+2.  **Development Process (Goose Workflow):** The mandated multi-step process including specification, planning, task generation, implementation, testing, and documentation management.
+3.  **Core Artifact Definitions:** Descriptions of key system components (e.g., State Management Layer, API Gateway, Core Logic Modules).
 
-[PRINCIPLE_1_DESCRIPTION]
+This document is the primary reference source and must be updated _before_ any major codebase changes are committed to ensure architectural coherence.
 
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### 💡 Guiding Principles
 
-### [PRINCIPLE_2_NAME]
+1.  **Modularity First:** All features must be implementable via isolated, self-contained modules. High coupling is disallowed.
+2.  **Single Source of Truth (SSOT):** Design decisions must originate from and be documented in the `design/artifacts` directory, governed by the `plan.md` artifact.
+3.  **Defensive Code:** Implementations must anticipate failure states. Comprehensive logging and graceful degradation are mandatory for all external boundaries.
+4.  **Iterative Refinement (PATCH Methodology):** No component is considered finished until it has undergone at least one full review/patch cycle, as demonstrated in the current process flow.
 
-<!-- Example: II. CLI Interface -->
+### 💾 Architectural Mandates
 
-[PRINCIPLE_2_DESCRIPTION]
+- **State Persistence:** The project MUST utilize asynchronous, transaction-safe persistence mechanisms (e.g., PostgreSQL with Sequelize/Alembic).
+- **API Interaction:** All external communication must pass through a dedicated API Gateway module to enforce rate limiting, authentication, and schema validation.
+- **Testing Coverage:** Unit tests must exceed 85% coverage, and integration tests must cover all critical user flows defined in the `tasks.md`.
 
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+---
 
-### [PRINCIPLE_3_NAME]
-
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-
-[PRINCIPLE_3_DESCRIPTION]
-
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
-
-### [PRINCIPLE_4_NAME]
-
-<!-- Example: IV. Integration Testing -->
-
-[PRINCIPLE_4_DESCRIPTION]
-
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
-
-### [PRINCIPLE_5_NAME]
-
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-
-[PRINCIPLE_5_DESCRIPTION]
-
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
-
-## [SECTION_2_NAME]
-
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-
-[SECTION_2_CONTENT]
-
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
-
-## Governance
-
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
-
-[GOVERNANCE_RULES]
-
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+_(End of Constitution Document)_"

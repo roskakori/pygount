@@ -1,73 +1,42 @@
-# [PROJECT_NAME] Constitution
+# 🌿 Project Constitution: pygount
 
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+## 📜 Introduction & Purpose
 
-## Core Principles
+This document outlines the foundational principles, mission, vision, and scope for the `pygount` project. It serves as the guiding source of truth to ensure maintainability, feature development consistency, and alignment with core objectives.
 
-### [PRINCIPLE_1_NAME]
+**The `pygount` Project Mission:**
+To provide a robust, automated, and standardized framework for conducting deep analysis and providing concise summaries of structured projects, leveraging command-line interfaces and version control integration where necessary.
 
-<!-- Example: I. Library-First -->
+**Core Value Proposition:**
+Reliable data extraction, structural analysis, and actionable reporting from complex codebases or documents.
 
-[PRINCIPLE_1_DESCRIPTION]
+## ✨ Vision
 
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+`pygount` aims to be the standard tool for developers requiring automated, multi-faceted analysis pipelines, moving beyond simple linting to provide holistic, context-aware insights into software structure, usage patterns, and overall quality.
 
-### [PRINCIPLE_2_NAME]
+## 🌎 Scope & Functionality (As per current implementation)
 
-<!-- Example: II. CLI Interface -->
+The project primarily focuses on several interconnected areas:
 
-[PRINCIPLE_2_DESCRIPTION]
+1.  **Code/Structure Analysis:** Analyzing file system paths, identifying classes, functions, imports, and call graphs within codebases (`analysis.py`, `common.py`).
+2.  **Command Execution Layer:** Providing a clean interface for users to interact with the analysis framework via command line (`command.py`).
+3.  **Data Modeling & Conversion:** Handling structured data formats, particularly XML (using `xmldialect.py`), and defining common utilities.
+4.  **State/Persistence Management:** Integrating basic storage mechanisms, possibly leveraging Git for state tracking or history reading (`git_storage.py`).
+5.  **Reporting and Summarization:** Generating high-level, consumable reports from raw analysis results (`summary.py`, `write.py`).
 
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+## 🧭 Guiding Principles (The Pillars of pygount)
 
-### [PRINCIPLE_3_NAME]
+1.  **Modularity First:** All core components must be logically separated (e.g., lexing in `lexers.py`, storage in `git_storage.py`, execution in `command.py`) to minimize coupling and maximize testability.
+2.  **Single Responsibility Principle:** Each module, class, or function should have one, and only one, reason to change.
+3.  **Actionable Output:** The final output must not just report data; it must be _actionable_ insight that directly informs development decisions or project understanding.
+4.  **Test-Driven Development (TDD) Commitment:** Maintain a strong commitment to test coverage across all modules (`tests/`).
 
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
+## 🧑‍💻 Technical Stack & Architecture
 
-[PRINCIPLE_3_DESCRIPTION]
+- **Language:** Python 3.x
+- **Structure:** Modular, with clear separation between core logic, utility functions, and presentation layers.
+- **Dependencies:** Minimal standard library dependencies are preferred. External libraries should be justified by explicit functional necessity.
 
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+## 📌 Next Steps (Evolution)
 
-### [PRINCIPLE_4_NAME]
-
-<!-- Example: IV. Integration Testing -->
-
-[PRINCIPLE_4_DESCRIPTION]
-
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
-
-### [PRINCIPLE_5_NAME]
-
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-
-[PRINCIPLE_5_DESCRIPTION]
-
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
-
-## [SECTION_2_NAME]
-
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-
-[SECTION_2_CONTENT]
-
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
-
-## Governance
-
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
-
-[GOVERNANCE_RULES]
-
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+Future development efforts must prioritize refining the synergy between analysis (`analysis.py`) and state management (`git_storage.py`) to create fully reproducible, version-controlled reports that evolve with the project over time.
