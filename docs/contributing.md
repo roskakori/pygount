@@ -55,6 +55,38 @@ $ uv run pre-commit run --all-files
 
 In particular, this applies checks from [black](https://black.readthedocs.io/en/stable/), [flake8](https://flake8.pycqa.org/) and [isort](https://pypi.org/project/isort/).
 
+## Spec-driven development
+
+The repository supports spec-driven development based on [spec-kit](https://github.com/github/spec-kit) and [goose]((https://goose-docs.ai/).
+
+To set it up with [homebrew](https://brew.sh/), first install the required tools and LLM models:
+
+```bash
+brew install goose-cli ollama specify
+ollama pull gemma4:latest  # Model for quick edits.
+ollama pull qwen3.6:27b-coding-bf16  # Model for more sophisticated tasks; requires 32 GB VRAM.
+```
+
+Next, set up goose:
+
+```bash
+goose configure
+```
+
+For that:
+
+1. Choose: Configure Providers
+2. Choose: Ollama
+3. For the next couple of questions use the default.
+4. Set the model according to your needs and the abilities of your computer.
+
+Then start goose:
+
+```bash
+cd .../pygount
+goose
+```
+
 ## Publish a new version
 
 This section is only relevant for developers with access to the PyPI project.
