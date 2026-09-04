@@ -382,6 +382,12 @@ def test_can_guess_lexer_for_python():
     assert lexer.name == "Python"
 
 
+def test_can_guess_lexer_for_svg():
+    lexer = guess_lexer("drawing.svg", '<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+    assert lexer is not None
+    assert lexer.name == "XML"
+
+
 def test_can_guess_lexer_for_plain_text():
     lexer = guess_lexer("README.1st", "hello!")
     assert lexer is not None

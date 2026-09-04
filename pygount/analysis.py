@@ -192,7 +192,6 @@ _SUFFIX_TO_FALLBACK_LEXER_MAP: dict[str, pygments.lexer.Lexer] = {
     "fex": pygount.lexers.MinimalisticWebFocusLexer(),
     "idl": pygount.lexers.IdlLexer(),
     "m4": pygount.lexers.MinimalisticM4Lexer(),
-    "svg": pygments.lexers.html.XmlLexer(),  # TODO#213 Remove SVG hack.
     "txt": pygount.lexers.PlainTextLexer(),
     "vbe": pygount.lexers.MinimalisticVBScriptLexer(),
     "vbs": pygount.lexers.MinimalisticVBScriptLexer(),

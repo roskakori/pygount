@@ -5,6 +5,8 @@ pygount.
 
 ## Version 3.3.0, 2026-xx-xx
 
+- Remove the SVG lexer workaround and require Pygments 2.21 or later (issue [#213](https://github.com/roskakori/pygount/issues/213)).
+
 Development:
 
 - Migrate ReadTheDocs documentation to uv (issue [#221](https://github.com/roskakori/pygount/issues/221)).
