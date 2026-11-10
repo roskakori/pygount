@@ -87,6 +87,13 @@ class PygountCommandTest(TempFolderTest):
         exit_code = command.pygount_command(["--generated", "[regex](", tempfile.gettempdir()])
         assert exit_code == 1
 
+    def test_fails_on_non_git_url_with_clean_error(self):
+        with self.assertLogs("pygount", level="ERROR") as logs:
+            exit_code = command.pygount_command(["https://no/git/url"])
+        assert exit_code == 1
+        assert logs.output, "expected the invalid URL to be reported as an error"
+        assert not any("Traceback" in message for message in logs.output)
+
     def test_can_analyze_pygount_setup_py(self):
         pygount_setup_py_path = os.path.join(PYGOUNT_PROJECT_FOLDER, "setup.py")
         exit_code = command.pygount_command(["--verbose", pygount_setup_py_path])

@@ -410,7 +410,7 @@ def pygount_command(arguments=None):
         result = 0
     except KeyboardInterrupt:  # pragma: no cover
         _log.error("interrupted as requested by user")
-    except (pygount.common.OptionError, OSError) as error:
+    except (pygount.common.Error, OSError) as error:
         _log.error(error)
     except Exception as error:
         _log.exception(error)
