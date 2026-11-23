@@ -5,6 +5,8 @@ pygount.
 
 ## Version 3.3.0, 2026-xx-xx
 
+- Allow chardet 6 and 7 (the optional encoding detection).
+
 Development:
 
 - Migrate ReadTheDocs documentation to uv (issue [#221](https://github.com/roskakori/pygount/issues/221)).
